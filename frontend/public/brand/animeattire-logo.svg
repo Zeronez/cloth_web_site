@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="animeattire-logo-title animeattire-logo-desc">
+  <title id="animeattire-logo-title">AnimeAttire logo</title>
+  <desc id="animeattire-logo-desc">A sharp AnimeAttire wordmark with a katana stroke, stitched clothing threads, and anime streetwear styling.</desc>
+  <defs>
+    <linearGradient id="aa-ink" x1="72" y1="52" x2="862" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="0.47" stop-color="#111827"/>
+      <stop offset="1" stop-color="#0b1020"/>
+    </linearGradient>
+    <linearGradient id="aa-crimson" x1="104" y1="64" x2="356" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff385c"/>
+      <stop offset="1" stop-color="#d91136"/>
+    </linearGradient>
+    <linearGradient id="aa-thread" x1="80" y1="124" x2="888" y2="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff385c"/>
+      <stop offset="0.55" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+    <filter id="aa-soft-shadow" x="-6%" y="-16%" width="112%" height="132%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0b1020" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <g fill="none" fill-rule="evenodd" filter="url(#aa-soft-shadow)">
+    <path d="M83 171 141 47h31l58 124h-34l-11-25h-59l-11 25H83Zm54-51h37l-18-44-19 44Z" fill="url(#aa-crimson)"/>
+    <path d="M191 62h35l23 61 24-61h33l-43 109h-30L191 62Z" fill="url(#aa-ink)" opacity="0.96"/>
+    <path d="M320 171V62h31v109h-31Zm-1-126V20h33v25h-33Z" fill="url(#aa-ink)"/>
+    <path d="M382 171V62h30l2 14c8-11 20-17 36-17 13 0 24 4 32 13 8 8 12 20 12 36v63h-31v-58c0-18-8-27-23-27-8 0-15 3-20 8-5 6-7 14-7 24v53h-31Z" fill="url(#aa-ink)"/>
+    <path d="M574 174c-18 0-33-5-44-16-11-10-16-24-16-41 0-16 5-30 16-41 11-11 25-17 42-17 16 0 29 5 39 15 10 10 15 24 15 41 0 4 0 8-1 12h-80c2 8 6 14 12 18 6 4 13 6 22 6 13 0 24-4 34-13l13 20c-14 11-31 16-52 16Zm-28-67h51c-2-16-10-24-25-24-14 0-23 8-26 24Z" fill="url(#aa-ink)"/>
+    <path d="M640 171 698 47h31l58 124h-34l-11-25h-59l-11 25h-32Zm54-51h37l-18-44-19 44Z" fill="url(#aa-ink)"/>
+    <path d="M821 173c-24 0-36-12-36-37V88h-18V62h18V32h31v30h31v26h-31v43c0 10 5 15 15 15 6 0 12-1 18-4v25c-8 4-17 6-28 6Z" fill="url(#aa-ink)"/>
+    <path d="M863 171V62h31v109h-31Zm-1-126V20h33v25h-33Z" fill="url(#aa-ink)"/>
+  </g>
+  <g aria-hidden="true">
+    <path d="M63 190c145-28 300-41 466-39 145 1 268 15 368 42" stroke="url(#aa-thread)" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 16"/>
+    <path d="M77 154 888 86" stroke="#d8dee9" stroke-width="7" stroke-linecap="round"/>
+    <path d="M77 154 888 86" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.82"/>
+    <path d="M872 78 918 82 879 101Z" fill="#111827"/>
+    <path d="M61 150h41v15H61z" fill="#111827" transform="rotate(-5 81.5 157.5)"/>
+    <path d="M51 145h14v26H51z" fill="#ff385c" transform="rotate(-5 58 158)"/>
+    <path d="M105 146c23 13 44 15 63 5" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M113 137c16 11 33 12 50 3" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
+    <path d="M164 44c9 26 9 50 0 72" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+    <path d="M127 145h58" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 9" opacity="0.72"/>
+    <path d="M676 145h72" stroke="#ff385c" stroke-width="3" stroke-linecap="round" stroke-dasharray="9 8" opacity="0.72"/>
+  </g>
+</svg>

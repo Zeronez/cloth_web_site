@@ -1,0 +1,486 @@
+AnimeAttire Production Orchestration Plan
+=========================================
+
+Status Statement
+----------------
+Current state is NOT a complete production product yet.
+It is a strong engineering foundation: repository structure, Django/DRF core, SKU model,
+cart/checkout service, Next.js storefront scaffold, Docker, and CI skeleton exist.
+
+Definition of Done for "production-ready"
+-----------------------------------------
+[ ] A real customer can register, browse, filter, add SKU variants to cart, pay, receive order confirmation, track fulfillment, and get support.
+[ ] Store staff can manage catalog, stock, orders, refunds, shipping statuses, content, discounts, and customer issues without developer access.
+[ ] Payments, delivery, email/SMS, media storage, analytics, monitoring, backups, secrets, CI/CD, security controls, and legal pages are wired for real operation.
+[ ] Every release passes automated tests in CI against real service containers: PostgreSQL, Redis, Celery worker, object storage emulator, frontend browser, and API.
+[ ] The site is Russian-first for CIS audience: Russian copy, prices in RUB by default, regional checkout UX, Russian legal/support pages, and localized emails.
+
+Repository
+----------
+Remote: https://github.com/Zeronez/cloth_web_site.git
+
+Phase 0: Product Scope and Release Decisions
+--------------------------------------------
+[ ] Define launch countries: Russia only or broader CIS list.
+[ ] Define default currency: RUB first, optional KZT/BYN/AMD/UZS later.
+[ ] Define payment providers to integrate: YooKassa/CloudPayments/Tinkoff/Robokassa/etc.
+[ ] Define delivery providers: CDEK/Boxberry/Russian Post/PickPoint/local courier/etc.
+[ ] Define tax/fiscalization requirements with a legal/accounting specialist before implementation.
+[ ] Define return/refund policy, privacy policy, offer agreement, terms of sale, and cookie policy.
+[ ] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant.
+[ ] Define launch SLOs: uptime, max checkout error rate, API latency, page performance, recovery time.
+[ ] Define production environments: dev, staging, production.
+[ ] Define DNS/domain, transactional email domain, S3/MinIO bucket naming, CDN strategy.
+
+Phase 1: Initialization and Architecture
+----------------------------------------
+[x] Create local project structure: backend/, frontend/, .github/.
+[x] Agent-Designer: Generate AnimeAttire SVG logo.
+[x] Agent-DevOps: Create Django and Next.js Dockerfiles plus docker-compose.yml.
+[x] Agent-Git: Prepare git init, remote, release commands, and .gitignore.
+[ ] Add ADR documents for architecture decisions.
+[ ] Add API contract documentation strategy: OpenAPI schema, Swagger/ReDoc, typed frontend client.
+[ ] Add environment variable contract: .env.example for dev/staging/prod.
+[ ] Add Makefile/task runner for standard commands.
+[ ] Add dependency update policy and lockfile strategy.
+[ ] Add branch protection plan for main.
+[ ] Add release versioning policy and changelog.
+
+Phase 2: Backend Core
+---------------------
+[x] Configure Django settings: PostgreSQL, Redis, Celery, JWT, S3/MinIO-ready media.
+[x] Implement database models: users, products, variants, media, cart, orders.
+[x] Configure Django Admin with filters and product variant inlines.
+[x] Implement catalog, product detail, and filters API.
+[x] Implement cart API.
+[x] Implement checkout with transactional stock locking via select_for_update.
+
+Phase 2.1: Backend Production Hardening
+---------------------------------------
+[ ] Split settings into base/development/test/staging/production with strict production defaults.
+[ ] Fail startup when required production secrets are missing.
+[ ] Add structured logging with request ids and user/order correlation ids.
+[ ] Add error handling format for DRF: stable error codes, translated messages, validation details.
+[x] Add health endpoints: liveness, readiness, database check, Redis check.
+[ ] Add Celery health/readiness check.
+[ ] Add OpenAPI schema generation and published API docs.
+[ ] Add API versioning: /api/v1/.
+[ ] Add throttling/rate limits for auth, cart, checkout, and public catalog.
+[ ] Add CORS/CSRF policy for production domains.
+[ ] Add secure cookie/JWT storage strategy.
+[ ] Add permission classes and object-level access checks.
+[ ] Add admin audit log for critical changes.
+[ ] Add soft-delete or archive policy for products/orders where legally appropriate.
+[ ] Add database indexes for all real query paths.
+[ ] Add migration safety policy: no destructive migrations without backfill plan.
+[ ] Add idempotency keys for checkout/payment creation.
+[ ] Add transaction boundaries for every stock/payment/order mutation.
+[ ] Add optimistic/pessimistic locking strategy for inventory updates.
+[ ] Add Celery retry policies, dead-letter behavior, and task idempotency.
+
+Phase 2.2: Authentication and Customer Account
+----------------------------------------------
+[ ] Implement registration with email/phone validation.
+[ ] Implement login, refresh, logout, token revocation/blacklist.
+[ ] Implement password reset and email confirmation.
+[ ] Implement phone confirmation if SMS provider is selected.
+[ ] Implement customer profile API.
+[ ] Implement address CRUD with default address.
+[ ] Implement order history and order detail API.
+[ ] Implement wishlist/favorites.
+[ ] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
+[ ] Implement account deletion/export flow if required by legal policy.
+
+Phase 2.3: Catalog and Merchandising
+------------------------------------
+[ ] Add product publishing workflow: draft, active, archived.
+[ ] Add collection/drop model for limited capsules.
+[ ] Add product tags and search synonyms in Russian.
+[ ] Add product attributes: material, fit, care, gender/unisex, season, weight.
+[ ] Add size chart entities per category/product.
+[ ] Add variant images by color.
+[ ] Add video/media support for product hover/gallery.
+[ ] Add SEO fields: title, description, canonical, OpenGraph image.
+[ ] Add related products and recommendations.
+[ ] Add inventory reservations with expiration for checkout.
+[ ] Add low-stock alerts.
+[ ] Add bulk import/export for products and variants.
+[ ] Add admin actions for mass price/stock/status updates.
+
+Phase 2.4: Pricing, Promotions, and Taxes
+-----------------------------------------
+[ ] Store money internally with Decimal and currency code.
+[ ] Add price history/audit.
+[ ] Add sale price/scheduled promotions.
+[ ] Add coupon model: fixed, percentage, free shipping, min cart, per-user limit.
+[ ] Add discount conflict rules.
+[ ] Add gift cards/store credit if needed.
+[ ] Add tax/fiscalization placeholders after provider/legal decision.
+[ ] Add price display API for frontend with final totals.
+[ ] Add cart total breakdown: items, discount, delivery, tax/fiscal fees if applicable.
+
+Phase 2.5: Payments
+-------------------
+[ ] Select and implement real payment provider for launch.
+[ ] Implement payment intent/session creation.
+[ ] Implement redirect/return flow.
+[ ] Implement webhook endpoint with signature verification.
+[ ] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
+[ ] Implement idempotent webhook processing.
+[ ] Implement retry-safe order/payment reconciliation command.
+[ ] Implement refund flow, partial refund support if provider allows.
+[ ] Implement payment timeout/cancel task.
+[ ] Implement admin payment status view.
+[ ] Add payment event audit table.
+
+Phase 2.6: Delivery and Fulfillment
+-----------------------------------
+[ ] Select delivery providers for launch.
+[ ] Implement delivery method catalog: courier, pickup point, postal.
+[ ] Implement delivery price calculation.
+[ ] Implement pickup point search/map API if provider supports it.
+[ ] Implement shipment creation after payment.
+[ ] Implement tracking number storage and tracking status sync.
+[ ] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
+[ ] Implement warehouse picking list.
+[ ] Implement packing slip generation.
+[ ] Implement stock return on cancellation/refund according to business rules.
+[ ] Implement admin fulfillment dashboard.
+
+Phase 2.7: Notifications and Support
+------------------------------------
+[ ] Implement transactional email templates in Russian.
+[ ] Add order confirmation email.
+[ ] Add payment success/failure email.
+[ ] Add shipping/tracking email.
+[ ] Add password reset email.
+[ ] Add low-stock/internal admin email.
+[ ] Add SMS/Telegram notifications if provider selected.
+[ ] Add support request/contact form.
+[ ] Add support/admin notes on orders.
+[ ] Add notification delivery log and retry behavior.
+
+Phase 3: Frontend Core
+----------------------
+[x] Bootstrap Next.js App Router with TypeScript strict mode.
+[x] Configure Tailwind CSS and Framer Motion.
+[x] Implement Zustand cart and user stores.
+[x] Build layout, scroll-aware header, cart drawer, and footer.
+[x] Build animated home page with hero and new arrivals.
+[x] Build catalog page with fast filters and bento/masonry grid.
+[x] Build product detail page with variant selection and animated transitions.
+
+Phase 3.1: Russian-First CIS Frontend
+-------------------------------------
+[x] Translate current visible storefront UI to Russian.
+[x] Set html lang="ru".
+[x] Display current storefront prices in RUB by default.
+[x] Use Russian number/currency formatting for current storefront.
+[ ] Add Russian empty states, validation messages, button labels, page titles, metadata.
+[x] Replace current fallback/demo product names and copy with Russian storefront copy where appropriate.
+[ ] Add localized email subject/copy references for frontend confirmations.
+[ ] Add legal footer links in Russian: оферта, доставка, возврат, конфиденциальность, контакты.
+[ ] Add support contacts: email, phone, Telegram/VK if business selects them.
+[ ] Add mobile-first checkout flow for CIS users.
+[ ] Add responsive testing targets for common Android/iPhone viewport sizes.
+
+Phase 3.2: Frontend Production UX
+---------------------------------
+[ ] Implement real API client with auth token handling and typed responses.
+[ ] Remove demo fallbacks from production paths or gate them behind dev mode.
+[x] Add reusable product image placeholders until real media is connected.
+[x] Implement skeleton loaders for catalog and product pages.
+[ ] Implement skeleton loaders for cart/order pages.
+[ ] Implement error boundaries and retry states.
+[x] Implement API fallback warnings for catalog and product pages.
+[x] Implement no-results catalog state.
+[ ] Implement product gallery with images/video hover behavior.
+[ ] Implement size selector with stock awareness.
+[ ] Implement cart drawer synced with backend for authenticated users.
+[ ] Implement guest cart persistence and merge after login.
+[ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
+[ ] Implement account pages: profile, addresses, orders, favorites.
+[ ] Implement order tracking page.
+[ ] Implement search page with suggestions.
+[ ] Implement SEO metadata for all public pages.
+[ ] Implement sitemap.xml and robots.txt.
+[ ] Implement OpenGraph/Twitter images.
+[ ] Implement accessibility pass: keyboard navigation, focus states, labels, color contrast.
+[ ] Implement performance pass: image optimization, font strategy, bundle analysis.
+[ ] Implement analytics events: product view, add to cart, checkout start, payment success.
+
+Phase 4: Admin and Operations Product
+-------------------------------------
+[ ] Improve Django Admin branding and navigation for AnimeAttire.
+[ ] Add staff roles/groups and permissions.
+[ ] Add catalog manager workflow.
+[ ] Add order manager workflow.
+[ ] Add inventory manager workflow.
+[ ] Add support agent workflow.
+[ ] Add dashboards: revenue, orders, conversion, low stock, failed payments.
+[ ] Add export reports: orders, customers, SKU stock, payments.
+[ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
+[ ] Add admin inline order items, payment events, shipment events.
+[ ] Add admin-only stock adjustment with audit reason.
+[ ] Add admin comments/internal notes on orders.
+[ ] Add moderation/validation for uploaded media.
+
+Phase 5: Security and Compliance
+--------------------------------
+[ ] Threat model the system: auth, checkout, payment webhooks, admin, file uploads.
+[ ] Add dependency vulnerability scanning.
+[ ] Add secret scanning.
+[ ] Add SAST for backend and frontend.
+[ ] Add container image scanning.
+[ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
+[ ] Add admin 2FA strategy if package/provider is selected.
+[ ] Add brute-force protection for login/password reset.
+[ ] Add webhook signature verification tests.
+[ ] Add file upload type/size validation.
+[ ] Add PII handling policy and minimal logging of personal data.
+[ ] Add backup encryption plan.
+[ ] Add legal review tasks for CIS/Russian ecommerce requirements.
+[ ] Add privacy consent and marketing opt-in storage.
+[ ] Add data retention policy.
+
+Phase 6: Observability, Reliability, and Performance
+----------------------------------------------------
+[ ] Add Sentry or equivalent for backend/frontend errors.
+[ ] Add structured JSON logs for production.
+[ ] Add metrics endpoint or OpenTelemetry instrumentation.
+[ ] Add dashboards for API latency, error rate, payment failures, Celery failures.
+[ ] Add uptime checks for frontend, backend, checkout, payment webhook endpoint.
+[ ] Add database backup schedule and restore drill.
+[ ] Add media backup strategy.
+[ ] Add Celery queue monitoring.
+[ ] Add slow query logging and index review.
+[ ] Add CDN/cache strategy for static/media files.
+[ ] Add load testing plan for catalog browsing and checkout.
+[ ] Add disaster recovery runbook.
+[ ] Add incident response runbook.
+
+Phase 7: DevOps and Deployment
+------------------------------
+[x] Create GitHub Actions workflow skeleton.
+[x] Create Dockerfiles and docker-compose.yml.
+[ ] Create production-grade Docker images with non-root users and minimal layers.
+[ ] Add frontend lockfile and deterministic installs.
+[ ] Add backend dependency lock/compile strategy.
+[ ] Add staging docker-compose or IaC environment.
+[ ] Add production deployment target: VPS/Kubernetes/managed platform.
+[ ] Add reverse proxy config: Nginx/Traefik/Caddy.
+[ ] Add TLS/HTTPS automation.
+[ ] Add secrets management: GitHub Environments, Vault, Doppler, cloud secrets, or server env.
+[ ] Add zero-downtime migration/deploy strategy.
+[ ] Add static collection/media storage deployment flow.
+[ ] Add Celery worker and beat deployment.
+[ ] Add rollback commands.
+[ ] Add release checklist.
+
+Phase 8: Real Product Test Strategy - Final Hardening Gate
+----------------------------------------------------------
+Principle: tests must validate the real product against real service containers in CI.
+No purely theoretical mocks for critical commerce paths.
+
+CI Infrastructure Tests
+-----------------------
+[ ] In GitHub Actions, start PostgreSQL 16 service container with the same extensions/settings required by production.
+[ ] In GitHub Actions, start Redis service container.
+[ ] In GitHub Actions, start Celery worker connected to the test Redis and test PostgreSQL.
+[ ] In GitHub Actions, start MinIO or S3-compatible emulator for media upload tests.
+[ ] In GitHub Actions, build and run backend Docker image for smoke tests.
+[ ] In GitHub Actions, build and run frontend Docker image for smoke tests.
+[ ] In GitHub Actions, run migrations against real PostgreSQL before tests.
+[ ] In GitHub Actions, collect static/check media storage configuration.
+[ ] In GitHub Actions, run frontend browser tests against real Next.js server.
+[ ] In GitHub Actions, upload test artifacts: screenshots, videos, coverage, logs.
+
+Backend Unit Tests
+------------------
+[x] Cart totals and duplicate-line merge contracts.
+[x] Stock availability and validation contracts.
+[ ] Money calculations: Decimal precision, rounding, currency.
+[ ] Product variant price calculation with price_delta.
+[ ] Coupon calculation and conflict rules.
+[ ] Order total recalculation.
+[ ] Delivery price calculation.
+[ ] Payment state transition rules.
+[ ] Order state transition rules.
+[ ] Notification template rendering.
+[ ] Slug generation and uniqueness behavior.
+[ ] Permission helper functions.
+
+Backend Integration Tests Against Real PostgreSQL
+-------------------------------------------------
+[ ] Apply all migrations on PostgreSQL 16.
+[ ] User registration/login/token refresh/logout flow.
+[ ] Address CRUD flow.
+[ ] Category/franchise/product/variant creation and querying.
+[ ] Product filters: category, franchise, size, color, in_stock, min/max price, ordering, search.
+[ ] Product detail returns images and variants.
+[ ] Cart creation for guest session.
+[ ] Cart creation for authenticated user.
+[ ] Add SKU to cart.
+[ ] Update cart quantity.
+[ ] Remove cart item.
+[ ] Reject inactive product/variant.
+[ ] Reject quantity above stock.
+[ ] Merge guest cart into user cart after login.
+[ ] Checkout creates order and order items.
+[ ] Checkout decrements stock in same transaction.
+[ ] Checkout clears cart after order creation.
+[ ] Checkout rejects empty cart.
+[ ] Checkout rejects insufficient stock.
+[ ] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
+[ ] Order history only returns current user's orders.
+[ ] Admin/staff-only endpoints reject regular users.
+[ ] Uploaded product images persist through configured storage.
+
+Celery and Async Tests
+----------------------
+[ ] Celery worker starts in CI and consumes test queue.
+[ ] Order confirmation task is enqueued after checkout.
+[ ] Cart cleanup task deletes expired guest carts.
+[ ] Payment timeout task cancels unpaid stale orders.
+[ ] Notification retry behavior works after transient failure.
+[ ] Failed task logging includes correlation id.
+
+Payment Provider Tests
+----------------------
+[ ] Payment creation integration with provider sandbox or contract fake matching real webhook schema.
+[ ] Webhook signature validation with valid signature.
+[ ] Webhook signature rejection with invalid signature.
+[ ] Payment success webhook marks order paid idempotently.
+[ ] Duplicate webhook does not duplicate effects.
+[ ] Payment failure webhook marks payment failed without stock corruption.
+[ ] Refund webhook updates order/payment status.
+[ ] Payment reconciliation command fixes drift between provider and database.
+
+Delivery Provider Tests
+-----------------------
+[ ] Delivery methods API returns available methods for a real address fixture.
+[ ] Delivery cost calculation uses provider sandbox/contract fixture.
+[ ] Pickup point search returns provider-format points.
+[ ] Shipment creation after payment stores tracking number.
+[ ] Tracking sync updates status.
+[ ] Delivery provider failure shows recoverable checkout error.
+
+Frontend Unit and Component Tests
+---------------------------------
+[x] Footer renders brand and commerce links.
+[ ] Header renders Russian nav and cart button.
+[ ] Cart drawer empty state.
+[ ] Cart drawer item quantity changes.
+[ ] Zustand cart persistence and merge behavior.
+[ ] User store session set/clear.
+[ ] Product card renders price/stock/category.
+[ ] Catalog filters update query params/API params.
+[ ] Product detail size selection.
+[ ] Checkout form validation in Russian.
+[ ] Error state rendering.
+[ ] Skeleton state rendering.
+[ ] Accessibility checks for key components.
+
+Frontend Integration Tests
+--------------------------
+[ ] React Query API client handles success, 401, 404, 500.
+[ ] Authenticated user sees account menu.
+[ ] Guest cart survives refresh.
+[ ] Cart syncs after login.
+[ ] Catalog page renders real API data from test backend.
+[ ] Product page renders real API data from test backend.
+[ ] Checkout page posts to real backend API in CI.
+[ ] Russian UI snapshot/semantic checks for all public pages.
+
+End-to-End Browser Tests With Real App Stack
+--------------------------------------------
+[ ] Start PostgreSQL, Redis, backend, Celery, frontend in CI.
+[ ] Seed database with realistic Russian catalog fixtures.
+[ ] E2E: browse home page.
+[ ] E2E: open catalog and filter by category/franchise/size/stock.
+[ ] E2E: open product detail and select size.
+[ ] E2E: add SKU to cart and update quantity.
+[ ] E2E: register/login user.
+[ ] E2E: add shipping address.
+[ ] E2E: complete checkout with sandbox payment success.
+[ ] E2E: verify order appears in account.
+[ ] E2E: verify stock decreased in admin/API.
+[ ] E2E: failed payment keeps order consistent.
+[ ] E2E: mobile viewport checkout.
+[ ] E2E: keyboard-only cart/checkout navigation.
+[ ] E2E: Russian copy smoke test for critical screens.
+[ ] E2E: screenshots/videos uploaded on failure.
+
+API Contract Tests
+------------------
+[ ] Generate OpenAPI schema in CI.
+[ ] Validate schema has all public endpoints.
+[ ] Validate frontend typed client matches schema.
+[ ] Run backward compatibility check for API changes.
+[ ] Validate error response shapes.
+
+Security Tests
+--------------
+[ ] Dependency audit backend.
+[ ] Dependency audit frontend.
+[ ] Secret scanning.
+[ ] SAST backend.
+[ ] SAST frontend.
+[ ] Container image scan backend.
+[ ] Container image scan frontend.
+[ ] Auth rate-limit tests.
+[ ] Permission bypass tests.
+[ ] IDOR tests for orders/addresses.
+[ ] CSRF/CORS production config tests.
+[ ] File upload validation tests.
+[ ] Webhook replay/idempotency tests.
+
+Performance and Load Tests
+--------------------------
+[ ] Lighthouse CI for home/catalog/product/checkout.
+[ ] API load test: catalog list.
+[ ] API load test: product detail.
+[ ] API load test: add to cart.
+[ ] API load test: checkout stock lock.
+[ ] Database query count tests for catalog and product detail.
+[ ] N+1 query regression tests.
+[ ] Frontend bundle size budget.
+[ ] Image optimization checks.
+
+Operational Acceptance Tests
+----------------------------
+[ ] Backup and restore drill on staging.
+[ ] Migration rollback drill.
+[ ] Production image boot smoke test.
+[ ] Health/readiness endpoint test.
+[ ] Monitoring alert test.
+[ ] Sentry/error reporting test.
+[ ] Staff can create product, variant, image, stock adjustment in admin.
+[ ] Staff can process order through fulfillment statuses.
+[ ] Staff can issue refund/cancel order according to rules.
+[ ] Support can find customer/order and add internal note.
+
+Manual Pre-Launch Checklist
+---------------------------
+[ ] Legal pages reviewed and published.
+[ ] Payment provider live credentials tested with real small payment.
+[ ] Delivery provider live credentials tested with real shipment/pickup fixture.
+[ ] Email domain DNS configured: SPF/DKIM/DMARC.
+[ ] Error pages polished in Russian.
+[ ] 404/500 pages polished.
+[ ] SEO metadata reviewed.
+[ ] Analytics events validated.
+[ ] Cookie/consent behavior validated.
+[ ] Admin accounts secured.
+[ ] Backups enabled.
+[ ] Rollback path tested.
+[ ] First production smoke order completed.
+
+Agent Notes
+-----------
+Agent-Designer owns brand visual assets.
+Agent-DevOps owns Docker, CI, deployment, service containers, and environment gates.
+Agent-QA owns real product test matrix and CI execution strategy.
+Agent-Backend owns domain logic, integrations, transactions, and admin workflows.
+Agent-Frontend owns Russian storefront UX, accessibility, performance, and checkout UI.
+Agent-Git owns release commands, commit hygiene, branches, changelog, and push flow.
