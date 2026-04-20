@@ -5,10 +5,11 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from config import health
 from cart.views import CartViewSet
 from catalog.views import AnimeFranchiseViewSet, CategoryViewSet, ProductViewSet
+from config import health
 from orders.views import OrderViewSet
+from users.views import AddressViewSet, RegisterView, UserMeView, logout
 
 router = DefaultRouter()
 router.register("categories", CategoryViewSet, basename="category")
@@ -16,13 +17,17 @@ router.register("franchises", AnimeFranchiseViewSet, basename="franchise")
 router.register("products", ProductViewSet, basename="product")
 router.register("cart", CartViewSet, basename="cart")
 router.register("orders", OrderViewSet, basename="order")
+router.register("addresses", AddressViewSet, basename="address")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/live/", health.live, name="health_live"),
     path("api/health/ready/", health.ready, name="health_ready"),
+    path("api/auth/register/", RegisterView.as_view(), name="auth_register"),
+    path("api/auth/logout/", logout, name="auth_logout"),
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/users/me/", UserMeView.as_view(), name="user_me"),
     path("api/", include(router.urls)),
 ]
 

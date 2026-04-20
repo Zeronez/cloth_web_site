@@ -80,12 +80,12 @@ Phase 2.1: Backend Production Hardening
 
 Phase 2.2: Authentication and Customer Account
 ----------------------------------------------
-[ ] Implement registration with email/phone validation.
-[ ] Implement login, refresh, logout, token revocation/blacklist.
+[x] Implement registration with email/phone fields.
+[x] Implement login, refresh, logout, token rotation and blacklist.
 [ ] Implement password reset and email confirmation.
 [ ] Implement phone confirmation if SMS provider is selected.
-[ ] Implement customer profile API.
-[ ] Implement address CRUD with default address.
+[x] Implement customer profile API.
+[x] Implement address CRUD with default address.
 [ ] Implement order history and order detail API.
 [ ] Implement wishlist/favorites.
 [ ] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
