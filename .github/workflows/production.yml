@@ -13,6 +13,12 @@ on:
 permissions:
   contents: read
 
+env:
+  CI: "true"
+  FORCE_COLOR: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+
 concurrency:
   group: production-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +27,7 @@ jobs:
   linting:
     name: Job 1 - Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,6 +55,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Enable Corepack
         run: corepack enable
@@ -71,6 +80,7 @@ jobs:
     name: Job 2 - Testing
     runs-on: ubuntu-latest
     needs: linting
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16-alpine
@@ -118,14 +128,44 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Run Django system checks
+        working-directory: backend
+        run: python manage.py check
+
+      - name: Check Django migrations
+        working-directory: backend
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Apply Django migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
       - name: Run backend tests
         working-directory: backend
         run: pytest
+
+      - name: Upload backend diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-diagnostics-${{ github.run_attempt }}
+          path: |
+            backend/.coverage
+            backend/coverage.xml
+            backend/htmlcov/**
+            backend/.pytest_cache/**
+            backend/**/*.log
+            backend/logs/**
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Enable Corepack
         run: corepack enable
@@ -145,10 +185,49 @@ jobs:
           elif [ -f yarn.lock ]; then yarn test --watch=false; \
           else npm test; fi
 
+      - name: Upload frontend diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-diagnostics-${{ github.run_attempt }}
+          path: |
+            frontend/coverage/**
+            frontend/junit*.xml
+            frontend/test-results/**
+            frontend/playwright-report/**
+            frontend/npm-debug.log*
+            frontend/yarn-debug.log*
+            frontend/yarn-error.log*
+            frontend/pnpm-debug.log*
+            frontend/**/*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Collect service diagnostics
+        if: failure()
+        continue-on-error: true
+        run: |
+          mkdir -p diagnostics
+          docker ps -a > diagnostics/docker-ps.txt
+          for container in $(docker ps -aq); do
+            name="$(docker inspect --format='{{.Name}}' "$container" | sed 's#^/##')"
+            docker logs "$container" > "diagnostics/${name}.log" 2>&1 || true
+          done
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-diagnostics-${{ github.run_attempt }}
+          path: diagnostics/**
+          if-no-files-found: ignore
+          retention-days: 14
+
   build:
     name: Job 3 - Build
     runs-on: ubuntu-latest
     needs: testing
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4

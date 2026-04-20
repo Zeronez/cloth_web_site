@@ -68,8 +68,11 @@ class Product(TimeStampedModel):
     class Meta:
         ordering = ["-is_featured", "-created_at"]
         indexes = [
-            models.Index(fields=["slug"]),
-            models.Index(fields=["is_active", "is_featured"]),
+            models.Index(fields=["slug"], name="catalog_pro_slug_13a17c_idx"),
+            models.Index(
+                fields=["is_active", "is_featured"],
+                name="catalog_pro_is_acti_c4e01c_idx",
+            ),
         ]
 
     def save(self, *args, **kwargs):
@@ -114,8 +117,11 @@ class ProductVariant(TimeStampedModel):
             )
         ]
         indexes = [
-            models.Index(fields=["sku"]),
-            models.Index(fields=["is_active", "stock_quantity"]),
+            models.Index(fields=["sku"], name="catalog_pro_sku_e76e0b_idx"),
+            models.Index(
+                fields=["is_active", "stock_quantity"],
+                name="catalog_pro_is_acti_36416c_idx",
+            ),
         ]
 
     @property
@@ -137,7 +143,12 @@ class ProductImage(TimeStampedModel):
 
     class Meta:
         ordering = ["sort_order", "id"]
-        indexes = [models.Index(fields=["product", "is_main"])]
+        indexes = [
+            models.Index(
+                fields=["product", "is_main"],
+                name="catalog_pro_product_292fff_idx",
+            )
+        ]
 
     def __str__(self):
         return self.alt_text

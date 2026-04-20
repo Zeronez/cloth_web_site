@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from cart.views import CartViewSet
 from catalog.views import AnimeFranchiseViewSet, CategoryViewSet, ProductViewSet
 from config import health
+from favorites.views import FavoriteProductViewSet
 from orders.views import OrderViewSet
 from users.views import AddressViewSet, RegisterView, UserMeView, logout
 
@@ -18,6 +19,7 @@ router.register("products", ProductViewSet, basename="product")
 router.register("cart", CartViewSet, basename="cart")
 router.register("orders", OrderViewSet, basename="order")
 router.register("addresses", AddressViewSet, basename="address")
+router.register("favorites", FavoriteProductViewSet, basename="favorite")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

@@ -45,22 +45,20 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["patch"], url_path=r"items/(?P<item_id>\d+)")
-    def update_item(self, request, item_id=None):
-        serializer = SetCartItemQuantitySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    @action(
+        detail=False,
+        methods=["patch", "delete"],
+        url_path=r"items/(?P<item_id>\d+)",
+    )
+    def item_detail(self, request, item_id=None):
         cart = get_or_create_cart(request)
-        set_cart_item_quantity(cart, item_id, serializer.validated_data["quantity"])
-        cart.refresh_from_db()
-        return Response(
-            CartSerializer(cart, context=self.get_serializer_context()).data
-        )
-
-    @action(detail=False, methods=["delete"], url_path=r"items/(?P<item_id>\d+)")
-    def remove_item(self, request, item_id=None):
-        cart = get_or_create_cart(request)
-        item = get_object_or_404(CartItem, pk=item_id, cart=cart)
-        item.delete()
+        if request.method == "PATCH":
+            serializer = SetCartItemQuantitySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            set_cart_item_quantity(cart, item_id, serializer.validated_data["quantity"])
+        else:
+            item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+            item.delete()
         cart.refresh_from_db()
         return Response(
             CartSerializer(cart, context=self.get_serializer_context()).data

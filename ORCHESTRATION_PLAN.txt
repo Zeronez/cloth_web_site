@@ -87,7 +87,7 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement customer profile API.
 [x] Implement address CRUD with default address.
 [ ] Implement order history and order detail API.
-[ ] Implement wishlist/favorites.
+[x] Implement wishlist/favorites API.
 [ ] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
 [ ] Implement account deletion/export flow if required by legal policy.
 
@@ -199,7 +199,8 @@ Phase 3.2: Frontend Production UX
 [ ] Implement cart drawer synced with backend for authenticated users.
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
-[ ] Implement account pages: profile, addresses, orders, favorites.
+[x] Implement account pages: profile and addresses.
+[ ] Implement account pages: orders and favorites.
 [ ] Implement order tracking page.
 [ ] Implement search page with suggestions.
 [ ] Implement SEO metadata for all public pages.
@@ -290,7 +291,7 @@ CI Infrastructure Tests
 [ ] In GitHub Actions, start MinIO or S3-compatible emulator for media upload tests.
 [ ] In GitHub Actions, build and run backend Docker image for smoke tests.
 [ ] In GitHub Actions, build and run frontend Docker image for smoke tests.
-[ ] In GitHub Actions, run migrations against real PostgreSQL before tests.
+[x] In GitHub Actions, run migrations against real PostgreSQL before tests.
 [ ] In GitHub Actions, collect static/check media storage configuration.
 [ ] In GitHub Actions, run frontend browser tests against real Next.js server.
 [ ] In GitHub Actions, upload test artifacts: screenshots, videos, coverage, logs.
@@ -312,25 +313,25 @@ Backend Unit Tests
 
 Backend Integration Tests Against Real PostgreSQL
 -------------------------------------------------
-[ ] Apply all migrations on PostgreSQL 16.
-[ ] User registration/login/token refresh/logout flow.
-[ ] Address CRUD flow.
-[ ] Category/franchise/product/variant creation and querying.
-[ ] Product filters: category, franchise, size, color, in_stock, min/max price, ordering, search.
-[ ] Product detail returns images and variants.
+[x] Apply all migrations on PostgreSQL 16 before tests.
+[x] User registration/login/token refresh flow.
+[x] Address CRUD flow.
+[x] Category/franchise/product/variant creation and querying.
+[x] Product filters: category, franchise, size, color, in_stock, min/max price, ordering, search.
+[x] Product detail returns images and variants.
 [ ] Cart creation for guest session.
 [ ] Cart creation for authenticated user.
-[ ] Add SKU to cart.
-[ ] Update cart quantity.
-[ ] Remove cart item.
+[x] Add SKU to cart.
+[x] Update cart quantity.
+[x] Remove cart item.
 [ ] Reject inactive product/variant.
 [ ] Reject quantity above stock.
 [ ] Merge guest cart into user cart after login.
-[ ] Checkout creates order and order items.
-[ ] Checkout decrements stock in same transaction.
-[ ] Checkout clears cart after order creation.
+[x] Checkout creates order and order items.
+[x] Checkout decrements stock in same transaction.
+[x] Checkout clears cart after order creation.
 [ ] Checkout rejects empty cart.
-[ ] Checkout rejects insufficient stock.
+[x] Checkout rejects insufficient stock.
 [ ] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
 [ ] Order history only returns current user's orders.
 [ ] Admin/staff-only endpoints reject regular users.

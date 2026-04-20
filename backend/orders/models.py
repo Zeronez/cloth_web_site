@@ -34,8 +34,11 @@ class Order(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "status"]),
-            models.Index(fields=["created_at"]),
+            models.Index(
+                fields=["user", "status"],
+                name="orders_orde_user_id_f64abd_idx",
+            ),
+            models.Index(fields=["created_at"], name="orders_orde_created_0fc1c0_idx"),
         ]
 
     def recalculate_total(self, save=True):
@@ -62,7 +65,7 @@ class OrderItem(models.Model):
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
-        indexes = [models.Index(fields=["sku"])]
+        indexes = [models.Index(fields=["sku"], name="orders_orde_sku_71777a_idx")]
 
     @property
     def line_total(self):
