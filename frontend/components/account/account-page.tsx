@@ -4,19 +4,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+
 import {
   ApiError,
   createAddress,
   deleteAddress,
   fetchAddresses,
+  fetchFavorites,
   fetchMe,
+  fetchOrders,
   logoutUser,
+  removeFavorite,
   updateAddress,
   updateMe,
   type Address,
   type AddressInput,
+  type FavoriteProductEntry,
+  type Order,
   type UserProfile
 } from "../../lib/api";
+import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
 
 type ProfileFormState = {
@@ -39,6 +46,11 @@ const emptyAddressForm: AddressFormState = {
   line2: "",
   is_default: false
 };
+
+const currencyFormatter = new Intl.NumberFormat("ru-RU", {
+  currency: "RUB",
+  style: "currency"
+});
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -77,6 +89,32 @@ function initials(profile: UserProfile | null) {
   return profile.username.slice(0, 2).toUpperCase();
 }
 
+function orderStatusLabel(status: Order["status"]) {
+  switch (status) {
+    case "paid":
+      return "Оплачен";
+    case "shipped":
+      return "Отправлен";
+    case "cancelled":
+      return "Отменён";
+    default:
+      return "В обработке";
+  }
+}
+
+function orderStatusTone(status: Order["status"]) {
+  switch (status) {
+    case "paid":
+      return "border-neon-teal/40 bg-neon-teal/10 text-neon-teal";
+    case "shipped":
+      return "border-neon-amber/40 bg-neon-amber/10 text-neon-amber";
+    case "cancelled":
+      return "border-red-400/30 bg-red-500/10 text-red-100";
+    default:
+      return "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson";
+  }
+}
+
 function AddressCard({
   address,
   onEdit,
@@ -111,7 +149,7 @@ function AddressCard({
         </div>
 
         <div className="text-right text-xs uppercase text-slate-500">
-          Обновлен
+          Обновлён
           <br />
           {formatDate(address.updated_at)}
         </div>
@@ -146,6 +184,118 @@ function AddressCard({
   );
 }
 
+function OrderCard({ order }: { order: Order }) {
+  return (
+    <article className="border border-white/10 bg-white/[0.04] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase text-slate-500">
+            Заказ #{order.id}
+          </p>
+          <h3 className="mt-2 text-xl font-black">
+            {currencyFormatter.format(Number(order.total_amount))}
+          </h3>
+          <p className="mt-2 text-sm text-slate-400">
+            {formatDate(order.created_at)} · {order.items_count} поз.
+          </p>
+        </div>
+        <div className="text-right">
+          <span
+            className={`inline-flex border px-3 py-1 text-xs font-black uppercase ${orderStatusTone(
+              order.status
+            )}`}
+          >
+            {orderStatusLabel(order.status)}
+          </span>
+          {order.track_number ? (
+            <p className="mt-2 text-xs uppercase text-slate-500">
+              Трек {order.track_number}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="border border-white/10 bg-ink-900/60 p-4">
+          <p className="text-xs uppercase text-slate-500">Доставка</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200">
+            {order.shipping_address.name}
+            <br />
+            {order.shipping_address.city}, {order.shipping_address.line1}
+            {order.shipping_address.line2 ? `, ${order.shipping_address.line2}` : ""}
+          </p>
+        </div>
+        <div className="border border-white/10 bg-ink-900/60 p-4">
+          <p className="text-xs uppercase text-slate-500">Состав</p>
+          <div className="mt-2 space-y-2">
+            {order.items.slice(0, 3).map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">{item.product_name}</p>
+                  <p className="text-xs uppercase text-slate-500">
+                    Размер {item.size} · {item.quantity} шт.
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-slate-200">
+                  {currencyFormatter.format(Number(item.line_total))}
+                </p>
+              </div>
+            ))}
+            {order.items.length > 3 ? (
+              <p className="text-xs uppercase text-slate-500">
+                И ещё {order.items.length - 3} поз.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FavoriteCard({
+  favorite,
+  onRemove
+}: {
+  favorite: FavoriteProductEntry;
+  onRemove: (favorite: FavoriteProductEntry) => void;
+}) {
+  return (
+    <article className="border border-white/10 bg-white/[0.04] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase text-neon-crimson">
+            {favorite.product.category.name}
+          </p>
+          <Link
+            href={`/products/${favorite.product.slug}`}
+            className="mt-2 block text-xl font-black transition hover:text-neon-teal"
+          >
+            {favorite.product.name}
+          </Link>
+          <p className="mt-2 text-sm text-slate-400">
+            {currencyFormatter.format(Number(favorite.product.base_price))} ·{" "}
+            {favorite.product.franchise?.name ?? "AnimeAttire"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs uppercase text-slate-500">
+          Добавлено {formatDate(favorite.created_at)}
+        </p>
+        <button
+          type="button"
+          onClick={() => onRemove(favorite)}
+          className="h-10 border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-neon-crimson/70 hover:bg-neon-crimson/10"
+        >
+          Убрать
+        </button>
+      </div>
+    </article>
+  );
+}
+
 export function AccountPage() {
   const router = useRouter();
   const accessToken = useUserStore((state) => state.accessToken);
@@ -153,9 +303,11 @@ export function AccountPage() {
   const profile = useUserStore((state) => state.profile);
   const setSession = useUserStore((state) => state.setSession);
   const clearSession = useUserStore((state) => state.clearSession);
+  const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const [isMounted, setIsMounted] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
     first_name: "",
     last_name: "",
@@ -187,6 +339,20 @@ export function AccountPage() {
     retry: false
   });
 
+  const ordersQuery = useQuery({
+    queryKey: ["orders", accessToken],
+    enabled: isMounted && Boolean(accessToken),
+    queryFn: () => fetchOrders(accessToken ?? ""),
+    retry: false
+  });
+
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites", accessToken],
+    enabled: isMounted && Boolean(accessToken),
+    queryFn: () => fetchFavorites(accessToken ?? ""),
+    retry: false
+  });
+
   const currentProfile = profileQuery.data ?? profile;
 
   useEffect(() => {
@@ -199,6 +365,12 @@ export function AccountPage() {
       });
     }
   }, [profileQuery.data]);
+
+  useEffect(() => {
+    if (favoritesQuery.data) {
+      setFavorites(favoritesQuery.data);
+    }
+  }, [favoritesQuery.data, setFavorites]);
 
   useEffect(() => {
     if (profileQuery.error instanceof ApiError && profileQuery.error.status === 401) {
@@ -215,13 +387,35 @@ export function AccountPage() {
     }
   }, [addressesQuery.error, clearSession]);
 
+  useEffect(() => {
+    if (ordersQuery.error instanceof ApiError && ordersQuery.error.status === 401) {
+      clearSession();
+    }
+  }, [clearSession, ordersQuery.error]);
+
+  useEffect(() => {
+    if (
+      favoritesQuery.error instanceof ApiError &&
+      favoritesQuery.error.status === 401
+    ) {
+      clearSession();
+    }
+  }, [clearSession, favoritesQuery.error]);
+
   const metrics = useMemo(
     () => [
       { label: "Имя пользователя", value: currentProfile?.username ?? "—" },
       { label: "Телефон", value: currentProfile?.phone ?? "Не указан" },
-      { label: "Адресов", value: String(addressesQuery.data?.length ?? 0) }
+      { label: "Адресов", value: String(addressesQuery.data?.length ?? 0) },
+      { label: "Заказов", value: String(ordersQuery.data?.results.length ?? 0) },
+      { label: "В избранном", value: String(favoritesQuery.data?.length ?? 0) }
     ],
-    [addressesQuery.data?.length, currentProfile]
+    [
+      addressesQuery.data?.length,
+      currentProfile,
+      favoritesQuery.data?.length,
+      ordersQuery.data?.results.length
+    ]
   );
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
@@ -246,7 +440,6 @@ export function AccountPage() {
         refreshToken,
         profile: updated
       });
-      setProfileError(null);
       profileQuery.refetch();
     } catch (error) {
       setProfileError(getErrorMessage(error));
@@ -337,6 +530,22 @@ export function AccountPage() {
     }
   }
 
+  async function handleRemoveFavorite(favorite: FavoriteProductEntry) {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      setFavoritesError(null);
+      await removeFavorite(accessToken, favorite.product_id);
+      const updatedFavorites = await fetchFavorites(accessToken);
+      setFavorites(updatedFavorites);
+      await favoritesQuery.refetch();
+    } catch (error) {
+      setFavoritesError(getErrorMessage(error));
+    }
+  }
+
   async function handleLogout() {
     if (!accessToken || !refreshToken) {
       clearSession();
@@ -349,7 +558,7 @@ export function AccountPage() {
     try {
       await logoutUser(accessToken, refreshToken);
     } catch {
-      // The local session is still valid to clear even if logout fails.
+      // Локальную сессию всё равно можно очистить.
     } finally {
       clearSession();
       router.push("/login");
@@ -361,11 +570,15 @@ export function AccountPage() {
   if (!isMounted) {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
-        <section className="mx-auto max-w-7xl space-y-6">
+        <section className="mx-auto space-y-6">
           <div className="h-10 w-64 animate-pulse bg-white/10" />
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="h-[380px] animate-pulse border border-white/10 bg-white/[0.04]" />
             <div className="h-[380px] animate-pulse border border-white/10 bg-white/[0.04]" />
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div className="h-[320px] animate-pulse border border-white/10 bg-white/[0.04]" />
+            <div className="h-[320px] animate-pulse border border-white/10 bg-white/[0.04]" />
           </div>
         </section>
       </main>
@@ -376,15 +589,13 @@ export function AccountPage() {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
         <section className="mx-auto grid max-w-4xl gap-6 border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-          <p className="text-xs font-black uppercase text-neon-teal">
-            Личный кабинет
-          </p>
+          <p className="text-xs font-black uppercase text-neon-teal">Личный кабинет</p>
           <h1 className="text-3xl font-black sm:text-4xl">
-            Войдите, чтобы открыть профиль и адреса доставки.
+            Войдите, чтобы открыть профиль, адреса, заказы и избранное.
           </h1>
           <p className="max-w-2xl text-base leading-7 text-slate-300">
-            В кабинете сохраняются данные профиля, адреса и основная информация,
-            необходимая для оформления заказов.
+            В кабинете сохраняются данные профиля, адреса доставки, история заказов и
+            подборка любимых вещей.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -442,9 +653,7 @@ export function AccountPage() {
           <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase text-neon-teal">
-                  Профиль
-                </p>
+                <p className="text-xs font-black uppercase text-neon-teal">Профиль</p>
                 <h2 className="mt-3 text-2xl font-black">Контактные данные</h2>
               </div>
             </div>
@@ -455,12 +664,10 @@ export function AccountPage() {
               </div>
             ) : null}
 
-            <dl className="mt-6 grid gap-3 sm:grid-cols-3">
+            <dl className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {metrics.map((metric) => (
                 <div key={metric.label} className="border border-white/10 bg-ink-900/60 p-4">
-                  <dt className="text-xs uppercase text-slate-500">
-                    {metric.label}
-                  </dt>
+                  <dt className="text-xs uppercase text-slate-500">{metric.label}</dt>
                   <dd className="mt-2 text-sm font-semibold text-white">{metric.value}</dd>
                 </div>
               ))}
@@ -470,7 +677,7 @@ export function AccountPage() {
               {[
                 ["first_name", "Имя"],
                 ["last_name", "Фамилия"],
-                ["email", "Email"],
+                ["email", "Почта"],
                 ["phone", "Телефон"]
               ].map(([name, label]) => (
                 <label key={name} className="block">
@@ -511,9 +718,7 @@ export function AccountPage() {
           <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase text-neon-amber">
-                  Адреса
-                </p>
+                <p className="text-xs font-black uppercase text-neon-amber">Адреса</p>
                 <h2 className="mt-3 text-2xl font-black">Доставка и получатели</h2>
               </div>
               <span className="text-sm text-slate-400">
@@ -627,6 +832,87 @@ export function AccountPage() {
                 <div className="border border-dashed border-white/15 bg-ink-900/50 px-5 py-10 text-center text-sm leading-6 text-slate-400">
                   Адресов пока нет. Добавьте первый адрес, чтобы ускорить оформление
                   заказа.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <section className="border border-white/10 bg-white/[0.04] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase text-neon-teal">Заказы</p>
+                <h2 className="mt-3 text-2xl font-black">История покупок</h2>
+              </div>
+              <span className="text-sm text-slate-400">
+                {ordersQuery.data?.results.length ?? 0} запис.
+              </span>
+            </div>
+
+            {ordersQuery.error ? (
+              <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                {getErrorMessage(ordersQuery.error)}
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-4">
+              {ordersQuery.isLoading ? (
+                <div className="space-y-4">
+                  <div className="h-44 animate-pulse border border-white/10 bg-white/[0.04]" />
+                  <div className="h-44 animate-pulse border border-white/10 bg-white/[0.04]" />
+                </div>
+              ) : ordersQuery.data?.results.length ? (
+                ordersQuery.data.results.map((order) => (
+                  <OrderCard key={order.id} order={order} />
+                ))
+              ) : (
+                <div className="border border-dashed border-white/15 bg-ink-900/50 px-5 py-10 text-center text-sm leading-6 text-slate-400">
+                  Пока нет заказов. Первый оформленный дроп появится здесь.
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="border border-white/10 bg-white/[0.04] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase text-neon-crimson">Избранное</p>
+                <h2 className="mt-3 text-2xl font-black">Любимые вещи</h2>
+              </div>
+              <span className="text-sm text-slate-400">
+                {favoritesQuery.data?.length ?? 0} запис.
+              </span>
+            </div>
+
+            {favoritesQuery.error ? (
+              <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                {getErrorMessage(favoritesQuery.error)}
+              </div>
+            ) : null}
+            {favoritesError ? (
+              <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                {favoritesError}
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-4">
+              {favoritesQuery.isLoading ? (
+                <div className="space-y-4">
+                  <div className="h-36 animate-pulse border border-white/10 bg-white/[0.04]" />
+                  <div className="h-36 animate-pulse border border-white/10 bg-white/[0.04]" />
+                </div>
+              ) : favoritesQuery.data?.length ? (
+                favoritesQuery.data.map((favorite) => (
+                  <FavoriteCard
+                    key={favorite.id}
+                    favorite={favorite}
+                    onRemove={handleRemoveFavorite}
+                  />
+                ))
+              ) : (
+                <div className="border border-dashed border-white/15 bg-ink-900/50 px-5 py-10 text-center text-sm leading-6 text-slate-400">
+                  Здесь будут вещи, которые вы отложили на потом.
                 </div>
               )}
             </div>

@@ -1,12 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProduct, type Product, type ProductVariant } from "../../lib/api";
+
+import {
+  ApiError,
+  fetchFavorites,
+  fetchProduct,
+  type Product,
+  type ProductVariant
+} from "../../lib/api";
+import { useCartStore } from "../../stores/cart-store";
+import { useFavoritesStore } from "../../stores/favorites-store";
+import { useUserStore } from "../../stores/user-store";
+import { FavoriteToggleButton } from "../catalog/favorite-toggle-button";
 import { InlineNotice, ProductDetailSkeleton } from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
-import { useCartStore } from "../../stores/cart-store";
 
 const fallbackProduct = (slug: string): Product => ({
   id: 999,
@@ -55,9 +65,18 @@ const money = new Intl.NumberFormat("ru-RU", {
 
 export function ProductDetailPage({ slug }: { slug: string }) {
   const addItem = useCartStore((state) => state.addItem);
+  const accessToken = useUserStore((state) => state.accessToken);
+  const clearSession = useUserStore((state) => state.clearSession);
+  const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const productQuery = useQuery({
     queryKey: ["product", slug],
     queryFn: () => fetchProduct(slug)
+  });
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites", accessToken, slug],
+    enabled: Boolean(accessToken),
+    queryFn: () => fetchFavorites(accessToken ?? ""),
+    retry: false
   });
   const isInitialLoading = productQuery.isLoading && !productQuery.data;
   const isUsingFallback = productQuery.isError && !productQuery.data;
@@ -73,6 +92,18 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const selectedVariant =
     availableVariants.find((variant) => variant.id === selectedVariantId) ??
     availableVariants[0];
+
+  useEffect(() => {
+    if (favoritesQuery.data) {
+      setFavorites(favoritesQuery.data);
+    }
+  }, [favoritesQuery.data, setFavorites]);
+
+  useEffect(() => {
+    if (favoritesQuery.error instanceof ApiError && favoritesQuery.error.status === 401) {
+      clearSession();
+    }
+  }, [clearSession, favoritesQuery.error]);
 
   const addSelected = (variant: ProductVariant) => {
     addItem({
@@ -107,7 +138,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           {isUsingFallback ? (
             <div className="mb-6">
               <InlineNotice
-                title="Карточка открыта в demo-режиме"
+                title="Карточка открыта в демо-режиме"
                 text="Backend API не ответил, поэтому показываем временные данные и плейсхолдер изображения."
                 tone="warning"
               />
@@ -129,14 +160,19 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           </p>
 
           <div className="mt-8 border-y border-white/10 py-6">
-            <p className="text-3xl font-black">
-              {money.format(Number(selectedVariant?.price ?? product.base_price))}
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              {selectedVariant
-                ? `В наличии: ${selectedVariant.stock_quantity}, цвет: ${selectedVariant.color}`
-                : "Нет в наличии"}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-3xl font-black">
+                  {money.format(Number(selectedVariant?.price ?? product.base_price))}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">
+                  {selectedVariant
+                    ? `В наличии: ${selectedVariant.stock_quantity}, цвет: ${selectedVariant.color}`
+                    : "Нет в наличии"}
+                </p>
+              </div>
+              <FavoriteToggleButton product={product} compact />
+            </div>
           </div>
 
           <div className="mt-8">
@@ -159,14 +195,19 @@ export function ProductDetailPage({ slug }: { slug: string }) {
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={!selectedVariant}
-            onClick={() => selectedVariant && addSelected(selectedVariant)}
-            className="mt-8 h-14 w-full bg-neon-crimson px-6 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-          >
-            Добавить выбранный размер
-          </button>
+          <div className="mt-8 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <button
+              type="button"
+              disabled={!selectedVariant}
+              onClick={() => selectedVariant && addSelected(selectedVariant)}
+              className="h-14 w-full bg-neon-crimson px-6 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
+            >
+              Добавить выбранный размер
+            </button>
+            <div className="sm:justify-self-end">
+              <FavoriteToggleButton product={product} />
+            </div>
+          </div>
         </div>
       </section>
     </main>

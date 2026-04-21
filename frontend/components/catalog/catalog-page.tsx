@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+
 import {
+  ApiError,
+  fetchFavorites,
   fetchCategories,
   fetchFranchises,
   fetchProducts,
@@ -11,6 +14,9 @@ import {
 } from "../../lib/api";
 import { CatalogGridSkeleton, InlineNotice } from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
+import { FavoriteToggleButton } from "./favorite-toggle-button";
+import { useFavoritesStore } from "../../stores/favorites-store";
+import { useUserStore } from "../../stores/user-store";
 
 const fallbackProducts: Product[] = [
   {
@@ -29,7 +35,7 @@ const fallbackProducts: Product[] = [
     name: "Худи Arcade Alley",
     slug: "arcade-alley-hoodie",
     category: { id: 2, name: "Худи", slug: "hoodies", description: "" },
-    franchise: { id: 2, name: "Сенен Core", slug: "shonen-core", description: "" },
+    franchise: { id: 2, name: "Сёнен Core", slug: "shonen-core", description: "" },
     base_price: "9600.00",
     is_featured: false,
     main_image: null,
@@ -57,6 +63,9 @@ const money = new Intl.NumberFormat("ru-RU", {
 });
 
 export function CatalogPage() {
+  const accessToken = useUserStore((state) => state.accessToken);
+  const clearSession = useUserStore((state) => state.clearSession);
+  const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const [category, setCategory] = useState("");
   const [franchise, setFranchise] = useState("");
   const [size, setSize] = useState("");
@@ -83,6 +92,24 @@ export function CatalogPage() {
     queryKey: ["franchises"],
     queryFn: fetchFranchises
   });
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites", accessToken, "catalog"],
+    enabled: Boolean(accessToken),
+    queryFn: () => fetchFavorites(accessToken ?? ""),
+    retry: false
+  });
+
+  useEffect(() => {
+    if (favoritesQuery.data) {
+      setFavorites(favoritesQuery.data);
+    }
+  }, [favoritesQuery.data, setFavorites]);
+
+  useEffect(() => {
+    if (favoritesQuery.error instanceof ApiError && favoritesQuery.error.status === 401) {
+      clearSession();
+    }
+  }, [clearSession, favoritesQuery.error]);
 
   const products = productsQuery.data?.results ?? fallbackProducts;
   const categories = categoriesQuery.data?.results ?? [];
@@ -184,11 +211,13 @@ export function CatalogPage() {
                   Актуальная подборка
                 </p>
                 <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-                  Bento-витрина лимитированной аниме-одежды.
+                  Bento-витрина лимитированной anime-одежды.
                 </h2>
               </div>
               <p className="hidden text-sm text-slate-400 md:block">
-                {productsQuery.isFetching ? "Обновляем дропы" : `${products.length} позиций`}
+                {productsQuery.isFetching
+                  ? "Обновляем дропы"
+                  : `${products.length} позиций`}
               </p>
             </div>
 
@@ -208,8 +237,8 @@ export function CatalogPage() {
               <div className="border border-white/10 bg-white/[0.04] p-10 text-center">
                 <h3 className="text-2xl font-black">Ничего не найдено</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-400">
-                  Попробуйте сбросить фильтры или выбрать другой размер,
-                  категорию или франшизу.
+                  Попробуйте сбросить фильтры или выбрать другой размер, категорию
+                  или франшизу.
                 </p>
               </div>
             ) : null}
@@ -235,9 +264,16 @@ export function CatalogPage() {
                         <span className="bg-ink-950/80 px-3 py-2 text-sm font-bold text-slate-200">
                           {product.category.name}
                         </span>
-                        <span className="bg-neon-teal px-3 py-2 text-sm font-black text-ink-950">
-                          Осталось: {product.total_stock}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-neon-teal px-3 py-2 text-sm font-black text-ink-950">
+                            Осталось: {product.total_stock}
+                          </span>
+                          <FavoriteToggleButton
+                            product={product}
+                            compact
+                            stopPropagation
+                          />
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm font-bold text-neon-crimson">

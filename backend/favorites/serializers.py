@@ -5,12 +5,13 @@ from favorites.models import FavoriteProduct
 
 
 class FavoriteProductSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(read_only=True)
     product = ProductListSerializer(read_only=True)
 
     class Meta:
         model = FavoriteProduct
-        fields = ("id", "product", "created_at")
-        read_only_fields = ("id", "product", "created_at")
+        fields = ("id", "product_id", "product", "created_at")
+        read_only_fields = ("id", "product_id", "product", "created_at")
 
 
 class FavoriteCreateSerializer(serializers.Serializer):

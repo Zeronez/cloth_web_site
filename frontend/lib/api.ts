@@ -116,6 +116,58 @@ export type Product = {
   variants?: ProductVariant[];
 };
 
+export type OrderStatus = "pending" | "paid" | "shipped" | "cancelled";
+
+export type OrderItem = {
+  id: number;
+  variant_id: number;
+  product_name: string;
+  sku: string;
+  size: string;
+  color: string;
+  quantity: number;
+  price_at_purchase: string;
+  line_total: string;
+};
+
+export type Order = {
+  id: number;
+  status: OrderStatus;
+  total_amount: string;
+  track_number: string;
+  items_count: number;
+  shipping_address: {
+    name: string;
+    phone: string;
+    country: string;
+    city: string;
+    postal_code: string;
+    line1: string;
+    line2: string;
+  };
+  shipping_name: string;
+  shipping_phone: string;
+  shipping_country: string;
+  shipping_city: string;
+  shipping_postal_code: string;
+  shipping_line1: string;
+  shipping_line2: string;
+  items: OrderItem[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type FavoriteProductEntry = {
+  id: number;
+  product_id: number;
+  product: Product;
+  created_at: string;
+};
+
+export type FavoriteProductMutationResult = FavoriteProductEntry & {
+  created: boolean;
+};
+
 type Paginated<T> = {
   count: number;
   next: string | null;
@@ -221,6 +273,32 @@ export async function fetchCategories() {
 
 export async function fetchFranchises() {
   return apiGet<Paginated<Franchise>>("/api/franchises/");
+}
+
+export async function fetchOrders(token: string) {
+  return apiRequest<Paginated<Order>>("/api/orders/", { token });
+}
+
+export async function fetchFavorites(token: string) {
+  return apiRequest<FavoriteProductEntry[]>("/api/favorites/", { token });
+}
+
+export async function addFavorite(token: string, productId: number) {
+  return apiRequest<FavoriteProductMutationResult>("/api/favorites/", {
+    method: "POST",
+    token,
+    body: { product_id: productId }
+  });
+}
+
+export async function removeFavorite(token: string, productId: number) {
+  return apiRequest<{ product_id: number; deleted: boolean }>(
+    `/api/favorites/products/${productId}/`,
+    {
+      method: "DELETE",
+      token
+    }
+  );
 }
 
 export async function loginUser(input: LoginInput) {

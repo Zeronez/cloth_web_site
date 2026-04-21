@@ -86,7 +86,7 @@ Phase 2.2: Authentication and Customer Account
 [ ] Implement phone confirmation if SMS provider is selected.
 [x] Implement customer profile API.
 [x] Implement address CRUD with default address.
-[ ] Implement order history and order detail API.
+[x] Implement order history and order detail API.
 [x] Implement wishlist/favorites API.
 [ ] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
 [ ] Implement account deletion/export flow if required by legal policy.
@@ -186,7 +186,7 @@ Phase 3.1: Russian-First CIS Frontend
 
 Phase 3.2: Frontend Production UX
 ---------------------------------
-[ ] Implement real API client with auth token handling and typed responses.
+[x] Implement real API client with auth token handling and typed responses.
 [ ] Remove demo fallbacks from production paths or gate them behind dev mode.
 [x] Add reusable product image placeholders until real media is connected.
 [x] Implement skeleton loaders for catalog and product pages.
@@ -200,7 +200,7 @@ Phase 3.2: Frontend Production UX
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
 [x] Implement account pages: profile and addresses.
-[ ] Implement account pages: orders and favorites.
+[x] Implement account pages: orders and favorites.
 [ ] Implement order tracking page.
 [ ] Implement search page with suggestions.
 [ ] Implement SEO metadata for all public pages.
@@ -330,10 +330,10 @@ Backend Integration Tests Against Real PostgreSQL
 [x] Checkout creates order and order items.
 [x] Checkout decrements stock in same transaction.
 [x] Checkout clears cart after order creation.
-[ ] Checkout rejects empty cart.
+[x] Checkout rejects empty cart.
 [x] Checkout rejects insufficient stock.
 [ ] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
-[ ] Order history only returns current user's orders.
+[x] Order history only returns current user's orders.
 [ ] Admin/staff-only endpoints reject regular users.
 [ ] Uploaded product images persist through configured storage.
 
@@ -373,7 +373,7 @@ Frontend Unit and Component Tests
 [ ] Cart drawer empty state.
 [ ] Cart drawer item quantity changes.
 [ ] Zustand cart persistence and merge behavior.
-[ ] User store session set/clear.
+[x] User store session set/clear.
 [ ] Product card renders price/stock/category.
 [ ] Catalog filters update query params/API params.
 [ ] Product detail size selection.
@@ -385,7 +385,7 @@ Frontend Unit and Component Tests
 Frontend Integration Tests
 --------------------------
 [ ] React Query API client handles success, 401, 404, 500.
-[ ] Authenticated user sees account menu.
+[x] Authenticated user sees account menu.
 [ ] Guest cart survives refresh.
 [ ] Cart syncs after login.
 [ ] Catalog page renders real API data from test backend.

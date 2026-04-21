@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { useFavoritesStore } from "./favorites-store";
+
 export type UserProfile = {
   id: number;
   username: string;
@@ -31,10 +33,14 @@ export const useUserStore = create<UserState>()(
       profile: null,
       setSession: (session) => set(session),
       clearSession: () =>
-        set({
-          accessToken: null,
-          refreshToken: null,
-          profile: null
+        set(() => {
+          useFavoritesStore.getState().clearFavorites();
+
+          return {
+            accessToken: null,
+            refreshToken: null,
+            profile: null
+          };
         })
     }),
     {

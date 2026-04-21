@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 
 from cart.models import Cart, CartItem
 from catalog.models import AnimeFranchise, Category, ProductVariant
+from favorites.models import FavoriteProduct
 from orders.models import Order
 from users.models import Address
 
@@ -352,6 +353,122 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
     assert cart_response.status_code == 200
     assert cart_response.data["total_quantity"] == 0
     assert cart_response.data["items"] == []
+
+
+def test_checkout_rejects_empty_cart(authenticated_client, user):
+    Cart.objects.create(user=user)
+
+    checkout_response = authenticated_client.post(
+        "/api/orders/checkout/",
+        shipping_payload(),
+        format="json",
+    )
+
+    assert checkout_response.status_code == 400
+    assert checkout_response.data == {"cart": "Cart is empty."}
+    assert not Order.objects.filter(user=user).exists()
+    assert Cart.objects.get(user=user).items.count() == 0
+
+
+def test_orders_list_and_detail_are_scoped_to_authenticated_user(
+    authenticated_client, user, other_user
+):
+    own_order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("42.00"),
+        **shipping_payload(shipping_name="QA Shopper"),
+    )
+    other_order = Order.objects.create(
+        user=other_user,
+        total_amount=Decimal("99.00"),
+        **shipping_payload(shipping_name="Other Shopper"),
+    )
+
+    list_response = authenticated_client.get("/api/orders/")
+
+    assert list_response.status_code == 200
+    returned_ids = {item["id"] for item in paginated_items(list_response)}
+    assert returned_ids == {own_order.id}
+    assert other_order.id not in returned_ids
+
+    own_detail_response = authenticated_client.get(f"/api/orders/{own_order.id}/")
+
+    assert own_detail_response.status_code == 200
+    assert own_detail_response.data["id"] == own_order.id
+    assert own_detail_response.data["shipping_name"] == "QA Shopper"
+
+    other_detail_response = authenticated_client.get(f"/api/orders/{other_order.id}/")
+
+    assert other_detail_response.status_code == 404
+
+
+def test_favorites_add_list_delete_and_idempotency(
+    authenticated_client, user, other_user, product_factory
+):
+    product = product_factory(name="Favorite Eva Jacket", base_price="120.00")
+    other_product = product_factory(name="Other Shopper Hoodie", base_price="88.00")
+    inactive_product = product_factory(
+        name="Archived Favorite Tee",
+        base_price="24.00",
+        is_active=False,
+    )
+    FavoriteProduct.objects.create(user=other_user, product=other_product)
+
+    create_response = authenticated_client.post(
+        "/api/favorites/",
+        {"product_id": product.id},
+        format="json",
+    )
+
+    assert create_response.status_code == 201
+    assert create_response.data["created"] is True
+    assert create_response.data["product_id"] == product.id
+    assert create_response.data["product"]["slug"] == product.slug
+    assert FavoriteProduct.objects.filter(user=user, product=product).count() == 1
+
+    duplicate_response = authenticated_client.post(
+        "/api/favorites/",
+        {"product_id": product.id},
+        format="json",
+    )
+
+    assert duplicate_response.status_code == 200
+    assert duplicate_response.data["created"] is False
+    assert duplicate_response.data["id"] == create_response.data["id"]
+    assert FavoriteProduct.objects.filter(user=user, product=product).count() == 1
+
+    inactive_response = authenticated_client.post(
+        "/api/favorites/",
+        {"product_id": inactive_product.id},
+        format="json",
+    )
+
+    assert inactive_response.status_code == 404
+
+    list_response = authenticated_client.get("/api/favorites/")
+
+    assert list_response.status_code == 200
+    returned_product_ids = {item["product_id"] for item in list_response.data}
+    assert returned_product_ids == {product.id}
+    assert other_product.id not in returned_product_ids
+
+    delete_response = authenticated_client.delete(
+        f"/api/favorites/products/{product.id}/"
+    )
+
+    assert delete_response.status_code == 200
+    assert delete_response.data == {"product_id": product.id, "deleted": True}
+    assert not FavoriteProduct.objects.filter(user=user, product=product).exists()
+    assert FavoriteProduct.objects.filter(
+        user=other_user, product=other_product
+    ).exists()
+
+    second_delete_response = authenticated_client.delete(
+        f"/api/favorites/products/{product.id}/"
+    )
+
+    assert second_delete_response.status_code == 200
+    assert second_delete_response.data == {"product_id": product.id, "deleted": False}
 
 
 def test_checkout_rejects_overstock_without_creating_order_or_clearing_cart(

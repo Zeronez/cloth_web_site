@@ -1,5 +1,6 @@
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,8 +10,12 @@ from favorites.models import FavoriteProduct
 from favorites.serializers import FavoriteCreateSerializer, FavoriteProductSerializer
 
 
-class FavoriteProductViewSet(viewsets.GenericViewSet):
+class FavoriteProductViewSet(
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     permission_classes = (IsAuthenticated,)
+    serializer_class = FavoriteProductSerializer
 
     def get_queryset(self):
         return (
@@ -20,10 +25,9 @@ class FavoriteProductViewSet(viewsets.GenericViewSet):
         )
 
     def list(self, request):
-        serializer = FavoriteProductSerializer(
+        serializer = self.get_serializer(
             self.get_queryset(),
             many=True,
-            context=self.get_serializer_context(),
         )
         return Response(serializer.data)
 
@@ -34,21 +38,27 @@ class FavoriteProductViewSet(viewsets.GenericViewSet):
             Product.objects.filter(is_active=True),
             pk=serializer.validated_data["product_id"],
         )
-        favorite, _ = FavoriteProduct.objects.get_or_create(
-            user=request.user,
-            product=product,
-        )
-        return Response(
-            FavoriteProductSerializer(
-                favorite,
-                context=self.get_serializer_context(),
-            ).data,
-            status=status.HTTP_201_CREATED,
-        )
+        try:
+            with transaction.atomic():
+                favorite, created = FavoriteProduct.objects.get_or_create(
+                    user=request.user,
+                    product=product,
+                )
+        except IntegrityError:
+            favorite = FavoriteProduct.objects.get(user=request.user, product=product)
+            created = False
+
+        response_data = self.get_serializer(favorite).data
+        response_data["created"] = created
+        response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(response_data, status=response_status)
 
     @action(detail=False, methods=["delete"], url_path=r"products/(?P<product_id>\d+)")
     def remove_product(self, request, product_id=None):
-        FavoriteProduct.objects.filter(
+        deleted_count, _ = FavoriteProduct.objects.filter(
             user=request.user, product_id=product_id
         ).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"product_id": int(product_id), "deleted": deleted_count > 0},
+            status=status.HTTP_200_OK,
+        )

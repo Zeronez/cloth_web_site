@@ -17,7 +17,7 @@ class OrderViewSet(
     def get_queryset(self):
         return (
             Order.objects.filter(user=self.request.user)
-            .prefetch_related("items")
+            .prefetch_related("items__variant")
             .order_by("-created_at")
         )
 

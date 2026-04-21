@@ -4,6 +4,8 @@ from orders.models import Order, OrderItem
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    variant = serializers.PrimaryKeyRelatedField(read_only=True)
+    variant_id = serializers.IntegerField(read_only=True)
     line_total = serializers.DecimalField(
         max_digits=12, decimal_places=2, read_only=True
     )
@@ -13,6 +15,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "variant",
+            "variant_id",
             "product_name",
             "sku",
             "size",
@@ -25,6 +28,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    items_count = serializers.SerializerMethodField()
+    shipping_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -33,6 +38,8 @@ class OrderSerializer(serializers.ModelSerializer):
             "status",
             "total_amount",
             "track_number",
+            "items_count",
+            "shipping_address",
             "shipping_name",
             "shipping_phone",
             "shipping_country",
@@ -44,6 +51,23 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def get_items_count(self, obj):
+        prefetched_items = getattr(obj, "_prefetched_objects_cache", {}).get("items")
+        if prefetched_items is not None:
+            return sum(item.quantity for item in prefetched_items)
+        return obj.items.count()
+
+    def get_shipping_address(self, obj):
+        return {
+            "name": obj.shipping_name,
+            "phone": obj.shipping_phone,
+            "country": obj.shipping_country,
+            "city": obj.shipping_city,
+            "postal_code": obj.shipping_postal_code,
+            "line1": obj.shipping_line1,
+            "line2": obj.shipping_line2,
+        }
 
 
 class CheckoutSerializer(serializers.Serializer):
