@@ -205,4 +205,53 @@ describe("AccountPage", () => {
     expect(screen.getAllByText("Neon Ronin Shell").length).toBeGreaterThan(0);
     expect(screen.getByText("Заказ #11")).toBeInTheDocument();
   });
+
+  it("smokes the empty orders and favorites sections for an authenticated account", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 7,
+      username: "shopper",
+      email: "shopper@example.com",
+      first_name: "QA",
+      last_name: "Shopper",
+      phone: "+15551234567"
+    });
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchOrders).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    });
+    jest.mocked(fetchFavorites).mockResolvedValue([]);
+
+    renderWithQueryClient(<AccountPage />);
+
+    await waitFor(() => {
+      expect(fetchMe).toHaveBeenCalledWith("access-token");
+      expect(fetchAddresses).toHaveBeenCalledWith("access-token");
+      expect(fetchOrders).toHaveBeenCalledWith("access-token");
+      expect(fetchFavorites).toHaveBeenCalledWith("access-token");
+    });
+
+    expect(await screen.findByText("История покупок")).toBeInTheDocument();
+    expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
+    expect(
+      screen.getByText("Пока нет заказов. Первый оформленный дроп появится здесь.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Здесь будут вещи, которые вы отложили на потом.")
+    ).toBeInTheDocument();
+  });
 });

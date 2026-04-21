@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+
 import { selectCartSubtotal, useCartStore } from "../stores/cart-store";
 import { ProductImagePlaceholder } from "./product-image-placeholder";
 
@@ -147,13 +149,24 @@ export function CartDrawer() {
                   {currencyFormatter.format(subtotal)}
                 </strong>
               </div>
-              <button
-                type="button"
-                className="mt-5 h-12 w-full bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-                disabled={items.length === 0}
-              >
-                Оформить заказ
-              </button>
+              {items.length > 0 ? (
+                <Link
+                  href="/checkout"
+                  role="button"
+                  onClick={closeCart}
+                  className="mt-5 flex h-12 w-full items-center justify-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950"
+                >
+                  Оформить заказ
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="mt-5 h-12 w-full cursor-not-allowed bg-white/10 px-5 text-sm font-black uppercase text-slate-500 shadow-none"
+                  disabled
+                >
+                  Оформить заказ
+                </button>
+              )}
               {items.length > 0 ? (
                 <button
                   type="button"

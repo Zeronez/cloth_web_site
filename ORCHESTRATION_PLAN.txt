@@ -199,6 +199,7 @@ Phase 3.2: Frontend Production UX
 [ ] Implement cart drawer synced with backend for authenticated users.
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
+[x] Implement checkout page: contacts, saved-address selection, local-to-server cart sync, and order creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
 [ ] Implement order tracking page.
@@ -370,7 +371,7 @@ Frontend Unit and Component Tests
 ---------------------------------
 [x] Footer renders brand and commerce links.
 [ ] Header renders Russian nav and cart button.
-[ ] Cart drawer empty state.
+[x] Cart drawer empty state.
 [ ] Cart drawer item quantity changes.
 [ ] Zustand cart persistence and merge behavior.
 [x] User store session set/clear.

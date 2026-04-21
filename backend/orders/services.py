@@ -8,6 +8,10 @@ from catalog.models import ProductVariant
 from orders.models import Order, OrderItem
 
 
+def _cart_error(code, message):
+    return ValidationError({"cart": {"code": code, "message": message}})
+
+
 @transaction.atomic
 def checkout_cart(user, shipping_data):
     cart = (
@@ -17,7 +21,7 @@ def checkout_cart(user, shipping_data):
     )
     cart_items = list(cart.items.all())
     if not cart_items:
-        raise ValidationError({"cart": "Cart is empty."})
+        raise _cart_error("cart_empty", "Корзина пуста.")
 
     variant_ids = [item.variant_id for item in cart_items]
     locked_variants = {
@@ -34,12 +38,14 @@ def checkout_cart(user, shipping_data):
     for item in cart_items:
         variant = locked_variants[item.variant_id]
         if not variant.is_active or not variant.product.is_active:
-            raise ValidationError(
-                {"cart": f"Variant {variant.sku} is no longer available."}
+            raise _cart_error(
+                "variant_unavailable",
+                f"Товар с артикулом {variant.sku} больше недоступен.",
             )
         if item.quantity > variant.stock_quantity:
-            raise ValidationError(
-                {"cart": f"Insufficient stock for SKU {variant.sku}."}
+            raise _cart_error(
+                "insufficient_stock",
+                f"Недостаточно товара на складе для артикула {variant.sku}.",
             )
 
         price = variant.price

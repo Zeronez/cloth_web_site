@@ -157,6 +157,43 @@ export type Order = {
   updated_at: string;
 };
 
+export type ServerCartItem = {
+  id: number;
+  variant: ProductVariant;
+  product: {
+    id: number;
+    name: string;
+    slug: string;
+    base_price: string;
+    is_active: boolean;
+  };
+  quantity: number;
+  unit_price: string;
+  line_total: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ServerCart = {
+  id: number;
+  items: ServerCartItem[];
+  total_amount: string;
+  subtotal_amount: string;
+  total_quantity: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CheckoutInput = {
+  shipping_name: string;
+  shipping_phone: string;
+  shipping_country: string;
+  shipping_city: string;
+  shipping_postal_code: string;
+  shipping_line1: string;
+  shipping_line2: string;
+};
+
 export type FavoriteProductEntry = {
   id: number;
   product_id: number;
@@ -277,6 +314,52 @@ export async function fetchFranchises() {
 
 export async function fetchOrders(token: string) {
   return apiRequest<Paginated<Order>>("/api/orders/", { token });
+}
+
+export async function fetchCart(token?: string | null) {
+  return apiRequest<ServerCart>("/api/cart/", { token });
+}
+
+export async function addCartItem(
+  token: string | null,
+  variantId: number,
+  quantity: number
+) {
+  return apiRequest<ServerCart>("/api/cart/items/", {
+    method: "POST",
+    token,
+    body: {
+      variant_id: variantId,
+      quantity
+    }
+  });
+}
+
+export async function updateCartItemQuantity(
+  token: string | null,
+  itemId: number,
+  quantity: number
+) {
+  return apiRequest<ServerCart>(`/api/cart/items/${itemId}/`, {
+    method: "PATCH",
+    token,
+    body: { quantity }
+  });
+}
+
+export async function deleteCartItem(token: string | null, itemId: number) {
+  return apiRequest<ServerCart>(`/api/cart/items/${itemId}/`, {
+    method: "DELETE",
+    token
+  });
+}
+
+export async function checkoutOrder(token: string, input: CheckoutInput) {
+  return apiRequest<Order>("/api/orders/checkout/", {
+    method: "POST",
+    token,
+    body: input
+  });
 }
 
 export async function fetchFavorites(token: string) {

@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from cart.models import Cart, CartItem
 from catalog.models import AnimeFranchise, Category, ProductVariant
 from favorites.models import FavoriteProduct
-from orders.models import Order
+from orders.models import Order, OrderItem
 from users.models import Address
 
 
@@ -260,6 +260,13 @@ def test_cart_add_update_and_remove_item(authenticated_client, user, product_fac
     assert add_response.status_code == 201
     assert add_response.data["total_quantity"] == 2
     assert add_response.data["total_amount"] == "69.00"
+    assert add_response.data["subtotal_amount"] == "69.00"
+    assert add_response.data["items"][0]["quantity"] == 2
+    assert add_response.data["items"][0]["unit_price"] == "34.50"
+    assert add_response.data["items"][0]["line_total"] == "69.00"
+    assert add_response.data["items"][0]["product"]["id"] == product.id
+    assert add_response.data["items"][0]["product"]["slug"] == product.slug
+    assert add_response.data["items"][0]["variant"]["sku"] == "GOJO-TEE-WHT-M"
     assert CartItem.objects.get(cart__user=user).quantity == 2
 
     item_id = cart_item_id(add_response, variant)
@@ -271,6 +278,8 @@ def test_cart_add_update_and_remove_item(authenticated_client, user, product_fac
 
     assert update_response.status_code == 200
     assert update_response.data["total_quantity"] == 4
+    assert update_response.data["total_amount"] == "138.00"
+    assert update_response.data["items"][0]["line_total"] == "138.00"
     assert CartItem.objects.get(pk=item_id).quantity == 4
 
     remove_response = authenticated_client.delete(f"/api/cart/items/{item_id}/")
@@ -278,6 +287,8 @@ def test_cart_add_update_and_remove_item(authenticated_client, user, product_fac
     assert remove_response.status_code == 200
     assert remove_response.data["items"] == []
     assert remove_response.data["total_quantity"] == 0
+    assert remove_response.data["total_amount"] == "0.00"
+    assert remove_response.data["subtotal_amount"] == "0.00"
     assert not CartItem.objects.filter(pk=item_id).exists()
 
 
@@ -341,6 +352,17 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
         "CHAINSAW-HOOD-BLK-L",
     }
 
+    detail_response = authenticated_client.get(f"/api/orders/{order.id}/")
+
+    assert detail_response.status_code == 200
+    assert detail_response.data["total_amount"] == "125.00"
+    assert detail_response.data["items_count"] == 3
+    returned_items = {item["sku"]: item for item in detail_response.data["items"]}
+    assert returned_items["SPY-TEE-GRN-M"]["product_name"] == "Spy Family Tee"
+    assert returned_items["SPY-TEE-GRN-M"]["price_at_purchase"] == "25.00"
+    assert returned_items["SPY-TEE-GRN-M"]["line_total"] == "50.00"
+    assert returned_items["CHAINSAW-HOOD-BLK-L"]["line_total"] == "75.00"
+
     tee_variant.refresh_from_db()
     hoodie_variant.refresh_from_db()
     assert tee_variant.stock_quantity == 3
@@ -365,18 +387,42 @@ def test_checkout_rejects_empty_cart(authenticated_client, user):
     )
 
     assert checkout_response.status_code == 400
-    assert checkout_response.data == {"cart": "Cart is empty."}
+    assert checkout_response.data["cart"]["code"] == "cart_empty"
+    assert checkout_response.data["cart"]["message"] == "Корзина пуста."
     assert not Order.objects.filter(user=user).exists()
     assert Cart.objects.get(user=user).items.count() == 0
 
 
 def test_orders_list_and_detail_are_scoped_to_authenticated_user(
-    authenticated_client, user, other_user
+    authenticated_client, user, other_user, product_factory
 ):
+    product = product_factory(
+        name="Scoped Order Tee",
+        base_price="21.00",
+        variants=[
+            {
+                "sku": "SCOPED-TEE-BLK-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 3,
+            }
+        ],
+    )
+    variant = product.variants.get()
     own_order = Order.objects.create(
         user=user,
         total_amount=Decimal("42.00"),
         **shipping_payload(shipping_name="QA Shopper"),
+    )
+    OrderItem.objects.create(
+        order=own_order,
+        variant=variant,
+        product_name=product.name,
+        sku=variant.sku,
+        size=variant.size,
+        color=variant.color,
+        quantity=2,
+        price_at_purchase=Decimal("21.00"),
     )
     other_order = Order.objects.create(
         user=other_user,
@@ -396,6 +442,10 @@ def test_orders_list_and_detail_are_scoped_to_authenticated_user(
     assert own_detail_response.status_code == 200
     assert own_detail_response.data["id"] == own_order.id
     assert own_detail_response.data["shipping_name"] == "QA Shopper"
+    assert own_detail_response.data["items_count"] == 2
+    assert own_detail_response.data["items"][0]["product_name"] == "Scoped Order Tee"
+    assert own_detail_response.data["items"][0]["sku"] == "SCOPED-TEE-BLK-M"
+    assert own_detail_response.data["items"][0]["line_total"] == "42.00"
 
     other_detail_response = authenticated_client.get(f"/api/orders/{other_order.id}/")
 
@@ -504,7 +554,11 @@ def test_checkout_rejects_overstock_without_creating_order_or_clearing_cart(
     )
 
     assert checkout_response.status_code == 400
-    assert "cart" in checkout_response.data
+    assert checkout_response.data["cart"]["code"] == "insufficient_stock"
+    assert (
+        checkout_response.data["cart"]["message"]
+        == "Недостаточно товара на складе для артикула EVA-TEE-PUR-M."
+    )
     assert not Order.objects.filter(user=user).exists()
 
     variant.refresh_from_db()
