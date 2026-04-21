@@ -140,6 +140,12 @@ jobs:
         working-directory: backend
         run: python manage.py migrate --noinput
 
+      - name: Run Celery Redis smoke test
+        working-directory: backend
+        env:
+          RUN_CELERY_SERVICE_SMOKE: "true"
+        run: pytest tests/test_celery_services.py -q
+
       - name: Run backend tests
         working-directory: backend
         run: pytest

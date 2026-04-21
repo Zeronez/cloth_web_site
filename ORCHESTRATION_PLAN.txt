@@ -122,22 +122,22 @@ Phase 2.4: Pricing, Promotions, and Taxes
 Phase 2.5: Payments
 -------------------
 [ ] Select and implement real payment provider for launch.
-[ ] Implement payment intent/session creation.
+[x] Implement provider-agnostic payment session foundation.
 [ ] Implement redirect/return flow.
 [ ] Implement webhook endpoint with signature verification.
-[ ] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
+[x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
 [ ] Implement idempotent webhook processing.
 [ ] Implement retry-safe order/payment reconciliation command.
 [ ] Implement refund flow, partial refund support if provider allows.
 [ ] Implement payment timeout/cancel task.
-[ ] Implement admin payment status view.
-[ ] Add payment event audit table.
+[x] Implement admin payment status view.
+[x] Add payment event audit table.
 
 Phase 2.6: Delivery and Fulfillment
 -----------------------------------
 [ ] Select delivery providers for launch.
-[ ] Implement delivery method catalog: courier, pickup point, postal.
-[ ] Implement delivery price calculation.
+[x] Implement delivery method catalog: courier, pickup point, postal.
+[x] Implement delivery price calculation.
 [ ] Implement pickup point search/map API if provider supports it.
 [ ] Implement shipment creation after payment.
 [ ] Implement tracking number storage and tracking status sync.
@@ -288,7 +288,7 @@ CI Infrastructure Tests
 -----------------------
 [ ] In GitHub Actions, start PostgreSQL 16 service container with the same extensions/settings required by production.
 [ ] In GitHub Actions, start Redis service container.
-[ ] In GitHub Actions, start Celery worker connected to the test Redis and test PostgreSQL.
+[x] In GitHub Actions, start Celery worker connected to the test Redis and test PostgreSQL.
 [ ] In GitHub Actions, start MinIO or S3-compatible emulator for media upload tests.
 [ ] In GitHub Actions, build and run backend Docker image for smoke tests.
 [ ] In GitHub Actions, build and run frontend Docker image for smoke tests.
@@ -305,8 +305,8 @@ Backend Unit Tests
 [ ] Product variant price calculation with price_delta.
 [ ] Coupon calculation and conflict rules.
 [ ] Order total recalculation.
-[ ] Delivery price calculation.
-[ ] Payment state transition rules.
+[x] Delivery price calculation.
+[x] Payment state transition rules.
 [ ] Order state transition rules.
 [ ] Notification template rendering.
 [ ] Slug generation and uniqueness behavior.
@@ -340,7 +340,7 @@ Backend Integration Tests Against Real PostgreSQL
 
 Celery and Async Tests
 ----------------------
-[ ] Celery worker starts in CI and consumes test queue.
+[x] Celery worker starts in CI and consumes test queue.
 [ ] Order confirmation task is enqueued after checkout.
 [ ] Cart cleanup task deletes expired guest carts.
 [ ] Payment timeout task cancels unpaid stale orders.

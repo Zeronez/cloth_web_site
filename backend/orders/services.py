@@ -5,6 +5,11 @@ from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart, CartItem
 from catalog.models import ProductVariant
+from delivery.services import (
+    create_order_delivery_snapshot,
+    delivery_price_for,
+    resolve_delivery_method,
+)
 from orders.models import Order, OrderItem
 
 
@@ -14,12 +19,12 @@ def _cart_error(code, message):
 
 @transaction.atomic
 def checkout_cart(user, shipping_data):
-    cart = (
-        Cart.objects.select_for_update()
-        .prefetch_related("items__variant__product")
-        .get(user=user)
+    delivery_method_code = shipping_data.pop("delivery_method_code", "")
+    delivery_method = resolve_delivery_method(delivery_method_code)
+    cart, _ = Cart.objects.select_for_update().get_or_create(user=user)
+    cart_items = list(
+        CartItem.objects.select_related("variant__product").filter(cart=cart)
     )
-    cart_items = list(cart.items.all())
     if not cart_items:
         raise _cart_error("cart_empty", "Корзина пуста.")
 
@@ -67,7 +72,8 @@ def checkout_cart(user, shipping_data):
         )
 
     OrderItem.objects.bulk_create(order_items)
-    order.total_amount = total
+    create_order_delivery_snapshot(order, delivery_method, shipping_data)
+    order.total_amount = total + delivery_price_for(delivery_method)
     order.save(update_fields=["total_amount", "updated_at"])
     CartItem.objects.filter(cart=cart).delete()
     return order

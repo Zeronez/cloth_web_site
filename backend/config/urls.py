@@ -8,8 +8,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from cart.views import CartViewSet
 from catalog.views import AnimeFranchiseViewSet, CategoryViewSet, ProductViewSet
 from config import health
+from delivery.views import DeliveryMethodViewSet
 from favorites.views import FavoriteProductViewSet
 from orders.views import OrderViewSet
+from payments.views import PaymentMethodViewSet, PaymentViewSet
 from users.views import AddressViewSet, RegisterView, UserMeView, logout
 
 router = DefaultRouter()
@@ -18,6 +20,9 @@ router.register("franchises", AnimeFranchiseViewSet, basename="franchise")
 router.register("products", ProductViewSet, basename="product")
 router.register("cart", CartViewSet, basename="cart")
 router.register("orders", OrderViewSet, basename="order")
+router.register("delivery-methods", DeliveryMethodViewSet, basename="delivery-method")
+router.register("payment-methods", PaymentMethodViewSet, basename="payment-method")
+router.register("payments", PaymentViewSet, basename="payment")
 router.register("addresses", AddressViewSet, basename="address")
 router.register("favorites", FavoriteProductViewSet, basename="favorite")
 

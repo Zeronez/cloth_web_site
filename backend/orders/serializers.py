@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from delivery.serializers import OrderDeliverySnapshotSerializer
 from orders.models import Order, OrderItem
 
 
@@ -30,6 +31,9 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     items_count = serializers.SerializerMethodField()
     shipping_address = serializers.SerializerMethodField()
+    delivery = OrderDeliverySnapshotSerializer(
+        source="delivery_snapshot", read_only=True
+    )
 
     class Meta:
         model = Order
@@ -40,6 +44,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "track_number",
             "items_count",
             "shipping_address",
+            "delivery",
             "shipping_name",
             "shipping_phone",
             "shipping_country",
@@ -71,6 +76,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class CheckoutSerializer(serializers.Serializer):
+    delivery_method_code = serializers.SlugField(
+        max_length=48, required=False, allow_blank=True
+    )
     shipping_name = serializers.CharField(max_length=160)
     shipping_phone = serializers.CharField(max_length=32)
     shipping_country = serializers.CharField(max_length=80)

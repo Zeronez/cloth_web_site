@@ -378,8 +378,6 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
 
 
 def test_checkout_rejects_empty_cart(authenticated_client, user):
-    Cart.objects.create(user=user)
-
     checkout_response = authenticated_client.post(
         "/api/orders/checkout/",
         shipping_payload(),
@@ -390,7 +388,7 @@ def test_checkout_rejects_empty_cart(authenticated_client, user):
     assert checkout_response.data["cart"]["code"] == "cart_empty"
     assert checkout_response.data["cart"]["message"] == "Корзина пуста."
     assert not Order.objects.filter(user=user).exists()
-    assert Cart.objects.get(user=user).items.count() == 0
+    assert not CartItem.objects.filter(cart__user=user).exists()
 
 
 def test_orders_list_and_detail_are_scoped_to_authenticated_user(
