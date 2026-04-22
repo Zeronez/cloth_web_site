@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "delivery",
     "payments",
     "favorites",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -129,6 +130,13 @@ CELERY_BROKER_URL = env_value("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env_value("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_TIME_LIMIT = 300
+
+EMAIL_BACKEND = env_value(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = env_value(
+    "DEFAULT_FROM_EMAIL", "AnimeAttire <no-reply@example.com>"
+)
 
 AWS_STORAGE_BUCKET_NAME = env_value("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")

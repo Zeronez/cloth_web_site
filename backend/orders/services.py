@@ -11,6 +11,7 @@ from delivery.services import (
     resolve_delivery_method,
 )
 from orders.models import Order, OrderItem
+from notifications.tasks import send_order_confirmation_email
 
 
 def _cart_error(code, message):
@@ -76,4 +77,5 @@ def checkout_cart(user, shipping_data):
     order.total_amount = total + delivery_price_for(delivery_method)
     order.save(update_fields=["total_amount", "updated_at"])
     CartItem.objects.filter(cart=cart).delete()
+    transaction.on_commit(lambda: send_order_confirmation_email.delay(order.id))
     return order

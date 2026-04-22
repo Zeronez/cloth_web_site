@@ -150,7 +150,7 @@ Phase 2.6: Delivery and Fulfillment
 Phase 2.7: Notifications and Support
 ------------------------------------
 [ ] Implement transactional email templates in Russian.
-[ ] Add order confirmation email.
+[x] Add order confirmation email foundation.
 [ ] Add payment success/failure email.
 [ ] Add shipping/tracking email.
 [ ] Add password reset email.
@@ -158,7 +158,7 @@ Phase 2.7: Notifications and Support
 [ ] Add SMS/Telegram notifications if provider selected.
 [ ] Add support request/contact form.
 [ ] Add support/admin notes on orders.
-[ ] Add notification delivery log and retry behavior.
+[x] Add notification delivery log and idempotent order confirmation task.
 
 Phase 3: Frontend Core
 ----------------------
@@ -342,7 +342,7 @@ Backend Integration Tests Against Real PostgreSQL
 Celery and Async Tests
 ----------------------
 [x] Celery worker starts in CI and consumes test queue.
-[ ] Order confirmation task is enqueued after checkout.
+[x] Order confirmation task is enqueued after checkout.
 [ ] Cart cleanup task deletes expired guest carts.
 [ ] Payment timeout task cancels unpaid stale orders.
 [ ] Notification retry behavior works after transient failure.
