@@ -1,6 +1,13 @@
 import Image from "next/image";
+import Link from "next/link";
 
-const footerLinks = ["Размеры", "Доставка", "Возврат", "Дропы", "Оферта"];
+const footerLinks = [
+  { label: "Доставка", href: "/delivery" },
+  { label: "Возврат", href: "/returns" },
+  { label: "Оферта", href: "/offer" },
+  { label: "Конфиденциальность", href: "/privacy" },
+  { label: "Контакты", href: "/contacts" }
+];
 
 export function Footer() {
   return (
@@ -15,18 +22,28 @@ export function Footer() {
             className="h-auto w-44"
           />
           <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
-            Аниме-стритвир для ночного города, лимитированных дропов и образов,
-            которые не теряются в толпе.
+            Аниме-стритвир для магазина в СНГ: полезные правила, контакты и
+            условия работы собраны здесь без лишнего шума.
+          </p>
+          <p className="mt-3 max-w-md text-xs leading-6 uppercase text-slate-500">
+            Реквизиты и операционные данные: требуется настройка
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-300">
+        <nav
+          aria-label="Служебные ссылки"
+          className="grid gap-3 text-sm font-semibold text-slate-300 sm:grid-cols-2"
+        >
           {footerLinks.map((link) => (
-            <a key={link} href="#" className="transition hover:text-white">
-              {link}
-            </a>
+            <Link
+              key={link.href}
+              href={link.href}
+              className="transition hover:text-white"
+            >
+              {link.label}
+            </Link>
           ))}
-        </div>
+        </nav>
       </div>
     </footer>
   );

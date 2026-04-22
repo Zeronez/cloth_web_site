@@ -12,6 +12,7 @@ from delivery.views import DeliveryMethodViewSet
 from favorites.views import FavoriteProductViewSet
 from orders.views import OrderViewSet
 from payments.views import PaymentMethodViewSet, PaymentViewSet
+from support.views import ContactRequestViewSet
 from users.views import AddressViewSet, RegisterView, UserMeView, logout
 
 router = DefaultRouter()
@@ -25,6 +26,7 @@ router.register("payment-methods", PaymentMethodViewSet, basename="payment-metho
 router.register("payments", PaymentViewSet, basename="payment")
 router.register("addresses", AddressViewSet, basename="address")
 router.register("favorites", FavoriteProductViewSet, basename="favorite")
+router.register("contact-requests", ContactRequestViewSet, basename="contact-request")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

@@ -1,3 +1,34 @@
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.production}
+  DEBUG: ${DEBUG:-0}
+  DATABASE_URL: postgres://${POSTGRES_USER:-animeattire}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting production services}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-animeattire}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:?Set ALLOWED_HOSTS before starting production services}
+  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?Set CSRF_TRUSTED_ORIGINS before starting production services}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS before starting production services}
+  SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY before starting production services}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-AnimeAttire <no-reply@example.com>}
+  SERVER_EMAIL: ${SERVER_EMAIL:-AnimeAttire <no-reply@example.com>}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+  EMAIL_HOST: ${EMAIL_HOST:-}
+  EMAIL_PORT: ${EMAIL_PORT:-587}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+  EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+  EMAIL_TIMEOUT: ${EMAIL_TIMEOUT:-10}
+  AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-}
+  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-us-east-1}
+  SIMPLE_JWT_ACCESS_TOKEN_LIFETIME_MINUTES: ${SIMPLE_JWT_ACCESS_TOKEN_LIFETIME_MINUTES:-30}
+  SIMPLE_JWT_REFRESH_TOKEN_LIFETIME_DAYS: ${SIMPLE_JWT_REFRESH_TOKEN_LIFETIME_DAYS:-14}
+  SIMPLE_JWT_ROTATE_REFRESH_TOKENS: ${SIMPLE_JWT_ROTATE_REFRESH_TOKENS:-1}
+  SIMPLE_JWT_BLACKLIST_AFTER_ROTATION: ${SIMPLE_JWT_BLACKLIST_AFTER_ROTATION:-1}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -5,7 +36,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-animeattire}
       POSTGRES_USER: ${POSTGRES_USER:-animeattire}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-animeattire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting production services}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,14 +63,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.production}
-      DATABASE_URL: postgres://${POSTGRES_USER:-animeattire}:${POSTGRES_PASSWORD:-animeattire}@postgres:5432/${POSTGRES_DB:-animeattire}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
-      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY before starting production services}
+      <<: *backend-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,12 +79,7 @@ services:
     restart: unless-stopped
     command: ["celery", "-A", "config", "worker", "--loglevel=info"]
     environment:
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.production}
-      DATABASE_URL: postgres://${POSTGRES_USER:-animeattire}:${POSTGRES_PASSWORD:-animeattire}@postgres:5432/${POSTGRES_DB:-animeattire}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY before starting production services}
+      <<: *backend-env
     depends_on:
       postgres:
         condition: service_healthy

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import dj_database_url
 
-from config.settings.env import env_bool, env_csv, env_value
+from config.settings.env import env_bool, env_csv, env_int, env_value
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "payments",
     "favorites",
     "notifications",
+    "support",
 ]
 
 MIDDLEWARE = [
@@ -112,10 +113,14 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=env_int("SIMPLE_JWT_ACCESS_TOKEN_LIFETIME_MINUTES", 30)
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=env_int("SIMPLE_JWT_REFRESH_TOKEN_LIFETIME_DAYS", 14)
+    ),
+    "ROTATE_REFRESH_TOKENS": env_bool("SIMPLE_JWT_ROTATE_REFRESH_TOKENS", True),
+    "BLACKLIST_AFTER_ROTATION": env_bool("SIMPLE_JWT_BLACKLIST_AFTER_ROTATION", True),
 }
 
 REDIS_URL = env_value("REDIS_URL", "redis://localhost:6379/0")
@@ -137,6 +142,14 @@ EMAIL_BACKEND = env_value(
 DEFAULT_FROM_EMAIL = env_value(
     "DEFAULT_FROM_EMAIL", "AnimeAttire <no-reply@example.com>"
 )
+SERVER_EMAIL = env_value("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_HOST = env_value("EMAIL_HOST", "")
+EMAIL_PORT = env_int("EMAIL_PORT", 587)
+EMAIL_HOST_USER = env_value("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env_value("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 10)
 
 AWS_STORAGE_BUCKET_NAME = env_value("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")

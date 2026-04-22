@@ -40,7 +40,7 @@ Phase 1: Initialization and Architecture
 [x] Agent-Git: Prepare git init, remote, release commands, and .gitignore.
 [ ] Add ADR documents for architecture decisions.
 [ ] Add API contract documentation strategy: OpenAPI schema, Swagger/ReDoc, typed frontend client.
-[ ] Add environment variable contract: .env.example for dev/staging/prod.
+[x] Add environment variable contract: .env.example for dev/staging/prod.
 [ ] Add Makefile/task runner for standard commands.
 [ ] Add dependency update policy and lockfile strategy.
 [ ] Add branch protection plan for main.
@@ -57,7 +57,7 @@ Phase 2: Backend Core
 
 Phase 2.1: Backend Production Hardening
 ---------------------------------------
-[ ] Split settings into base/development/test/staging/production with strict production defaults.
+[x] Split settings into base/development/test/staging/production with strict production defaults.
 [ ] Fail startup when required production secrets are missing.
 [ ] Add structured logging with request ids and user/order correlation ids.
 [ ] Add error handling format for DRF: stable error codes, translated messages, validation details.
@@ -156,7 +156,7 @@ Phase 2.7: Notifications and Support
 [ ] Add password reset email.
 [ ] Add low-stock/internal admin email.
 [ ] Add SMS/Telegram notifications if provider selected.
-[ ] Add support request/contact form.
+[x] Add support request/contact form.
 [ ] Add support/admin notes on orders.
 [x] Add notification delivery log and idempotent order confirmation task.
 
@@ -179,7 +179,7 @@ Phase 3.1: Russian-First CIS Frontend
 [ ] Add Russian empty states, validation messages, button labels, page titles, metadata.
 [x] Replace current fallback/demo product names and copy with Russian storefront copy where appropriate.
 [ ] Add localized email subject/copy references for frontend confirmations.
-[ ] Add legal footer links in Russian: оферта, доставка, возврат, конфиденциальность, контакты.
+[x] Add legal footer links in Russian: оферта, доставка, возврат, конфиденциальность, контакты.
 [ ] Add support contacts: email, phone, Telegram/VK if business selects them.
 [ ] Add mobile-first checkout flow for CIS users.
 [ ] Add responsive testing targets for common Android/iPhone viewport sizes.
