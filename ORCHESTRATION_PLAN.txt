@@ -398,7 +398,7 @@ Frontend Integration Tests
 End-to-End Browser Tests With Real App Stack
 --------------------------------------------
 [ ] Start PostgreSQL, Redis, backend, Celery, frontend in CI.
-[ ] Seed database with realistic Russian catalog fixtures.
+[x] Seed database with realistic Russian catalog fixtures.
 [ ] E2E: browse home page.
 [ ] E2E: open catalog and filter by category/franchise/size/stock.
 [ ] E2E: open product detail and select size.
