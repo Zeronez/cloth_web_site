@@ -200,6 +200,7 @@ Phase 3.2: Frontend Production UX
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
 [x] Implement checkout page: contacts, saved-address selection, local-to-server cart sync, and order creation.
+[x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
 [ ] Implement order tracking page.
@@ -391,7 +392,7 @@ Frontend Integration Tests
 [ ] Cart syncs after login.
 [ ] Catalog page renders real API data from test backend.
 [ ] Product page renders real API data from test backend.
-[ ] Checkout page posts to real backend API in CI.
+[x] Checkout page posts to real backend API contract in component tests.
 [ ] Russian UI snapshot/semantic checks for all public pages.
 
 End-to-End Browser Tests With Real App Stack

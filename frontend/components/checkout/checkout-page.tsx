@@ -8,13 +8,18 @@ import {
   ApiError,
   addCartItem,
   checkoutOrder,
+  createPaymentSession,
   deleteCartItem,
   fetchAddresses,
   fetchCart,
+  fetchDeliveryMethods,
+  fetchPaymentMethods,
   updateCartItemQuantity,
   type Address,
   type CheckoutInput,
-  type Order
+  type DeliveryMethod,
+  type Order,
+  type PaymentSession
 } from "../../lib/api";
 import {
   selectCartCount,
@@ -31,6 +36,7 @@ const currencyFormatter = new Intl.NumberFormat("ru-RU", {
 });
 
 const emptyCheckoutForm: CheckoutInput = {
+  delivery_method_code: "",
   shipping_name: "",
   shipping_phone: "",
   shipping_country: "RU",
@@ -39,6 +45,11 @@ const emptyCheckoutForm: CheckoutInput = {
   shipping_line1: "",
   shipping_line2: ""
 };
+
+function toAmount(value: string | number | null | undefined) {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
+}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -54,6 +65,7 @@ function getErrorMessage(error: unknown) {
 
 function addressToForm(address: Address): CheckoutInput {
   return {
+    delivery_method_code: "",
     shipping_name: address.recipient_name,
     shipping_phone: address.phone,
     shipping_country: address.country,
@@ -62,6 +74,26 @@ function addressToForm(address: Address): CheckoutInput {
     shipping_line1: address.line1,
     shipping_line2: address.line2
   };
+}
+
+function deliveryEta(method: DeliveryMethod) {
+  if (method.estimated_days_min === null && method.estimated_days_max === null) {
+    return null;
+  }
+
+  if (method.estimated_days_min === method.estimated_days_max) {
+    return `${method.estimated_days_min} дн.`;
+  }
+
+  if (method.estimated_days_min === null) {
+    return `до ${method.estimated_days_max} дн.`;
+  }
+
+  if (method.estimated_days_max === null) {
+    return `от ${method.estimated_days_min} дн.`;
+  }
+
+  return `${method.estimated_days_min}-${method.estimated_days_max} дн.`;
 }
 
 function profileName(profile: ReturnType<typeof useUserStore.getState>["profile"]) {
@@ -152,13 +184,78 @@ function CheckoutField({
   );
 }
 
+function MethodCard({
+  checked,
+  description,
+  detail,
+  disabled,
+  name,
+  price,
+  title,
+  value,
+  onChange
+}: {
+  checked: boolean;
+  description: string;
+  detail?: string | null;
+  disabled?: boolean;
+  name: string;
+  price?: string;
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label
+      className={`block border p-4 transition ${
+        checked
+          ? "border-neon-teal bg-neon-teal/10 ring-2 ring-neon-teal/30"
+          : "border-white/10 bg-ink-900/60 hover:border-white/25"
+      } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+    >
+      <div className="flex items-start gap-3">
+        <input
+          type="radio"
+          name={name}
+          value={value}
+          checked={checked}
+          disabled={disabled}
+          onChange={() => onChange(value)}
+          className="mt-1 h-4 w-4 accent-neon-teal"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <p className="font-black text-white">{title}</p>
+            {price ? (
+              <p className="shrink-0 text-sm font-bold text-neon-teal">{price}</p>
+            ) : null}
+          </div>
+          {description ? (
+            <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
+          ) : null}
+          {detail ? (
+            <p className="mt-2 text-xs font-semibold uppercase text-slate-500">
+              {detail}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </label>
+  );
+}
+
 function OrderSummary({
   items,
-  subtotal
+  subtotal,
+  deliveryMethod
 }: {
   items: CartItem[];
   subtotal: number;
+  deliveryMethod: DeliveryMethod | null;
 }) {
+  const deliveryPrice = deliveryMethod ? toAmount(deliveryMethod.price_amount) : 0;
+  const total = subtotal + deliveryPrice;
+
   return (
     <section className="border border-white/10 bg-white/[0.04] p-5">
       <div className="flex items-center justify-between gap-4">
@@ -205,18 +302,34 @@ function OrderSummary({
         </div>
         <div className="flex items-center justify-between text-slate-300">
           <dt>Доставка</dt>
-          <dd>Рассчитаем после подтверждения</dd>
+          <dd>
+            {deliveryMethod
+              ? currencyFormatter.format(deliveryPrice)
+              : "Выберите способ"}
+          </dd>
         </div>
         <div className="flex items-center justify-between text-lg font-black text-white">
           <dt>Итого</dt>
-          <dd>{currencyFormatter.format(subtotal)}</dd>
+          <dd>{currencyFormatter.format(total)}</dd>
         </div>
       </dl>
     </section>
   );
 }
 
-function SuccessState({ order }: { order: Order }) {
+function SuccessState({
+  order,
+  paymentSession,
+  paymentError
+}: {
+  order: Order;
+  paymentSession: PaymentSession | null;
+  paymentError: string | null;
+}) {
+  const deliveryPrice = order.delivery
+    ? currencyFormatter.format(toAmount(order.delivery.price_amount))
+    : "Не выбрана";
+
   return (
     <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
       <section className="mx-auto max-w-4xl border border-neon-teal/30 bg-neon-teal/10 p-6 sm:p-8">
@@ -228,6 +341,56 @@ function SuccessState({ order }: { order: Order }) {
           Мы сохранили адрес доставки и состав заказа. Статус и детали доступны в
           личном кабинете.
         </p>
+
+        <dl className="mt-6 grid gap-3 border border-white/10 bg-ink-950/50 p-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-slate-400">Сумма заказа</dt>
+            <dd className="mt-1 font-bold text-white">
+              {currencyFormatter.format(toAmount(order.total_amount))}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-400">Доставка</dt>
+            <dd className="mt-1 font-bold text-white">{deliveryPrice}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-400">Платеж</dt>
+            <dd className="mt-1 font-bold text-white">
+              {paymentSession?.payment.status_label ?? "Сессия не создана"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-400">Оплата</dt>
+            <dd className="mt-1 font-bold text-white">
+              {paymentSession
+                ? currencyFormatter.format(toAmount(paymentSession.payment.amount))
+                : "Ожидает повторной попытки"}
+            </dd>
+          </div>
+        </dl>
+
+        {paymentSession ? (
+          <div className="mt-4 border border-white/10 bg-ink-950/50 px-4 py-3 text-sm leading-6 text-slate-200">
+            {paymentSession.confirmation_url ? (
+              <Link
+                href={paymentSession.confirmation_url}
+                className="font-bold text-neon-teal transition hover:text-white"
+              >
+                Перейти к оплате
+              </Link>
+            ) : (
+              "Платежная сессия создана локально. Внешний платежный провайдер пока не подключен, поэтому ссылки на оплату нет."
+            )}
+          </div>
+        ) : null}
+
+        {paymentError ? (
+          <div className="mt-4 border border-neon-amber/30 bg-neon-amber/10 px-4 py-3 text-sm leading-6 text-orange-100">
+            Заказ создан, но платежную сессию не удалось подготовить. Попробуйте
+            открыть заказ в личном кабинете позже.
+          </div>
+        ) : null}
+
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/account"
@@ -258,8 +421,15 @@ export function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [form, setForm] = useState<CheckoutInput>(emptyCheckoutForm);
   const [selectedAddressId, setSelectedAddressId] = useState("manual");
+  const [selectedDeliveryCode, setSelectedDeliveryCode] = useState("");
+  const [selectedPaymentCode, setSelectedPaymentCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successOrder, setSuccessOrder] = useState<Order | null>(null);
+  const [successPaymentSession, setSuccessPaymentSession] =
+    useState<PaymentSession | null>(null);
+  const [successPaymentError, setSuccessPaymentError] = useState<string | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -277,6 +447,39 @@ export function CheckoutPage() {
     () => addressesQuery.data ?? [],
     [addressesQuery.data]
   );
+
+  const deliveryMethodsQuery = useQuery({
+    queryKey: ["delivery-methods"],
+    enabled: isMounted,
+    queryFn: fetchDeliveryMethods,
+    retry: false
+  });
+
+  const paymentMethodsQuery = useQuery({
+    queryKey: ["payment-methods"],
+    enabled: isMounted,
+    queryFn: fetchPaymentMethods,
+    retry: false
+  });
+
+  const deliveryMethods = useMemo(
+    () => deliveryMethodsQuery.data?.results ?? [],
+    [deliveryMethodsQuery.data]
+  );
+  const paymentMethods = useMemo(
+    () => paymentMethodsQuery.data?.results ?? [],
+    [paymentMethodsQuery.data]
+  );
+  const selectedDeliveryMethod = useMemo(
+    () =>
+      deliveryMethods.find((method) => method.code === selectedDeliveryCode) ??
+      null,
+    [deliveryMethods, selectedDeliveryCode]
+  );
+  const isFoundationLoading =
+    deliveryMethodsQuery.isLoading || paymentMethodsQuery.isLoading;
+  const hasFoundationError =
+    deliveryMethodsQuery.isError || paymentMethodsQuery.isError;
 
   useEffect(() => {
     if (addressesQuery.error instanceof ApiError && addressesQuery.error.status === 401) {
@@ -308,6 +511,22 @@ export function CheckoutPage() {
       setForm(addressToForm(defaultAddress));
     }
   }, [addresses, selectedAddressId]);
+
+  useEffect(() => {
+    if (selectedDeliveryCode || deliveryMethods.length === 0) {
+      return;
+    }
+
+    setSelectedDeliveryCode(deliveryMethods[0].code);
+  }, [deliveryMethods, selectedDeliveryCode]);
+
+  useEffect(() => {
+    if (selectedPaymentCode || paymentMethods.length === 0) {
+      return;
+    }
+
+    setSelectedPaymentCode(paymentMethods[0].code);
+  }, [paymentMethods, selectedPaymentCode]);
 
   function updateField(name: keyof CheckoutInput, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -342,12 +561,40 @@ export function CheckoutPage() {
       return;
     }
 
+    if (!selectedDeliveryCode) {
+      setError("Выберите способ доставки.");
+      return;
+    }
+
+    if (!selectedPaymentCode) {
+      setError("Выберите способ оплаты.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await syncLocalCartToServer(accessToken, items);
-      const order = await checkoutOrder(accessToken, form);
+      const order = await checkoutOrder(accessToken, {
+        ...form,
+        delivery_method_code: selectedDeliveryCode
+      });
+      let paymentSession: PaymentSession | null = null;
+      let paymentError: string | null = null;
+
+      try {
+        paymentSession = await createPaymentSession(accessToken, {
+          order_id: order.id,
+          payment_method_code: selectedPaymentCode,
+          idempotency_key: `checkout-${order.id}-${selectedPaymentCode}`
+        });
+      } catch (sessionError) {
+        paymentError = getErrorMessage(sessionError);
+      }
+
       clearCart();
+      setSuccessPaymentSession(paymentSession);
+      setSuccessPaymentError(paymentError);
       setSuccessOrder(order);
     } catch (submittedError) {
       setError(getErrorMessage(submittedError));
@@ -368,7 +615,13 @@ export function CheckoutPage() {
   }
 
   if (successOrder) {
-    return <SuccessState order={successOrder} />;
+    return (
+      <SuccessState
+        order={successOrder}
+        paymentSession={successPaymentSession}
+        paymentError={successPaymentError}
+      />
+    );
   }
 
   if (items.length === 0) {
@@ -537,6 +790,90 @@ export function CheckoutPage() {
                 </div>
               </div>
 
+              <div>
+                <p className="text-xs font-black uppercase text-neon-teal">
+                  Способ доставки
+                </p>
+                {deliveryMethodsQuery.isLoading ? (
+                  <div className="mt-4 h-24 animate-pulse border border-white/10 bg-ink-900/60" />
+                ) : null}
+                {deliveryMethods.length > 0 ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {deliveryMethods.map((method) => (
+                      <MethodCard
+                        key={method.code}
+                        name="delivery-method"
+                        value={method.code}
+                        checked={selectedDeliveryCode === method.code}
+                        title={method.name}
+                        description={method.description}
+                        detail={[
+                          method.kind_label,
+                          deliveryEta(method)
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        price={currencyFormatter.format(
+                          toAmount(method.price_amount)
+                        )}
+                        onChange={setSelectedDeliveryCode}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {deliveryMethodsQuery.isError ? (
+                  <div className="mt-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                    Не удалось загрузить способы доставки. Обновите страницу и
+                    попробуйте еще раз.
+                  </div>
+                ) : null}
+                {!deliveryMethodsQuery.isLoading &&
+                !deliveryMethodsQuery.isError &&
+                deliveryMethods.length === 0 ? (
+                  <div className="mt-3 border border-neon-amber/30 bg-neon-amber/10 px-4 py-3 text-sm leading-6 text-orange-100">
+                    Сейчас нет доступных способов доставки.
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <p className="text-xs font-black uppercase text-neon-teal">
+                  Способ оплаты
+                </p>
+                {paymentMethodsQuery.isLoading ? (
+                  <div className="mt-4 h-24 animate-pulse border border-white/10 bg-ink-900/60" />
+                ) : null}
+                {paymentMethods.length > 0 ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {paymentMethods.map((method) => (
+                      <MethodCard
+                        key={method.code}
+                        name="payment-method"
+                        value={method.code}
+                        checked={selectedPaymentCode === method.code}
+                        title={method.name}
+                        description={method.description}
+                        detail={method.session_mode_label}
+                        onChange={setSelectedPaymentCode}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {paymentMethodsQuery.isError ? (
+                  <div className="mt-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                    Не удалось загрузить способы оплаты. Обновите страницу и
+                    попробуйте еще раз.
+                  </div>
+                ) : null}
+                {!paymentMethodsQuery.isLoading &&
+                !paymentMethodsQuery.isError &&
+                paymentMethods.length === 0 ? (
+                  <div className="mt-3 border border-neon-amber/30 bg-neon-amber/10 px-4 py-3 text-sm leading-6 text-orange-100">
+                    Сейчас нет доступных способов оплаты.
+                  </div>
+                ) : null}
+              </div>
+
               {error ? (
                 <div className="border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                   {error}
@@ -545,7 +882,14 @@ export function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !accessToken}
+                disabled={
+                  isSubmitting ||
+                  !accessToken ||
+                  isFoundationLoading ||
+                  hasFoundationError ||
+                  !selectedDeliveryCode ||
+                  !selectedPaymentCode
+                }
                 className="flex h-12 w-full items-center justify-center bg-neon-crimson px-6 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
               >
                 {isSubmitting ? "Создаем заказ..." : "Подтвердить заказ"}
@@ -553,7 +897,11 @@ export function CheckoutPage() {
             </form>
           </section>
 
-          <OrderSummary items={items} subtotal={subtotal} />
+          <OrderSummary
+            items={items}
+            subtotal={subtotal}
+            deliveryMethod={selectedDeliveryMethod}
+          />
         </div>
       </section>
     </main>

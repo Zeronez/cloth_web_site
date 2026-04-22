@@ -130,6 +130,24 @@ export type OrderItem = {
   line_total: string;
 };
 
+export type OrderDeliverySnapshot = {
+  method_code: string;
+  method_name: string;
+  method_kind: string;
+  method_kind_label: string;
+  price_amount: string;
+  currency: string;
+  estimated_days_min: number | null;
+  estimated_days_max: number | null;
+  recipient_name: string;
+  recipient_phone: string;
+  country: string;
+  city: string;
+  postal_code: string;
+  line1: string;
+  line2: string;
+};
+
 export type Order = {
   id: number;
   status: OrderStatus;
@@ -145,6 +163,7 @@ export type Order = {
     line1: string;
     line2: string;
   };
+  delivery: OrderDeliverySnapshot | null;
   shipping_name: string;
   shipping_phone: string;
   shipping_country: string;
@@ -155,6 +174,77 @@ export type Order = {
   items: OrderItem[];
   created_at: string;
   updated_at: string;
+};
+
+export type DeliveryMethod = {
+  code: string;
+  name: string;
+  kind: string;
+  kind_label: string;
+  description: string;
+  price_amount: string;
+  currency: string;
+  estimated_days_min: number | null;
+  estimated_days_max: number | null;
+  requires_address: boolean;
+  sort_order: number;
+};
+
+export type PaymentMethod = {
+  code: string;
+  name: string;
+  description: string;
+  provider_code: string;
+  session_mode: string;
+  session_mode_label: string;
+  currency: string;
+  sort_order: number;
+};
+
+export type PaymentStatus =
+  | "pending"
+  | "session_created"
+  | "authorized"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "refunded"
+  | "expired";
+
+export type PaymentEvent = {
+  id: number;
+  event_type: string;
+  previous_status: string;
+  new_status: PaymentStatus;
+  new_status_label: string;
+  message: string;
+  payload: unknown;
+  external_event_id: string;
+  created_at: string;
+};
+
+export type Payment = {
+  id: number;
+  order: number;
+  method_code: string;
+  provider_code: string;
+  status: PaymentStatus;
+  status_label: string;
+  amount: string;
+  currency: string;
+  external_payment_id: string;
+  session_expires_at: string | null;
+  events: PaymentEvent[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentSession = {
+  payment: Payment;
+  created: boolean;
+  provider: string;
+  confirmation_url: string | null;
+  message: string;
 };
 
 export type ServerCartItem = {
@@ -185,6 +275,7 @@ export type ServerCart = {
 };
 
 export type CheckoutInput = {
+  delivery_method_code?: string;
   shipping_name: string;
   shipping_phone: string;
   shipping_country: string;
@@ -237,6 +328,16 @@ function buildApiErrorMessage(payload: unknown, fallback: string) {
     if (entries.length > 0) {
       return entries
         .flatMap(([key, value]) => {
+          if (
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value) &&
+            "message" in value &&
+            typeof (value as { message?: unknown }).message === "string"
+          ) {
+            return [`${key}: ${(value as { message: string }).message}`];
+          }
+
           if (Array.isArray(value)) {
             return value.map((item) => `${key}: ${item}`);
           }
@@ -316,6 +417,14 @@ export async function fetchOrders(token: string) {
   return apiRequest<Paginated<Order>>("/api/orders/", { token });
 }
 
+export async function fetchDeliveryMethods() {
+  return apiRequest<Paginated<DeliveryMethod>>("/api/delivery-methods/");
+}
+
+export async function fetchPaymentMethods() {
+  return apiRequest<Paginated<PaymentMethod>>("/api/payment-methods/");
+}
+
 export async function fetchCart(token?: string | null) {
   return apiRequest<ServerCart>("/api/cart/", { token });
 }
@@ -356,6 +465,21 @@ export async function deleteCartItem(token: string | null, itemId: number) {
 
 export async function checkoutOrder(token: string, input: CheckoutInput) {
   return apiRequest<Order>("/api/orders/checkout/", {
+    method: "POST",
+    token,
+    body: input
+  });
+}
+
+export async function createPaymentSession(
+  token: string,
+  input: {
+    order_id: number;
+    payment_method_code: string;
+    idempotency_key?: string;
+  }
+) {
+  return apiRequest<PaymentSession>("/api/payments/sessions/", {
     method: "POST",
     token,
     body: input
