@@ -16,7 +16,7 @@ import {
 } from "../../lib/api";
 import { useCartStore } from "../../stores/cart-store";
 import { useUserStore } from "../../stores/user-store";
-import { CheckoutPage } from "./checkout-page";
+import { CheckoutPage, SuccessState } from "./checkout-page";
 
 jest.mock("next/link", () => {
   const React = require("react");
@@ -36,6 +36,7 @@ jest.mock("../product-image-placeholder", () => ({
 }));
 
 jest.mock("../../lib/api", () => ({
+  ...jest.requireActual("../../lib/api"),
   ApiError: class ApiError extends Error {
     status: number;
     payload: unknown;
@@ -174,6 +175,76 @@ function makePaymentMethods() {
         sort_order: 10
       }
     ]
+  };
+}
+
+function makeSuccessOrder() {
+  return {
+    id: 9001,
+    status: "pending",
+    total_amount: "605.00",
+    track_number: "",
+    items_count: 3,
+    shipping_address: {
+      name: "QA Shopper",
+      phone: "+15551234567",
+      country: "RU",
+      city: "Moscow",
+      postal_code: "101000",
+      line1: "Test street 1",
+      line2: ""
+    },
+    delivery: {
+      method_code: "courier-msk",
+      method_name: "Курьер по Москве",
+      method_kind: "courier",
+      method_kind_label: "Курьер",
+      price_amount: "350.00",
+      currency: "RUB",
+      estimated_days_min: 1,
+      estimated_days_max: 2,
+      recipient_name: "QA Shopper",
+      recipient_phone: "+15551234567",
+      country: "RU",
+      city: "Moscow",
+      postal_code: "101000",
+      line1: "Test street 1",
+      line2: ""
+    },
+    shipping_name: "QA Shopper",
+    shipping_phone: "+15551234567",
+    shipping_country: "RU",
+    shipping_city: "Moscow",
+    shipping_postal_code: "101000",
+    shipping_line1: "Test street 1",
+    shipping_line2: "",
+    items: [],
+    created_at: "2026-04-22T10:00:00Z",
+    updated_at: "2026-04-22T10:00:00Z"
+  };
+}
+
+function makeSuccessPaymentSession(status: string, statusLabel: string) {
+  return {
+    payment: {
+      id: 3001,
+      order: 9001,
+      method_code: "local-card",
+      provider_code: "placeholder",
+      status,
+      status_label: statusLabel,
+      amount: "605.00",
+      currency: "RUB",
+      external_payment_id: "",
+      session_expires_at: null,
+      events: [],
+      created_at: "2026-04-22T10:00:00Z",
+      updated_at: "2026-04-22T10:00:00Z"
+    },
+    created: true,
+    provider: "placeholder",
+    confirmation_url: "https://pay.example.com/checkout",
+    message: "Платёжная сессия обновлена"
   };
 }
 
@@ -382,4 +453,29 @@ describe("CheckoutPage", () => {
       await screen.findByText(/внешний платежный провайдер пока не подключен/i)
     ).toBeInTheDocument();
   });
+
+  it.each([
+    ["failed", "Платёж не прошёл", "Повторить оплату", "Оплата не прошла"],
+    ["cancelled", "Отменён", "Повторить оплату", "Оплата отменена"],
+    ["refunded", "Возврат оформлен", "Повторить оплату", "Платёж возвращён"],
+    ["expired", "Сессия истекла", "Повторить оплату", "Сессия оплаты истекла"]
+  ])(
+    "shows a truthful follow-up state for payment status %s",
+    async (status, statusLabel, actionLabel, followUpFragment) => {
+      render(
+        <SuccessState
+          order={makeSuccessOrder() as any}
+          paymentSession={makeSuccessPaymentSession(status, statusLabel) as any}
+          paymentError={null}
+        />
+      );
+
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "сохранён, но оплату нужно повторить"
+      );
+      expect(screen.getAllByText(statusLabel).length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText(new RegExp(followUpFragment, "i"))).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: actionLabel })).toBeInTheDocument();
+    }
+  );
 });

@@ -160,3 +160,67 @@ def test_payment_webhook_requires_matching_provider(api_client, user):
 
     assert response.status_code == 400
     assert "provider" in response.data
+
+
+def test_payment_failure_webhook_marks_payment_failed_without_changing_order_paid_state(
+    api_client, user
+):
+    order, payment = create_payment_fixture(user)
+
+    response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-5",
+            "status": "failed",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.FAILED
+    assert order.status == Order.Status.PENDING
+    assert PaymentEvent.objects.filter(
+        payment=payment,
+        external_event_id="provider-event-5",
+        new_status=Payment.Status.FAILED,
+    ).exists()
+
+
+def test_payment_refund_webhook_marks_payment_refunded_and_order_cancelled(
+    api_client, user
+):
+    order, payment = create_payment_fixture(user)
+    payment.transition_to(
+        Payment.Status.SUCCEEDED,
+        event_type="manual_success",
+        message="Manual success for refund test.",
+        external_event_id="manual-success-refund",
+    )
+    order.status = Order.Status.PAID
+    order.save(update_fields=["status", "updated_at"])
+
+    response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-6",
+            "status": "refunded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.REFUNDED
+    assert order.status == Order.Status.CANCELLED
+    assert PaymentEvent.objects.filter(
+        payment=payment,
+        external_event_id="provider-event-6",
+        new_status=Payment.Status.REFUNDED,
+    ).exists()

@@ -18,6 +18,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("../../lib/api", () => ({
+  ...jest.requireActual("../../lib/api"),
   ApiError: class ApiError extends Error {
     status: number;
     payload: unknown;
@@ -115,7 +116,7 @@ describe("AccountPage", () => {
       }
     ]);
     jest.mocked(fetchOrders).mockResolvedValue({
-      count: 1,
+      count: 2,
       next: null,
       previous: null,
       results: [
@@ -141,6 +142,7 @@ describe("AccountPage", () => {
           shipping_postal_code: "10001",
           shipping_line1: "11 Test Avenue",
           shipping_line2: "Apt 5",
+          delivery: null,
           items: [
             {
               id: 1,
@@ -156,6 +158,45 @@ describe("AccountPage", () => {
           ],
           created_at: "2026-04-05T10:00:00Z",
           updated_at: "2026-04-05T10:05:00Z"
+        },
+        {
+          id: 12,
+          status: "cancelled",
+          total_amount: "14900.00",
+          track_number: "",
+          items_count: 1,
+          shipping_address: {
+            name: "QA Shopper",
+            phone: "+15551234567",
+            country: "US",
+            city: "New York",
+            postal_code: "10001",
+            line1: "11 Test Avenue",
+            line2: ""
+          },
+          shipping_name: "QA Shopper",
+          shipping_phone: "+15551234567",
+          shipping_country: "US",
+          shipping_city: "New York",
+          shipping_postal_code: "10001",
+          shipping_line1: "11 Test Avenue",
+          shipping_line2: "",
+          delivery: null,
+          items: [
+            {
+              id: 2,
+              variant_id: 45,
+              product_name: "Neon Ronin Shell",
+              sku: "NRS-002",
+              size: "L",
+              color: "Black",
+              quantity: 1,
+              price_at_purchase: "14900.00",
+              line_total: "14900.00"
+            }
+          ],
+          created_at: "2026-04-06T10:00:00Z",
+          updated_at: "2026-04-06T10:05:00Z"
         }
       ]
     });
@@ -204,6 +245,8 @@ describe("AccountPage", () => {
     expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
     expect(screen.getAllByText("Neon Ronin Shell").length).toBeGreaterThan(0);
     expect(screen.getByText("Заказ #11")).toBeInTheDocument();
+    expect(screen.getByText("Ожидает оплаты")).toBeInTheDocument();
+    expect(screen.getByText("Отменён")).toBeInTheDocument();
   });
 
   it("smokes the empty orders and favorites sections for an authenticated account", async () => {

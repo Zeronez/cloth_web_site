@@ -13,6 +13,8 @@ import {
   fetchFavorites,
   fetchMe,
   fetchOrders,
+  getOrderStatusLabel,
+  getOrderStatusTone,
   logoutUser,
   removeFavorite,
   updateAddress,
@@ -87,32 +89,6 @@ function initials(profile: UserProfile | null) {
   }
 
   return profile.username.slice(0, 2).toUpperCase();
-}
-
-function orderStatusLabel(status: Order["status"]) {
-  switch (status) {
-    case "paid":
-      return "Оплачен";
-    case "shipped":
-      return "Отправлен";
-    case "cancelled":
-      return "Отменён";
-    default:
-      return "В обработке";
-  }
-}
-
-function orderStatusTone(status: Order["status"]) {
-  switch (status) {
-    case "paid":
-      return "border-neon-teal/40 bg-neon-teal/10 text-neon-teal";
-    case "shipped":
-      return "border-neon-amber/40 bg-neon-amber/10 text-neon-amber";
-    case "cancelled":
-      return "border-red-400/30 bg-red-500/10 text-red-100";
-    default:
-      return "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson";
-  }
 }
 
 function AddressCard({
@@ -201,11 +177,11 @@ function OrderCard({ order }: { order: Order }) {
         </div>
         <div className="text-right">
           <span
-            className={`inline-flex border px-3 py-1 text-xs font-black uppercase ${orderStatusTone(
+            className={`inline-flex border px-3 py-1 text-xs font-black uppercase ${getOrderStatusTone(
               order.status
             )}`}
           >
-            {orderStatusLabel(order.status)}
+            {getOrderStatusLabel(order.status)}
           </span>
           {order.track_number ? (
             <p className="mt-2 text-xs uppercase text-slate-500">

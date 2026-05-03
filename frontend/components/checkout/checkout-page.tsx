@@ -14,6 +14,10 @@ import {
   fetchCart,
   fetchDeliveryMethods,
   fetchPaymentMethods,
+  getPaymentStatusActionLabel,
+  getPaymentStatusFollowUp,
+  getPaymentStatusLabel,
+  getPaymentStatusTone,
   updateCartItemQuantity,
   type Address,
   type CheckoutInput,
@@ -325,7 +329,7 @@ function OrderSummary({
   );
 }
 
-function SuccessState({
+export function SuccessState({
   order,
   paymentSession,
   paymentError
@@ -337,17 +341,26 @@ function SuccessState({
   const deliveryPrice = order.delivery
     ? currencyFormatter.format(toAmount(order.delivery.price_amount))
     : "Не выбрана";
+  const hasPaymentIssue = Boolean(
+    paymentSession &&
+      ["failed", "cancelled", "refunded", "expired"].includes(
+        paymentSession.payment.status
+      )
+  );
 
   return (
     <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
       <section className="mx-auto max-w-4xl border border-neon-teal/30 bg-neon-teal/10 p-6 sm:p-8">
         <p className="text-xs font-black uppercase text-neon-teal">Заказ создан</p>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-          Заказ #{order.id} принят в обработку.
+          {hasPaymentIssue
+            ? `Заказ #${order.id} сохранён, но оплату нужно повторить.`
+            : `Заказ #${order.id} принят в обработку.`}
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200">
-          Мы сохранили адрес доставки и состав заказа. Статус и детали доступны в
-          личном кабинете.
+          {hasPaymentIssue
+            ? "Мы сохранили адрес доставки и состав заказа. Статус оплаты и детали доступны в личном кабинете."
+            : "Мы сохранили адрес доставки и состав заказа. Статус и детали доступны в личном кабинете."}
         </p>
 
         <dl className="mt-6 grid gap-3 border border-white/10 bg-ink-950/50 p-4 text-sm sm:grid-cols-2">
@@ -362,9 +375,19 @@ function SuccessState({
             <dd className="mt-1 font-bold text-white">{deliveryPrice}</dd>
           </div>
           <div>
-            <dt className="text-slate-400">Платеж</dt>
-            <dd className="mt-1 font-bold text-white">
-              {paymentSession?.payment.status_label ?? "Сессия не создана"}
+            <dt className="text-slate-400">Статус платежа</dt>
+            <dd className="mt-1 inline-flex">
+              <span
+                className={`border px-3 py-1 text-xs font-black uppercase ${
+                  paymentSession
+                    ? getPaymentStatusTone(paymentSession.payment.status)
+                    : "border-white/10 bg-white/5 text-slate-400"
+                }`}
+              >
+                {paymentSession
+                  ? getPaymentStatusLabel(paymentSession.payment.status)
+                  : "Сессия не создана"}
+              </span>
             </dd>
           </div>
           <div>
@@ -379,16 +402,38 @@ function SuccessState({
 
         {paymentSession ? (
           <div className="mt-4 border border-white/10 bg-ink-950/50 px-4 py-3 text-sm leading-6 text-slate-200">
+            <p className="font-bold text-white">
+              {getPaymentStatusLabel(paymentSession.payment.status)}
+            </p>
+            <p className="mt-1">
+              {getPaymentStatusFollowUp(paymentSession.payment.status)}
+            </p>
+            {paymentSession.message ? (
+              <p className="mt-2 text-xs uppercase tracking-normal text-slate-400">
+                {paymentSession.message}
+              </p>
+            ) : null}
             {paymentSession.confirmation_url ? (
               <Link
                 href={paymentSession.confirmation_url}
-                className="font-bold text-neon-teal transition hover:text-white"
+                className={`mt-3 inline-flex font-bold transition hover:text-white ${
+                  paymentSession.payment.status === "failed" ||
+                  paymentSession.payment.status === "cancelled" ||
+                  paymentSession.payment.status === "refunded" ||
+                  paymentSession.payment.status === "expired"
+                    ? "text-neon-crimson"
+                    : "text-neon-teal"
+                }`}
               >
-                Перейти к оплате
+                {getPaymentStatusActionLabel(paymentSession.payment.status)}
               </Link>
-            ) : (
-              "Платежная сессия создана локально. Внешний платежный провайдер пока не подключен, поэтому ссылки на оплату нет."
-            )}
+            ) : null}
+            {!paymentSession.confirmation_url ? (
+              <p className="mt-3 text-xs uppercase tracking-normal text-slate-400">
+                Платежная сессия создана локально. Внешний платежный провайдер пока не
+                подключен, поэтому ссылки на оплату нет.
+              </p>
+            ) : null}
           </div>
         ) : null}
 

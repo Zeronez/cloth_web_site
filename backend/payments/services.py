@@ -49,6 +49,18 @@ class PaymentWebhookConflict(APIException):
 SAFE_PLACEHOLDER_PROVIDERS = {"manual", "placeholder", "local"}
 
 
+def _sync_order_after_payment_status(payment, new_status):
+    order = payment.order
+    if new_status == Payment.Status.SUCCEEDED and order.status != Order.Status.PAID:
+        order.status = Order.Status.PAID
+        order.save(update_fields=["status", "updated_at"])
+        return
+
+    if new_status == Payment.Status.REFUNDED and order.status != Order.Status.CANCELLED:
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=["status", "updated_at"])
+
+
 @transaction.atomic
 def create_payment_session(*, user, order_id, payment_method_code, idempotency_key=""):
     order = (
@@ -275,10 +287,7 @@ def process_payment_webhook(
         payload=payload,
         external_event_id=event_id,
     )
-
-    if status == Payment.Status.SUCCEEDED and payment.order.status != Order.Status.PAID:
-        payment.order.status = Order.Status.PAID
-        payment.order.save(update_fields=["status", "updated_at"])
+    _sync_order_after_payment_status(payment, status)
 
     return {
         "payment": payment,

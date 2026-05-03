@@ -355,8 +355,8 @@ Payment Provider Tests
 [x] Webhook signature rejection with invalid signature.
 [x] Payment success webhook marks order paid idempotently.
 [x] Duplicate webhook does not duplicate effects.
-[ ] Payment failure webhook marks payment failed without stock corruption.
-[ ] Refund webhook updates order/payment status.
+[x] Payment failure webhook marks payment failed without stock corruption.
+[x] Refund webhook updates order/payment status.
 [ ] Payment reconciliation command fixes drift between provider and database.
 
 Delivery Provider Tests

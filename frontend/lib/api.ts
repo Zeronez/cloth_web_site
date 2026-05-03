@@ -271,6 +271,96 @@ export type PaymentSession = {
   message: string;
 };
 
+const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: "Ожидает оплаты",
+  paid: "Оплачен",
+  shipped: "Отправлен",
+  cancelled: "Отменён"
+};
+
+const ORDER_STATUS_TONES: Record<OrderStatus, string> = {
+  pending: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
+  paid: "border-neon-teal/40 bg-neon-teal/10 text-neon-teal",
+  shipped: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
+  cancelled: "border-red-400/30 bg-red-500/10 text-red-100"
+};
+
+export function getOrderStatusLabel(status: OrderStatus) {
+  return ORDER_STATUS_LABELS[status] ?? "Статус неизвестен";
+}
+
+export function getOrderStatusTone(status: OrderStatus) {
+  return ORDER_STATUS_TONES[status] ?? "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson";
+}
+
+const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: "Ожидает оплаты",
+  session_created: "Сессия создана",
+  authorized: "Авторизован",
+  succeeded: "Оплачен",
+  failed: "Платёж не прошёл",
+  cancelled: "Отменён",
+  refunded: "Возврат оформлен",
+  expired: "Сессия истекла"
+};
+
+const PAYMENT_STATUS_TONES: Record<PaymentStatus, string> = {
+  pending: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
+  session_created: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
+  authorized: "border-neon-teal/40 bg-neon-teal/10 text-neon-teal",
+  succeeded: "border-neon-teal/40 bg-neon-teal/10 text-neon-teal",
+  failed: "border-red-400/30 bg-red-500/10 text-red-100",
+  cancelled: "border-red-400/30 bg-red-500/10 text-red-100",
+  refunded: "border-red-400/30 bg-red-500/10 text-red-100",
+  expired: "border-red-400/30 bg-red-500/10 text-red-100"
+};
+
+const PAYMENT_STATUS_FOLLOW_UP: Record<PaymentStatus, string> = {
+  pending:
+    "Платёж ожидает подтверждения. Заказ сохранён, статус можно проверить в личном кабинете.",
+  session_created:
+    "Платёжная сессия создана. Если ссылка на оплату доступна, завершите платёж по ней.",
+  authorized:
+    "Платёж авторизован. Финальный статус может обновиться после обработки провайдера.",
+  succeeded:
+    "Платёж прошёл успешно. Статус и детали заказа доступны в личном кабинете.",
+  failed:
+    "Оплата не прошла. Заказ сохранён, попробуйте повторить платёж позже.",
+  cancelled:
+    "Оплата отменена. Заказ сохранён, вы сможете повторить попытку позже.",
+  refunded:
+    "Платёж возвращён. Если это не плановый возврат, проверьте детали заказа.",
+  expired:
+    "Сессия оплаты истекла. Заказ сохранён, потребуется новая попытка оплаты."
+};
+
+const PAYMENT_STATUS_ACTIONS: Record<PaymentStatus, string> = {
+  pending: "Перейти к оплате",
+  session_created: "Перейти к оплате",
+  authorized: "Перейти к оплате",
+  succeeded: "Перейти к заказу",
+  failed: "Повторить оплату",
+  cancelled: "Повторить оплату",
+  refunded: "Повторить оплату",
+  expired: "Повторить оплату"
+};
+
+export function getPaymentStatusLabel(status: PaymentStatus) {
+  return PAYMENT_STATUS_LABELS[status] ?? "Статус неизвестен";
+}
+
+export function getPaymentStatusTone(status: PaymentStatus) {
+  return PAYMENT_STATUS_TONES[status] ?? "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson";
+}
+
+export function getPaymentStatusFollowUp(status: PaymentStatus) {
+  return PAYMENT_STATUS_FOLLOW_UP[status] ?? "Статус оплаты можно проверить в личном кабинете.";
+}
+
+export function getPaymentStatusActionLabel(status: PaymentStatus) {
+  return PAYMENT_STATUS_ACTIONS[status] ?? "Перейти к оплате";
+}
+
 export type ServerCartItem = {
   id: number;
   variant: ProductVariant;
