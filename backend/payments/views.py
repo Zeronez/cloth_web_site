@@ -43,7 +43,7 @@ class PaymentViewSet(
     def create_session(self, request):
         serializer = PaymentSessionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        payment, created = create_payment_session(
+        payment, session, created = create_payment_session(
             user=request.user, **serializer.validated_data
         )
         response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
@@ -53,9 +53,9 @@ class PaymentViewSet(
                     payment, context=self.get_serializer_context()
                 ).data,
                 "created": created,
-                "provider": "placeholder",
-                "confirmation_url": None,
-                "message": "Платежная сессия создана локально. Внешний провайдер не подключен.",
+                "provider": session.provider,
+                "confirmation_url": session.confirmation_url,
+                "message": session.message,
             },
             status=response_status,
         )

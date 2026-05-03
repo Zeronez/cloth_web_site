@@ -123,6 +123,7 @@ Phase 2.5: Payments
 -------------------
 [ ] Select and implement real payment provider for launch.
 [x] Implement provider-agnostic payment session foundation.
+[x] Add first provider-shaped payment adapter and sandbox redirect contract.
 [ ] Implement redirect/return flow.
 [x] Implement webhook endpoint with signature verification.
 [x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.

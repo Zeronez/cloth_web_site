@@ -7,6 +7,7 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
+from payments.providers import get_payment_provider
 
 
 def get_available_payment_methods():
@@ -46,9 +47,6 @@ class PaymentWebhookConflict(APIException):
     }
 
 
-SAFE_PLACEHOLDER_PROVIDERS = {"manual", "placeholder", "local"}
-
-
 def _sync_order_after_payment_status(payment, new_status):
     order = payment.order
     if new_status == Payment.Status.SUCCEEDED and order.status != Order.Status.PAID:
@@ -81,15 +79,21 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
         )
 
     method = resolve_payment_method(payment_method_code)
-    if method.session_mode != PaymentMethod.SessionMode.PLACEHOLDER:
+    provider = get_payment_provider(method.provider_code)
+    if provider is None:
+        raise _payment_session_error(
+            "provider_not_configured",
+            "Внешний платежный провайдер не подключен.",
+        )
+    if method.session_mode == PaymentMethod.SessionMode.NONE:
         raise _payment_session_error(
             "payment_session_disabled",
             "Для этого способа оплаты платежная сессия не создается.",
         )
-    if method.provider_code not in SAFE_PLACEHOLDER_PROVIDERS:
+    if not provider.supports(method.session_mode):
         raise _payment_session_error(
-            "provider_not_configured",
-            "Внешний платежный провайдер не подключен.",
+            "payment_session_unsupported",
+            "Платежная сессия для этого провайдера настроена некорректно.",
         )
     if method.currency != "RUB":
         raise _payment_session_error(
@@ -106,7 +110,8 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
                     "idempotency_conflict",
                     "Ключ идемпотентности уже использован для другого платежа.",
                 )
-            return existing, False
+            session = provider.create_session(payment=existing, method=method)
+            return existing, session, False
 
     active_payment = (
         Payment.objects.select_for_update()
@@ -115,7 +120,8 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
         .first()
     )
     if active_payment:
-        return active_payment, False
+        session = provider.create_session(payment=active_payment, method=method)
+        return active_payment, session, False
 
     payment = Payment.objects.create(
         order=order,
@@ -136,13 +142,22 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
         message="Платеж создан.",
         payload={"order_id": order.id},
     )
+
+    session = provider.create_session(payment=payment, method=method)
+    if (
+        session.external_payment_id
+        and payment.external_payment_id != session.external_payment_id
+    ):
+        payment.external_payment_id = session.external_payment_id
+        payment.save(update_fields=["external_payment_id", "updated_at"])
+
     payment.transition_to(
-        Payment.Status.SESSION_CREATED,
+        session.session_status,
         event_type="session_created",
-        message="Локальная платежная сессия создана. Внешний провайдер не подключен.",
-        payload={"provider": "placeholder"},
+        message=session.message,
+        payload=session.payload,
     )
-    return payment, True
+    return payment, session, True
 
 
 def _locate_payment_for_webhook(

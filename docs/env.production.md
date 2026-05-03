@@ -65,6 +65,12 @@ These define which providers may bypass signature checks and which providers mus
 - `PAYMENT_WEBHOOK_SECRETS_JSON`
 - `PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON`
 
+## Payment redirect session contracts
+
+These define sandbox or hosted checkout confirmation URLs for redirect-based providers.
+
+- `PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON`
+
 ## Local compose helpers
 
 - `BACKEND_PORT`

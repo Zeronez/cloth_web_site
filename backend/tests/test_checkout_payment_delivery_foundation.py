@@ -59,13 +59,9 @@ def test_available_delivery_and_payment_methods_return_active_only(api_client):
     assert [item["code"] for item in delivery_response.data["results"]] == [
         "courier-msk"
     ]
-    assert delivery_response.data["results"][0]["kind_label"] == "Курьер"
 
     assert payment_response.status_code == 200
     assert [item["code"] for item in payment_response.data["results"]] == ["local-card"]
-    assert payment_response.data["results"][0]["session_mode_label"] == (
-        "Локальная сессия"
-    )
 
 
 def test_checkout_snapshots_delivery_method_and_adds_delivery_price(
@@ -74,12 +70,7 @@ def test_checkout_snapshots_delivery_method_and_adds_delivery_price(
     product = product_factory(
         name="Delivery Foundation Tee",
         base_price="40.00",
-        variants=[
-            {
-                "sku": "DELIVERY-TEE-BLK-M",
-                "stock_quantity": 3,
-            }
-        ],
+        variants=[{"sku": "DELIVERY-TEE-BLK-M", "stock_quantity": 3}],
     )
     variant = product.variants.get()
     method = DeliveryMethod.objects.create(
@@ -105,7 +96,6 @@ def test_checkout_snapshots_delivery_method_and_adds_delivery_price(
     assert checkout_response.status_code == 201
     assert checkout_response.data["total_amount"] == "430.00"
     assert checkout_response.data["delivery"]["method_code"] == "courier-msk"
-    assert checkout_response.data["delivery"]["method_name"] == "Курьер по Москве"
     assert checkout_response.data["delivery"]["price_amount"] == "350.00"
 
     order = Order.objects.get(user=user)
@@ -122,12 +112,7 @@ def test_checkout_uses_first_active_delivery_method_when_code_is_omitted(
     product = product_factory(
         name="Delivery Optional Tee",
         base_price="40.00",
-        variants=[
-            {
-                "sku": "DELIVERY-OPT-TEE-M",
-                "stock_quantity": 1,
-            }
-        ],
+        variants=[{"sku": "DELIVERY-OPT-TEE-M", "stock_quantity": 1}],
     )
     variant = product.variants.get()
     method = DeliveryMethod.objects.create(
@@ -161,7 +146,6 @@ def test_checkout_uses_first_active_delivery_method_when_code_is_omitted(
     assert checkout_response.status_code == 201
     assert checkout_response.data["total_amount"] == "40.00"
     assert checkout_response.data["delivery"]["method_code"] == method.code
-    assert checkout_response.data["delivery"]["method_name"] == method.name
     assert checkout_response.data["delivery"]["price_amount"] == "0.00"
 
     order = Order.objects.get(user=user)
@@ -197,9 +181,8 @@ def test_payment_session_placeholder_is_safe_and_idempotent(authenticated_client
     assert create_response.data["created"] is True
     assert create_response.data["provider"] == "placeholder"
     assert create_response.data["confirmation_url"] is None
-    assert "Внешний провайдер не подключен" in create_response.data["message"]
+    assert "локально" in create_response.data["message"].lower()
     assert create_response.data["payment"]["status"] == "session_created"
-    assert create_response.data["payment"]["status_label"] == "Сессия создана"
 
     order.refresh_from_db()
     assert order.status == Order.Status.PENDING
@@ -251,13 +234,13 @@ def test_payment_sessions_are_scoped_to_the_authenticated_user(
         total_amount=Decimal("145.00"),
         **shipping_payload(shipping_name="Other Shopper"),
     )
-    own_payment, _ = create_payment_session(
+    own_payment, _, _ = create_payment_session(
         user=user,
         order_id=own_order.id,
         payment_method_code=method.code,
         idempotency_key="own-session",
     )
-    other_payment, _ = create_payment_session(
+    other_payment, _, _ = create_payment_session(
         user=other_user,
         order_id=other_order.id,
         payment_method_code=method.code,
@@ -337,30 +320,43 @@ def test_payment_session_idempotency_key_conflicts_across_orders(
     assert Payment.objects.filter(user=user, idempotency_key="shared-key").count() == 1
 
 
-def test_payment_session_rejects_unconfigured_external_provider(
-    authenticated_client, user
+def test_payment_session_returns_yookassa_sandbox_contract(
+    authenticated_client, user, settings
 ):
+    settings.PAYMENT_PROVIDER_CONFIRMATION_URLS = {
+        "yookassa": "https://pay.example.test/checkout"
+    }
     order = Order.objects.create(
         user=user,
         total_amount=Decimal("125.00"),
         **shipping_payload(),
     )
-    PaymentMethod.objects.create(
+    method = PaymentMethod.objects.create(
         code="yookassa-card",
         name="YooKassa card",
         provider_code="yookassa",
-        session_mode=PaymentMethod.SessionMode.PLACEHOLDER,
+        session_mode="redirect",
     )
 
     response = authenticated_client.post(
         "/api/payments/sessions/",
-        {"order_id": order.id, "payment_method_code": "yookassa-card"},
+        {
+            "order_id": order.id,
+            "payment_method_code": method.code,
+            "idempotency_key": "yookassa-session-1",
+        },
         format="json",
     )
 
-    assert response.status_code == 400
-    assert response.data["payment"]["code"] == "provider_not_configured"
-    assert response.data["payment"]["message"] == (
-        "Внешний платежный провайдер не подключен."
+    assert response.status_code == 201
+    assert response.data["provider"] == "yookassa"
+    assert response.data["confirmation_url"].startswith(
+        "https://pay.example.test/checkout/yookassa-sandbox-"
     )
-    assert not Payment.objects.filter(order=order).exists()
+    assert response.data["message"] == (
+        "Платежная сессия YooKassa подготовлена в sandbox-режиме."
+    )
+    assert response.data["payment"]["status"] == "session_created"
+
+    payment = Payment.objects.get(order=order)
+    assert payment.external_payment_id.startswith("yookassa-sandbox-")

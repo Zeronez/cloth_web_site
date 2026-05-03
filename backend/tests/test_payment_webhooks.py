@@ -36,7 +36,7 @@ def create_payment_fixture(user):
         total_amount=Decimal("125.00"),
         **shipping_payload(),
     )
-    payment, _ = create_payment_session(
+    payment, _, _ = create_payment_session(
         user=user,
         order_id=order.id,
         payment_method_code=method.code,
