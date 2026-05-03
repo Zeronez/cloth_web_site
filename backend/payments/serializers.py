@@ -79,3 +79,44 @@ class PaymentSessionSerializer(serializers.Serializer):
     provider = serializers.CharField()
     confirmation_url = serializers.URLField(allow_null=True)
     message = serializers.CharField()
+
+
+class PaymentWebhookSerializer(serializers.Serializer):
+    event_id = serializers.CharField(max_length=120)
+    provider = serializers.SlugField(max_length=48, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=Payment.Status.choices)
+    order_id = serializers.IntegerField(min_value=1)
+    payment_id = serializers.IntegerField(min_value=1, required=False)
+    external_payment_id = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+    payload = serializers.JSONField(required=False)
+
+    def validate(self, attrs):
+        provider_from_path = self.context.get("provider_code", "")
+        payload_provider = attrs.get("provider", "")
+        if (
+            payload_provider
+            and provider_from_path
+            and payload_provider != provider_from_path
+        ):
+            raise serializers.ValidationError(
+                {
+                    "provider": (
+                        "Payload provider must match the webhook endpoint provider."
+                    )
+                }
+            )
+        attrs["provider"] = payload_provider or provider_from_path
+        attrs["payload"] = attrs.get("payload") or {}
+        return attrs
+
+
+class PaymentWebhookResponseSerializer(serializers.Serializer):
+    payment = PaymentSerializer()
+    event_id = serializers.CharField()
+    code = serializers.CharField()
+    message = serializers.CharField()
+    processed = serializers.BooleanField()
+    replayed = serializers.BooleanField()
+    conflict = serializers.BooleanField()

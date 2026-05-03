@@ -1,15 +1,18 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from payments.models import Payment, PaymentMethod
 from payments.serializers import (
     PaymentMethodSerializer,
     PaymentSerializer,
     PaymentSessionCreateSerializer,
+    PaymentWebhookResponseSerializer,
+    PaymentWebhookSerializer,
 )
-from payments.services import create_payment_session
+from payments.services import create_payment_session, process_payment_webhook
 
 
 class PaymentMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -55,3 +58,23 @@ class PaymentViewSet(
             },
             status=response_status,
         )
+
+
+class PaymentWebhookView(APIView):
+    authentication_classes = []
+    permission_classes = (AllowAny,)
+
+    def post(self, request, provider_code):
+        serializer = PaymentWebhookSerializer(
+            data=request.data,
+            context={"provider_code": provider_code},
+        )
+        serializer.is_valid(raise_exception=True)
+        payload = dict(serializer.validated_data)
+        payload.pop("provider", None)
+        result = process_payment_webhook(
+            provider_code=provider_code,
+            **payload,
+        )
+        response = PaymentWebhookResponseSerializer(result)
+        return Response(response.data, status=status.HTTP_200_OK)

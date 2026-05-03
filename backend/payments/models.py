@@ -194,6 +194,13 @@ class PaymentEvent(models.Model):
                 name="payments_ev_externa_69f741_idx",
             ),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["payment", "external_event_id"],
+                condition=~models.Q(external_event_id=""),
+                name="unique_payment_event_external_id",
+            )
+        ]
 
     def __str__(self):
         return f"{self.event_type}: {self.previous_status}->{self.new_status}"

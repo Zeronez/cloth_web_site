@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.exceptions import APIException, ValidationError
 
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
@@ -28,6 +29,21 @@ def resolve_payment_method(code):
 
 def _payment_session_error(code, message):
     return ValidationError({"payment": {"code": code, "message": message}})
+
+
+def _payment_webhook_error(code, message):
+    return ValidationError({"webhook": {"code": code, "message": message}})
+
+
+class PaymentWebhookConflict(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "payment_webhook_conflict"
+    default_detail = {
+        "webhook": {
+            "code": "payment_webhook_conflict",
+            "message": "Конфликт при обработке webhook.",
+        }
+    }
 
 
 SAFE_PLACEHOLDER_PROVIDERS = {"manual", "placeholder", "local"}
@@ -115,3 +131,161 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
         payload={"provider": "placeholder"},
     )
     return payment, True
+
+
+def _locate_payment_for_webhook(
+    *,
+    provider_code,
+    order_id,
+    payment_id=None,
+    external_payment_id="",
+):
+    payments = Payment.objects.select_for_update().select_related("order", "user")
+    if payment_id is not None:
+        payment = payments.filter(pk=payment_id).first()
+    elif external_payment_id:
+        payment = payments.filter(
+            order_id=order_id,
+            provider_code=provider_code,
+            external_payment_id=external_payment_id,
+        ).first()
+        if payment is None:
+            payment = payments.filter(
+                order_id=order_id, provider_code=provider_code
+            ).first()
+    else:
+        payment = payments.filter(
+            order_id=order_id, provider_code=provider_code
+        ).first()
+
+    if payment is None:
+        raise _payment_webhook_error("payment_not_found", "Платеж не найден.")
+    if payment.order_id != order_id:
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "order_mismatch",
+                    "message": "Webhook ссылается на другой заказ.",
+                }
+            }
+        )
+    if payment.provider_code != provider_code:
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "provider_mismatch",
+                    "message": "Провайдер webhook не совпадает с платежом.",
+                }
+            }
+        )
+    if (
+        external_payment_id
+        and payment.external_payment_id
+        and payment.external_payment_id != external_payment_id
+    ):
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "external_payment_mismatch",
+                    "message": "Внешний идентификатор платежа не совпадает.",
+                }
+            }
+        )
+    return payment
+
+
+@transaction.atomic
+def process_payment_webhook(
+    *,
+    provider_code,
+    event_id,
+    status,
+    order_id,
+    payment_id=None,
+    external_payment_id="",
+    payload=None,
+):
+    payload = payload or {}
+    payment = _locate_payment_for_webhook(
+        provider_code=provider_code,
+        order_id=order_id,
+        payment_id=payment_id,
+        external_payment_id=external_payment_id,
+    )
+    existing_event = PaymentEvent.objects.filter(
+        payment=payment, external_event_id=event_id
+    ).first()
+    if existing_event is not None:
+        return {
+            "payment": payment,
+            "event_id": event_id,
+            "code": "event_replayed",
+            "message": "Событие уже было обработано ранее.",
+            "processed": False,
+            "replayed": True,
+            "conflict": False,
+        }
+
+    update_fields = []
+    if external_payment_id and payment.external_payment_id != external_payment_id:
+        payment.external_payment_id = external_payment_id
+        update_fields.append("external_payment_id")
+
+    if status == payment.status:
+        if update_fields:
+            payment.save(update_fields=[*update_fields, "updated_at"])
+        PaymentEvent.objects.create(
+            payment=payment,
+            event_type="webhook_noop",
+            previous_status=payment.status,
+            new_status=payment.status,
+            message="Webhook повторно подтвердил текущий статус платежа.",
+            payload=payload,
+            external_event_id=event_id,
+        )
+        return {
+            "payment": payment,
+            "event_id": event_id,
+            "code": "status_unchanged",
+            "message": "Статус платежа уже совпадает с webhook.",
+            "processed": True,
+            "replayed": False,
+            "conflict": False,
+        }
+
+    if not payment.can_transition_to(status):
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "invalid_transition",
+                    "message": (
+                        f"Нельзя перевести платеж из {payment.status} в {status}."
+                    ),
+                }
+            }
+        )
+
+    if update_fields:
+        payment.save(update_fields=[*update_fields, "updated_at"])
+
+    payment.transition_to(
+        status,
+        event_type="webhook_status_update",
+        message="Статус платежа обновлен из webhook.",
+        payload=payload,
+        external_event_id=event_id,
+    )
+
+    if status == Payment.Status.SUCCEEDED and payment.order.status != Order.Status.PAID:
+        payment.order.status = Order.Status.PAID
+        payment.order.save(update_fields=["status", "updated_at"])
+
+    return {
+        "payment": payment,
+        "event_id": event_id,
+        "code": "processed",
+        "message": "Webhook успешно обработан.",
+        "processed": True,
+        "replayed": False,
+        "conflict": False,
+    }

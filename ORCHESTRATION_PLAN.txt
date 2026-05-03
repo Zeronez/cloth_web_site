@@ -126,7 +126,7 @@ Phase 2.5: Payments
 [ ] Implement redirect/return flow.
 [ ] Implement webhook endpoint with signature verification.
 [x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
-[ ] Implement idempotent webhook processing.
+[x] Implement idempotent webhook processing.
 [ ] Implement retry-safe order/payment reconciliation command.
 [ ] Implement refund flow, partial refund support if provider allows.
 [ ] Implement payment timeout/cancel task.
@@ -353,8 +353,8 @@ Payment Provider Tests
 [ ] Payment creation integration with provider sandbox or contract fake matching real webhook schema.
 [ ] Webhook signature validation with valid signature.
 [ ] Webhook signature rejection with invalid signature.
-[ ] Payment success webhook marks order paid idempotently.
-[ ] Duplicate webhook does not duplicate effects.
+[x] Payment success webhook marks order paid idempotently.
+[x] Duplicate webhook does not duplicate effects.
 [ ] Payment failure webhook marks payment failed without stock corruption.
 [ ] Refund webhook updates order/payment status.
 [ ] Payment reconciliation command fixes drift between provider and database.
