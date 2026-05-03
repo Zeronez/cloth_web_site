@@ -57,6 +57,14 @@ These are used when media is routed to S3 or an S3-compatible service.
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_S3_REGION_NAME`
 
+## Payment webhook signatures
+
+These define which providers may bypass signature checks and which providers must present a valid HMAC signature.
+
+- `PAYMENT_WEBHOOK_BYPASS_PROVIDERS`
+- `PAYMENT_WEBHOOK_SECRETS_JSON`
+- `PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON`
+
 ## Local compose helpers
 
 - `BACKEND_PORT`

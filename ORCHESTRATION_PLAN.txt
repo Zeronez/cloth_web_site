@@ -124,7 +124,7 @@ Phase 2.5: Payments
 [ ] Select and implement real payment provider for launch.
 [x] Implement provider-agnostic payment session foundation.
 [ ] Implement redirect/return flow.
-[ ] Implement webhook endpoint with signature verification.
+[x] Implement webhook endpoint with signature verification.
 [x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
 [x] Implement idempotent webhook processing.
 [ ] Implement retry-safe order/payment reconciliation command.
@@ -238,7 +238,7 @@ Phase 5: Security and Compliance
 [ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
 [ ] Add admin 2FA strategy if package/provider is selected.
 [ ] Add brute-force protection for login/password reset.
-[ ] Add webhook signature verification tests.
+[x] Add webhook signature verification tests.
 [ ] Add file upload type/size validation.
 [ ] Add PII handling policy and minimal logging of personal data.
 [ ] Add backup encryption plan.
@@ -351,8 +351,8 @@ Celery and Async Tests
 Payment Provider Tests
 ----------------------
 [ ] Payment creation integration with provider sandbox or contract fake matching real webhook schema.
-[ ] Webhook signature validation with valid signature.
-[ ] Webhook signature rejection with invalid signature.
+[x] Webhook signature validation with valid signature.
+[x] Webhook signature rejection with invalid signature.
 [x] Payment success webhook marks order paid idempotently.
 [x] Duplicate webhook does not duplicate effects.
 [ ] Payment failure webhook marks payment failed without stock corruption.

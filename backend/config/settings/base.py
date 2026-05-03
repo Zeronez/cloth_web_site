@@ -3,7 +3,7 @@ from pathlib import Path
 
 import dj_database_url
 
-from config.settings.env import env_bool, env_csv, env_int, env_value
+from config.settings.env import env_bool, env_csv, env_int, env_json, env_value
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -156,6 +156,14 @@ AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")
 AWS_ACCESS_KEY_ID = env_value("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = env_value("AWS_SECRET_ACCESS_KEY", "")
 AWS_S3_REGION_NAME = env_value("AWS_S3_REGION_NAME", "us-east-1")
+
+PAYMENT_WEBHOOK_BYPASS_PROVIDERS = env_csv(
+    "PAYMENT_WEBHOOK_BYPASS_PROVIDERS", "manual,placeholder,local"
+)
+PAYMENT_WEBHOOK_SECRETS = env_json("PAYMENT_WEBHOOK_SECRETS_JSON", {})
+PAYMENT_WEBHOOK_SIGNATURE_HEADERS = env_json(
+    "PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON", {}
+)
 
 if AWS_STORAGE_BUCKET_NAME:
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

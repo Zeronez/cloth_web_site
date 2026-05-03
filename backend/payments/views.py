@@ -12,6 +12,7 @@ from payments.serializers import (
     PaymentWebhookResponseSerializer,
     PaymentWebhookSerializer,
 )
+from payments.signatures import verify_payment_webhook_signature
 from payments.services import create_payment_session, process_payment_webhook
 
 
@@ -65,6 +66,11 @@ class PaymentWebhookView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, provider_code):
+        verify_payment_webhook_signature(
+            provider_code=provider_code,
+            raw_body=request.body,
+            headers=request.headers,
+        )
         serializer = PaymentWebhookSerializer(
             data=request.data,
             context={"provider_code": provider_code},

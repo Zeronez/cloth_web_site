@@ -1,4 +1,5 @@
 import os
+import json
 
 
 def env_value(name, default=""):
@@ -29,3 +30,10 @@ def env_int(name, default):
     if raw is None or raw.strip() == "":
         return default
     return int(raw)
+
+
+def env_json(name, default=None):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return {} if default is None else default
+    return json.loads(raw)
