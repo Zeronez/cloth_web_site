@@ -25,8 +25,8 @@ class OrderViewSet(
     def checkout(self, request):
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = checkout_cart(request.user, serializer.validated_data)
+        order, created = checkout_cart(request.user, serializer.validated_data)
         return Response(
             OrderSerializer(order, context=self.get_serializer_context()).data,
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )

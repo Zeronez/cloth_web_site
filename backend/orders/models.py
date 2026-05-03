@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from catalog.models import ProductVariant
 
@@ -28,6 +29,7 @@ class Order(models.Model):
     shipping_postal_code = models.CharField(max_length=32)
     shipping_line1 = models.CharField(max_length=255)
     shipping_line2 = models.CharField(max_length=255, blank=True)
+    idempotency_key = models.CharField(max_length=120, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -39,6 +41,14 @@ class Order(models.Model):
                 name="orders_orde_user_id_f64abd_idx",
             ),
             models.Index(fields=["created_at"], name="orders_orde_created_0fc1c0_idx"),
+            models.Index(fields=["idempotency_key"], name="orders_idempo_key_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "idempotency_key"],
+                condition=~Q(idempotency_key=""),
+                name="unique_order_idempotency_per_user",
+            )
         ]
 
     def recalculate_total(self, save=True):

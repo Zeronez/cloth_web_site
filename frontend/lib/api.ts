@@ -56,6 +56,30 @@ export type AddressInput = {
   is_default: boolean;
 };
 
+export type ContactRequestTopic =
+  | "order"
+  | "delivery"
+  | "return"
+  | "product"
+  | "partnership"
+  | "other";
+
+export type ContactRequestInput = {
+  name: string;
+  email: string;
+  phone: string;
+  topic: ContactRequestTopic;
+  order_number: string;
+  message: string;
+};
+
+export type ContactRequestStatus = "new" | "in_progress" | "resolved" | "spam";
+
+export type ContactRequestResponse = {
+  id?: number;
+  status: ContactRequestStatus;
+};
+
 export class ApiError extends Error {
   status: number;
   payload: unknown;
@@ -275,6 +299,7 @@ export type ServerCart = {
 };
 
 export type CheckoutInput = {
+  idempotency_key?: string;
   delivery_method_code?: string;
   shipping_name: string;
   shipping_phone: string;
@@ -542,6 +567,13 @@ export async function createAddress(token: string, input: AddressInput) {
   return apiRequest<Address>("/api/addresses/", {
     method: "POST",
     token,
+    body: input
+  });
+}
+
+export async function createContactRequest(input: ContactRequestInput) {
+  return apiRequest<ContactRequestResponse>("/api/contact-requests/", {
+    method: "POST",
     body: input
   });
 }

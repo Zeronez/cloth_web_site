@@ -16,6 +16,9 @@ permissions:
 env:
   CI: "true"
   FORCE_COLOR: "1"
+  # GitHub recommends this opt-in to run JavaScript actions on Node 24
+  # while Node 20 is being phased out, without changing action versions.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PYTHONUNBUFFERED: "1"
 

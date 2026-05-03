@@ -52,6 +52,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "shipping_postal_code",
             "shipping_line1",
             "shipping_line2",
+            "idempotency_key",
             "items",
             "created_at",
             "updated_at",
@@ -76,6 +77,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class CheckoutSerializer(serializers.Serializer):
+    idempotency_key = serializers.CharField(
+        max_length=120, required=False, allow_blank=True, trim_whitespace=True
+    )
     delivery_method_code = serializers.SlugField(
         max_length=48, required=False, allow_blank=True
     )

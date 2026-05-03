@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -45,6 +45,14 @@ const emptyCheckoutForm: CheckoutInput = {
   shipping_line1: "",
   shipping_line2: ""
 };
+
+function createCheckoutIdempotencyKey() {
+  if (globalThis.crypto?.randomUUID) {
+    return `checkout-${globalThis.crypto.randomUUID()}`;
+  }
+
+  return `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function toAmount(value: string | number | null | undefined) {
   const amount = Number(value ?? 0);
@@ -431,6 +439,7 @@ export function CheckoutPage() {
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const checkoutIdempotencyKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -574,10 +583,12 @@ export function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
+      checkoutIdempotencyKeyRef.current ??= createCheckoutIdempotencyKey();
       await syncLocalCartToServer(accessToken, items);
       const order = await checkoutOrder(accessToken, {
         ...form,
-        delivery_method_code: selectedDeliveryCode
+        delivery_method_code: selectedDeliveryCode,
+        idempotency_key: checkoutIdempotencyKeyRef.current
       });
       let paymentSession: PaymentSession | null = null;
       let paymentError: string | null = null;
@@ -596,6 +607,7 @@ export function CheckoutPage() {
       setSuccessPaymentSession(paymentSession);
       setSuccessPaymentError(paymentError);
       setSuccessOrder(order);
+      checkoutIdempotencyKeyRef.current = null;
     } catch (submittedError) {
       setError(getErrorMessage(submittedError));
     } finally {

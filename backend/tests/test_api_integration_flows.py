@@ -377,6 +377,50 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
     assert cart_response.data["items"] == []
 
 
+def test_checkout_idempotency_key_returns_existing_order_without_second_stock_change(
+    authenticated_client, user, product_factory
+):
+    product = product_factory(
+        name="Idempotent Checkout Tee",
+        base_price="55.00",
+        variants=[
+            {
+                "sku": "IDEMPOTENT-TEE-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 5,
+            }
+        ],
+    )
+    variant = product.variants.get()
+    authenticated_client.post(
+        "/api/cart/items/",
+        {"variant_id": variant.id, "quantity": 2},
+        format="json",
+    )
+    payload = shipping_payload(idempotency_key="checkout-repeat-001")
+
+    first_response = authenticated_client.post(
+        "/api/orders/checkout/",
+        payload,
+        format="json",
+    )
+    second_response = authenticated_client.post(
+        "/api/orders/checkout/",
+        payload,
+        format="json",
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 200
+    assert second_response.data["id"] == first_response.data["id"]
+    assert second_response.data["idempotency_key"] == "checkout-repeat-001"
+    assert Order.objects.filter(user=user).count() == 1
+    variant.refresh_from_db()
+    assert variant.stock_quantity == 3
+    assert Cart.objects.get(user=user).items.count() == 0
+
+
 def test_checkout_rejects_empty_cart(authenticated_client, user):
     checkout_response = authenticated_client.post(
         "/api/orders/checkout/",

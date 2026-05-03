@@ -362,6 +362,7 @@ describe("CheckoutPage", () => {
       expect(addCartItem).toHaveBeenCalledWith("access-token", 200, 1);
       expect(checkoutOrder).toHaveBeenCalledWith("access-token", {
         delivery_method_code: "courier-msk",
+        idempotency_key: expect.stringMatching(/^checkout-/),
         shipping_name: "QA Shopper",
         shipping_phone: "+15551234567",
         shipping_country: "RU",

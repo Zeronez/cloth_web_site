@@ -73,7 +73,7 @@ Phase 2.1: Backend Production Hardening
 [ ] Add soft-delete or archive policy for products/orders where legally appropriate.
 [ ] Add database indexes for all real query paths.
 [ ] Add migration safety policy: no destructive migrations without backfill plan.
-[ ] Add idempotency keys for checkout/payment creation.
+[x] Add idempotency keys for checkout/payment creation.
 [ ] Add transaction boundaries for every stock/payment/order mutation.
 [ ] Add optimistic/pessimistic locking strategy for inventory updates.
 [ ] Add Celery retry policies, dead-letter behavior, and task idempotency.
