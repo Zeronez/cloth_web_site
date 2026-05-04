@@ -8,6 +8,7 @@ import pytest
 
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
+from payments.providers import normalize_payment_webhook_payload
 from payments.serializers import PaymentWebhookSerializer
 
 
@@ -131,6 +132,34 @@ def test_strict_webhook_serializer_normalizes_path_provider_and_payload():
     assert serializer.validated_data["payload"] == {}
 
 
+def test_yookassa_provider_normalizes_provider_shaped_webhook_payload():
+    raw_payload = {
+        "id": "evt_yoo_1",
+        "event": "payment.succeeded",
+        "object": {
+            "id": "yo_pay_1",
+            "status": "succeeded",
+            "metadata": {
+                "order_id": "77",
+                "payment_id": "501",
+            },
+        },
+    }
+
+    normalized = normalize_payment_webhook_payload(
+        provider_code="yookassa",
+        payload=raw_payload,
+    )
+
+    assert normalized["event_id"] == "evt_yoo_1"
+    assert normalized["provider"] == "yookassa"
+    assert normalized["status"] == Payment.Status.SUCCEEDED
+    assert normalized["order_id"] == 77
+    assert normalized["payment_id"] == 501
+    assert normalized["external_payment_id"] == "yo_pay_1"
+    assert normalized["payload"]["provider_payload"] == raw_payload
+
+
 def test_yookassa_session_contract_returns_redirect_envelope(
     authenticated_client, user, settings
 ):
@@ -221,3 +250,53 @@ def test_strict_provider_webhook_accepts_normalized_payload_and_processes_generi
         payment=payment, external_event_id="strict-event-1"
     )
     assert webhook_event.payload == {"source": "strict-provider"}
+
+
+def test_yookassa_provider_shaped_webhook_uses_external_payment_lookup_and_replays(
+    api_client, user, settings
+):
+    settings.PAYMENT_WEBHOOK_BYPASS_PROVIDERS = ["manual", "placeholder", "local"]
+    settings.PAYMENT_WEBHOOK_SECRETS = {"yookassa": "super-secret"}
+    settings.PAYMENT_WEBHOOK_SIGNATURE_HEADERS = {"yookassa": "X-Payment-Signature"}
+    order, payment = create_strict_provider_payment(user, provider_code="yookassa")
+    payment.external_payment_id = "yo-pay-lookup-1"
+    payment.save(update_fields=["external_payment_id", "updated_at"])
+    payload = {
+        "id": "evt-yoo-shaped-1",
+        "event": "payment.succeeded",
+        "object": {
+            "id": "yo-pay-lookup-1",
+            "status": "succeeded",
+            "metadata": {
+                "order_id": str(order.id),
+            },
+        },
+    }
+    _, signature = sign_payload(payload, "super-secret")
+
+    response = api_client.post(
+        "/api/payments/webhooks/yookassa/",
+        payload,
+        format="json",
+        HTTP_X_PAYMENT_SIGNATURE=f"sha256={signature}",
+    )
+    replay_response = api_client.post(
+        "/api/payments/webhooks/yookassa/",
+        payload,
+        format="json",
+        HTTP_X_PAYMENT_SIGNATURE=f"sha256={signature}",
+    )
+
+    assert response.status_code == 200
+    assert response.data["code"] == "processed"
+    assert replay_response.status_code == 200
+    assert replay_response.data["code"] == "event_replayed"
+
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.SUCCEEDED
+    assert order.status == Order.Status.PAID
+    webhook_event = PaymentEvent.objects.get(
+        payment=payment, external_event_id="evt-yoo-shaped-1"
+    )
+    assert webhook_event.payload["provider_payload"] == payload

@@ -6,13 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0002_paymentevent_unique_payment_event_external_id'),
+        ("payments", "0002_paymentevent_unique_payment_event_external_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='paymentmethod',
-            name='session_mode',
-            field=models.CharField(choices=[('none', 'Без сессии'), ('placeholder', 'Локальная сессия'), ('redirect', 'Hosted checkout / redirect')], default='none', max_length=24),
+            model_name="paymentmethod",
+            name="session_mode",
+            field=models.CharField(
+                choices=[
+                    ("none", "Без сессии"),
+                    ("placeholder", "Локальная сессия"),
+                    ("redirect", "Hosted checkout / redirect"),
+                ],
+                default="none",
+                max_length=24,
+            ),
         ),
     ]

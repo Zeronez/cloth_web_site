@@ -14,6 +14,7 @@ from payments.serializers import (
     PaymentWebhookResponseSerializer,
     PaymentWebhookSerializer,
 )
+from payments.providers import normalize_payment_webhook_payload
 from payments.signatures import verify_payment_webhook_signature
 from payments.services import (
     create_payment_session,
@@ -93,8 +94,12 @@ class PaymentWebhookView(APIView):
             raw_body=request.body,
             headers=request.headers,
         )
+        normalized_payload = normalize_payment_webhook_payload(
+            provider_code=provider_code,
+            payload=request.data,
+        )
         serializer = PaymentWebhookSerializer(
-            data=request.data,
+            data=normalized_payload,
             context={"provider_code": provider_code},
         )
         serializer.is_valid(raise_exception=True)

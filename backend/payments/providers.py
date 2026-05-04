@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
 from django.conf import settings
+from rest_framework.exceptions import ValidationError
 
 from payments.models import Payment
 
@@ -26,6 +27,9 @@ class BasePaymentProviderAdapter:
     def create_session(self, *, payment, method):
         raise NotImplementedError
 
+    def normalize_webhook_payload(self, payload):
+        return payload
+
 
 class PlaceholderProviderAdapter(BasePaymentProviderAdapter):
     provider_code = "placeholder"
@@ -43,6 +47,16 @@ class PlaceholderProviderAdapter(BasePaymentProviderAdapter):
 class YooKassaSandboxAdapter(BasePaymentProviderAdapter):
     provider_code = "yookassa"
     supported_session_modes = ("redirect",)
+
+    STATUS_MAPPING = {
+        "pending": Payment.Status.PENDING,
+        "waiting_for_capture": Payment.Status.AUTHORIZED,
+        "succeeded": Payment.Status.SUCCEEDED,
+        "failed": Payment.Status.FAILED,
+        "canceled": Payment.Status.CANCELLED,
+        "cancelled": Payment.Status.CANCELLED,
+        "refunded": Payment.Status.REFUNDED,
+    }
 
     def create_session(self, *, payment, method):
         external_payment_id = payment.external_payment_id or (
@@ -80,6 +94,67 @@ class YooKassaSandboxAdapter(BasePaymentProviderAdapter):
             },
         )
 
+    def normalize_webhook_payload(self, payload):
+        if not isinstance(payload, dict):
+            return payload
+        if "object" not in payload or "event" not in payload:
+            return payload
+
+        payment_object = payload.get("object") or {}
+        metadata = payment_object.get("metadata") or {}
+        raw_status = str(payment_object.get("status", "")).strip().lower()
+        normalized_status = self.STATUS_MAPPING.get(raw_status)
+        external_payment_id = str(payment_object.get("id", "")).strip()
+        order_id = metadata.get("order_id") or payload.get("order_id")
+        payment_id = metadata.get("payment_id") or payload.get("payment_id")
+        event_name = str(payload.get("event", "")).strip()
+        event_id = str(payload.get("id") or payload.get("event_id") or "").strip()
+
+        if not normalized_status:
+            raise ValidationError(
+                {
+                    "webhook": {
+                        "code": "webhook_status_unsupported",
+                        "message": "YooKassa webhook содержит неподдерживаемый статус.",
+                    }
+                }
+            )
+        if not external_payment_id:
+            raise ValidationError(
+                {
+                    "webhook": {
+                        "code": "webhook_external_payment_missing",
+                        "message": "YooKassa webhook не содержит внешний идентификатор платежа.",
+                    }
+                }
+            )
+        if not order_id and not payment_id:
+            raise ValidationError(
+                {
+                    "webhook": {
+                        "code": "webhook_payment_reference_missing",
+                        "message": "YooKassa webhook не содержит ссылку на заказ или платеж.",
+                    }
+                }
+            )
+
+        normalized = {
+            "event_id": event_id or f"{event_name}:{external_payment_id}:{raw_status}",
+            "provider": "yookassa",
+            "status": normalized_status,
+            "external_payment_id": external_payment_id,
+            "payload": {
+                "provider_payload": payload,
+                "event": event_name,
+                "object": payment_object,
+            },
+        }
+        if order_id:
+            normalized["order_id"] = int(order_id)
+        if payment_id:
+            normalized["payment_id"] = int(payment_id)
+        return normalized
+
 
 _PLACEHOLDER = PlaceholderProviderAdapter()
 _PROVIDERS = {
@@ -92,3 +167,10 @@ _PROVIDERS = {
 
 def get_payment_provider(provider_code):
     return _PROVIDERS.get(provider_code)
+
+
+def normalize_payment_webhook_payload(*, provider_code, payload):
+    provider = get_payment_provider(provider_code)
+    if provider is None:
+        return payload
+    return provider.normalize_webhook_payload(payload)

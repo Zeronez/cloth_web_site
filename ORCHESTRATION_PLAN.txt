@@ -128,6 +128,7 @@ Phase 2.5: Payments
 [x] Implement webhook endpoint with signature verification.
 [x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
 [x] Implement idempotent webhook processing.
+[x] Add provider-specific webhook normalization foundation.
 [ ] Implement retry-safe order/payment reconciliation command.
 [ ] Implement refund flow, partial refund support if provider allows.
 [ ] Implement payment timeout/cancel task.
