@@ -142,7 +142,7 @@ Phase 2.6: Delivery and Fulfillment
 [x] Implement delivery price calculation.
 [ ] Implement pickup point search/map API if provider supports it.
 [ ] Implement shipment creation after payment.
-[ ] Implement tracking number storage and tracking status sync.
+[x] Implement tracking number storage and tracking status sync.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
 [ ] Implement warehouse picking list.
 [ ] Implement packing slip generation.

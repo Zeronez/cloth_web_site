@@ -171,6 +171,12 @@ export type OrderDeliverySnapshot = {
   currency: string;
   estimated_days_min: number | null;
   estimated_days_max: number | null;
+  provider_code: string;
+  tracking_status: string;
+  tracking_status_label: string;
+  external_shipment_id: string;
+  current_location: string;
+  last_tracking_sync_at: string | null;
   recipient_name: string;
   recipient_phone: string;
   country: string;
@@ -178,6 +184,19 @@ export type OrderDeliverySnapshot = {
   postal_code: string;
   line1: string;
   line2: string;
+  tracking_events: Array<{
+    id: number;
+    event_type: string;
+    previous_status: string;
+    new_status: string;
+    new_status_label: string;
+    message: string;
+    location: string;
+    payload: unknown;
+    external_event_id: string;
+    happened_at: string | null;
+    created_at: string;
+  }>;
 };
 
 export type Order = {

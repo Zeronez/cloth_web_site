@@ -142,7 +142,30 @@ describe("AccountPage", () => {
           shipping_postal_code: "10001",
           shipping_line1: "11 Test Avenue",
           shipping_line2: "Apt 5",
-          delivery: null,
+          delivery: {
+            method_code: "courier-msk",
+            method_name: "Курьер по Москве",
+            method_kind: "courier",
+            method_kind_label: "Курьер",
+            price_amount: "350.00",
+            currency: "RUB",
+            estimated_days_min: 1,
+            estimated_days_max: 2,
+            provider_code: "cdek",
+            tracking_status: "out_for_delivery",
+            tracking_status_label: "Курьер уже едет",
+            external_shipment_id: "SHIP-4242",
+            current_location: "Москва",
+            last_tracking_sync_at: "2026-04-06T12:00:00Z",
+            recipient_name: "QA Shopper",
+            recipient_phone: "+15551234567",
+            country: "US",
+            city: "New York",
+            postal_code: "10001",
+            line1: "11 Test Avenue",
+            line2: "",
+            tracking_events: []
+          },
           items: [
             {
               id: 1,
@@ -249,6 +272,7 @@ describe("AccountPage", () => {
     expect(screen.getByText("Ожидает оплаты")).toBeInTheDocument();
     expect(screen.getByText("\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d")).toBeInTheDocument();
     expect(screen.getByText(/TRACK-4242/)).toBeInTheDocument();
+    expect(screen.getByText("Курьер уже едет: Москва")).toBeInTheDocument();
     expect(
       screen.getByText("\u0417\u0430\u043a\u0430\u0437 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d. \u0415\u0441\u043b\u0438 \u0447\u0442\u043e-\u0442\u043e \u043d\u0435 \u043f\u043e\u0434\u043e\u0448\u043b\u043e, \u043c\u043e\u0436\u043d\u043e \u043e\u0444\u043e\u0440\u043c\u0438\u0442\u044c \u0432\u043e\u0437\u0432\u0440\u0430\u0442.")
     ).toBeInTheDocument();

@@ -164,6 +164,10 @@ function AddressCard({
 function OrderCard({ order }: { order: Order }) {
   const statusLabel = order.status_label ?? getOrderStatusLabel(order.status);
   const statusNote = getOrderStatusNote(order.status);
+  const deliveryNote =
+    order.delivery?.tracking_status_label && order.delivery?.current_location
+      ? `${order.delivery.tracking_status_label}: ${order.delivery.current_location}`
+      : order.delivery?.tracking_status_label ?? "";
 
   return (
     <article className="border border-white/10 bg-white/[0.04] p-5">
@@ -191,6 +195,9 @@ function OrderCard({ order }: { order: Order }) {
             <p className="mt-2 text-xs uppercase text-slate-500">
               Трек {order.track_number}
             </p>
+          ) : null}
+          {deliveryNote ? (
+            <p className="mt-2 text-xs uppercase text-slate-500">{deliveryNote}</p>
           ) : null}
         </div>
       </div>
