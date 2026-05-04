@@ -2,6 +2,7 @@ from decimal import Decimal
 import hashlib
 import hmac
 import json
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -136,6 +137,9 @@ def test_yookassa_session_contract_returns_redirect_envelope(
     settings.PAYMENT_PROVIDER_CONFIRMATION_URLS = {
         "yookassa": "https://pay.example.test/session"
     }
+    settings.PAYMENT_PROVIDER_RETURN_BASE_URL = (
+        "https://animeattire.example/checkout/return"
+    )
     order = create_session_order(user)
     method = PaymentMethod.objects.create(
         code="yookassa-card",
@@ -159,6 +163,17 @@ def test_yookassa_session_contract_returns_redirect_envelope(
     assert response.data["confirmation_url"].startswith(
         "https://pay.example.test/session/yookassa-sandbox-"
     )
+    confirmation_query = parse_qs(urlparse(response.data["confirmation_url"]).query)
+    assert "return_url" in confirmation_query
+    return_url = confirmation_query["return_url"][0]
+    parsed_return = urlparse(return_url)
+    return_query = parse_qs(parsed_return.query)
+    assert parsed_return.scheme == "https"
+    assert parsed_return.netloc == "animeattire.example"
+    assert parsed_return.path == "/checkout/return"
+    assert return_query["provider"] == ["yookassa"]
+    assert return_query["order_id"] == [str(order.id)]
+    assert return_query["payment_id"] == [str(response.data["payment"]["id"])]
     assert response.data["message"] == (
         "Платежная сессия YooKassa подготовлена в sandbox-режиме."
     )

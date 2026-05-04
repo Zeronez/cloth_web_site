@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from urllib.parse import urlencode
 
 from django.conf import settings
 
@@ -50,7 +51,22 @@ class YooKassaSandboxAdapter(BasePaymentProviderAdapter):
         base_url = getattr(settings, "PAYMENT_PROVIDER_CONFIRMATION_URLS", {}).get(
             "yookassa", "https://yookassa.example/checkout"
         )
-        confirmation_url = f"{base_url.rstrip('/')}/{external_payment_id}"
+        return_base_url = getattr(
+            settings,
+            "PAYMENT_PROVIDER_RETURN_BASE_URL",
+            "http://localhost:3000/checkout/return",
+        )
+        return_url = f"{return_base_url}?" + urlencode(
+            {
+                "provider": "yookassa",
+                "order_id": payment.order_id,
+                "payment_id": payment.pk,
+                "external_payment_id": external_payment_id,
+            }
+        )
+        confirmation_url = f"{base_url.rstrip('/')}/{external_payment_id}?" + urlencode(
+            {"return_url": return_url}
+        )
         return PaymentSessionResult(
             provider="yookassa",
             confirmation_url=confirmation_url,
@@ -60,6 +76,7 @@ class YooKassaSandboxAdapter(BasePaymentProviderAdapter):
                 "provider": "yookassa",
                 "mode": "sandbox",
                 "confirmation_url": confirmation_url,
+                "return_url": return_url,
             },
         )
 

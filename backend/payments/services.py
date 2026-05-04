@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import APIException, NotFound, ValidationError
 
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
@@ -47,6 +47,14 @@ class PaymentWebhookConflict(APIException):
     }
 
 
+RETURN_STATE_MESSAGES = {
+    "awaiting_webhook": "Оплата обрабатывается, статус обновится автоматически.",
+    "paid": "Оплата подтверждена, заказ передан в дальнейшую обработку.",
+    "retry_available": "Заказ сохранен, оплату можно продолжить или подготовить заново.",
+    "refunded": "По платежу оформлен возврат. Проверьте детали заказа или свяжитесь с поддержкой.",
+}
+
+
 def _sync_order_after_payment_status(payment, new_status):
     order = payment.order
     if new_status == Payment.Status.SUCCEEDED and order.status != Order.Status.PAID:
@@ -57,6 +65,20 @@ def _sync_order_after_payment_status(payment, new_status):
     if new_status == Payment.Status.REFUNDED and order.status != Order.Status.CANCELLED:
         order.status = Order.Status.CANCELLED
         order.save(update_fields=["status", "updated_at"])
+
+
+def _resolve_return_state(payment):
+    if payment.status in {
+        Payment.Status.PENDING,
+        Payment.Status.SESSION_CREATED,
+        Payment.Status.AUTHORIZED,
+    }:
+        return "awaiting_webhook"
+    if payment.status == Payment.Status.SUCCEEDED:
+        return "paid"
+    if payment.status == Payment.Status.REFUNDED:
+        return "refunded"
+    return "retry_available"
 
 
 @transaction.atomic
@@ -312,4 +334,70 @@ def process_payment_webhook(
         "processed": True,
         "replayed": False,
         "conflict": False,
+    }
+
+
+def get_payment_return_status(
+    *,
+    user,
+    payment_id,
+    provider_code="",
+    external_payment_id="",
+    serializer_context=None,
+):
+    payment = (
+        Payment.objects.select_related("order", "method", "user")
+        .prefetch_related("events", "order__items")
+        .filter(pk=payment_id, user=user)
+        .first()
+    )
+    if payment is None:
+        raise NotFound(
+            {"payment": {"code": "payment_not_found", "message": "Платеж не найден."}}
+        )
+    if provider_code and payment.provider_code != provider_code:
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "provider_mismatch",
+                    "message": "Провайдер возврата не совпадает с платежом.",
+                }
+            }
+        )
+    if (
+        external_payment_id
+        and payment.external_payment_id
+        and payment.external_payment_id != external_payment_id
+    ):
+        raise PaymentWebhookConflict(
+            {
+                "webhook": {
+                    "code": "external_payment_mismatch",
+                    "message": "Внешний идентификатор платежа не совпадает.",
+                }
+            }
+        )
+
+    return_state = _resolve_return_state(payment)
+    provider = get_payment_provider(payment.provider_code)
+    confirmation_url = None
+    can_retry = return_state in {"awaiting_webhook", "retry_available"}
+
+    if (
+        provider is not None
+        and payment.method is not None
+        and payment.method.session_mode != PaymentMethod.SessionMode.NONE
+        and return_state == "awaiting_webhook"
+    ):
+        session = provider.create_session(payment=payment, method=payment.method)
+        confirmation_url = session.confirmation_url
+
+    return {
+        "payment": payment,
+        "order": payment.order,
+        "provider": payment.provider_code,
+        "return_state": return_state,
+        "message": RETURN_STATE_MESSAGES[return_state],
+        "confirmation_url": confirmation_url,
+        "can_retry": can_retry,
     }

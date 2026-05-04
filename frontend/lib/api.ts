@@ -271,6 +271,22 @@ export type PaymentSession = {
   message: string;
 };
 
+export type PaymentReturnState =
+  | "awaiting_webhook"
+  | "paid"
+  | "retry_available"
+  | "refunded";
+
+export type PaymentReturnStatus = {
+  payment: Payment;
+  order: Order;
+  provider: string;
+  return_state: PaymentReturnState;
+  message: string;
+  confirmation_url: string | null;
+  can_retry: boolean;
+};
+
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Ожидает оплаты",
   paid: "Оплачен",
@@ -532,6 +548,10 @@ export async function fetchOrders(token: string) {
   return apiRequest<Paginated<Order>>("/api/orders/", { token });
 }
 
+export async function fetchOrder(token: string, orderId: number) {
+  return apiRequest<Order>(`/api/orders/${orderId}/`, { token });
+}
+
 export async function fetchDeliveryMethods() {
   return apiRequest<Paginated<DeliveryMethod>>("/api/delivery-methods/");
 }
@@ -599,6 +619,34 @@ export async function createPaymentSession(
     token,
     body: input
   });
+}
+
+export async function fetchPayment(token: string, paymentId: number) {
+  return apiRequest<Payment>(`/api/payments/${paymentId}/`, { token });
+}
+
+export async function fetchPaymentReturnStatus(
+  token: string,
+  paymentId: number,
+  input: {
+    provider?: string;
+    external_payment_id?: string;
+  } = {}
+) {
+  const params = new URLSearchParams();
+  if (input.provider) {
+    params.set("provider", input.provider);
+  }
+  if (input.external_payment_id) {
+    params.set("external_payment_id", input.external_payment_id);
+  }
+  const query = params.toString();
+  return apiRequest<PaymentReturnStatus>(
+    `/api/payments/${paymentId}/return-status/${query ? `?${query}` : ""}`,
+    {
+      token
+    }
+  );
 }
 
 export async function fetchFavorites(token: string) {

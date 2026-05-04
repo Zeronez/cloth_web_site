@@ -7,13 +7,19 @@ from rest_framework.views import APIView
 from payments.models import Payment, PaymentMethod
 from payments.serializers import (
     PaymentMethodSerializer,
+    PaymentReturnStatusQuerySerializer,
+    PaymentReturnStatusSerializer,
     PaymentSerializer,
     PaymentSessionCreateSerializer,
     PaymentWebhookResponseSerializer,
     PaymentWebhookSerializer,
 )
 from payments.signatures import verify_payment_webhook_signature
-from payments.services import create_payment_session, process_payment_webhook
+from payments.services import (
+    create_payment_session,
+    get_payment_return_status,
+    process_payment_webhook,
+)
 
 
 class PaymentMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -59,6 +65,22 @@ class PaymentViewSet(
             },
             status=response_status,
         )
+
+    @action(detail=True, methods=["get"], url_path="return-status")
+    def return_status(self, request, pk=None):
+        query_serializer = PaymentReturnStatusQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+        result = get_payment_return_status(
+            user=request.user,
+            payment_id=pk,
+            serializer_context=self.get_serializer_context(),
+            provider_code=query_serializer.validated_data.get("provider", ""),
+            external_payment_id=query_serializer.validated_data.get(
+                "external_payment_id", ""
+            ),
+        )
+        serializer = PaymentReturnStatusSerializer(result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PaymentWebhookView(APIView):

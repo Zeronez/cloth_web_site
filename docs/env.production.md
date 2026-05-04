@@ -70,6 +70,7 @@ These define which providers may bypass signature checks and which providers mus
 These define sandbox or hosted checkout confirmation URLs for redirect-based providers.
 
 - `PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON`
+- `PAYMENT_PROVIDER_RETURN_BASE_URL`
 
 ## Local compose helpers
 

@@ -6,6 +6,7 @@ class PaymentMethod(models.Model):
     class SessionMode(models.TextChoices):
         NONE = "none", "Без сессии"
         PLACEHOLDER = "placeholder", "Локальная сессия"
+        REDIRECT = "redirect", "Hosted checkout / redirect"
 
     code = models.SlugField(max_length=48, unique=True)
     name = models.CharField(max_length=120)

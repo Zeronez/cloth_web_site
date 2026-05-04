@@ -168,6 +168,10 @@ PAYMENT_PROVIDER_CONFIRMATION_URLS = env_json(
     "PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON",
     {"yookassa": "https://yookassa.example/checkout"},
 )
+PAYMENT_PROVIDER_RETURN_BASE_URL = env_value(
+    "PAYMENT_PROVIDER_RETURN_BASE_URL",
+    "http://localhost:3000/checkout/return",
+)
 
 if AWS_STORAGE_BUCKET_NAME:
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

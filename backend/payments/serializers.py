@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from orders.serializers import OrderSerializer
 from payments.models import Payment, PaymentEvent, PaymentMethod
 
 
@@ -120,3 +121,20 @@ class PaymentWebhookResponseSerializer(serializers.Serializer):
     processed = serializers.BooleanField()
     replayed = serializers.BooleanField()
     conflict = serializers.BooleanField()
+
+
+class PaymentReturnStatusQuerySerializer(serializers.Serializer):
+    provider = serializers.SlugField(max_length=48, required=False, allow_blank=True)
+    external_payment_id = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+
+
+class PaymentReturnStatusSerializer(serializers.Serializer):
+    payment = PaymentSerializer()
+    order = OrderSerializer()
+    provider = serializers.CharField()
+    return_state = serializers.CharField()
+    message = serializers.CharField()
+    confirmation_url = serializers.URLField(allow_null=True)
+    can_retry = serializers.BooleanField()
