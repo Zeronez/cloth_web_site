@@ -172,6 +172,10 @@ PAYMENT_PROVIDER_RETURN_BASE_URL = env_value(
     "PAYMENT_PROVIDER_RETURN_BASE_URL",
     "http://localhost:3000/checkout/return",
 )
+PAYMENT_PROVIDER_STATUS_OVERRIDES = env_json(
+    "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON",
+    {},
+)
 
 if AWS_STORAGE_BUCKET_NAME:
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

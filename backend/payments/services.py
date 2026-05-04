@@ -7,7 +7,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
-from payments.providers import get_payment_provider
+from payments.providers import fetch_provider_payment_status, get_payment_provider
 
 
 def get_available_payment_methods():
@@ -378,6 +378,34 @@ def get_payment_return_status(
             }
         )
 
+    provider_fetch_message = ""
+    if payment.status in {
+        Payment.Status.PENDING,
+        Payment.Status.SESSION_CREATED,
+        Payment.Status.AUTHORIZED,
+    }:
+        fetch_result = fetch_provider_payment_status(
+            provider_code=payment.provider_code,
+            payment=payment,
+            external_payment_id=external_payment_id,
+        )
+        if fetch_result is not None:
+            process_payment_webhook(
+                provider_code=payment.provider_code,
+                event_id=fetch_result.event_id,
+                status=fetch_result.status,
+                order_id=payment.order_id,
+                payment_id=payment.id,
+                external_payment_id=fetch_result.external_payment_id
+                or payment.external_payment_id,
+                payload=fetch_result.payload,
+            )
+            payment.refresh_from_db()
+            payment.order.refresh_from_db()
+            provider_fetch_message = (
+                " Статус синхронизирован по sandbox-ответу провайдера."
+            )
+
     return_state = _resolve_return_state(payment)
     provider = get_payment_provider(payment.provider_code)
     confirmation_url = None
@@ -397,7 +425,7 @@ def get_payment_return_status(
         "order": payment.order,
         "provider": payment.provider_code,
         "return_state": return_state,
-        "message": RETURN_STATE_MESSAGES[return_state],
+        "message": f"{RETURN_STATE_MESSAGES[return_state]}{provider_fetch_message}",
         "confirmation_url": confirmation_url,
         "can_retry": can_retry,
     }

@@ -154,3 +154,83 @@ def test_return_status_after_failed_payment_returns_retry_available(
     assert response.data["return_state"] == "retry_available"
     assert response.data["can_retry"] is True
     assert response.data["confirmation_url"] is None
+
+
+def test_return_status_can_reconcile_sandbox_success_via_provider_fetch(
+    authenticated_client, user, settings
+):
+    _, payment = create_redirect_payment(user)
+    settings.PAYMENT_PROVIDER_STATUS_OVERRIDES = {
+        "yookassa": {
+            payment.external_payment_id: "succeeded",
+        }
+    }
+
+    response = authenticated_client.get(
+        f"/api/payments/{payment.id}/return-status/",
+        {"provider": "yookassa"},
+    )
+
+    assert response.status_code == 200
+    assert response.data["return_state"] == "paid"
+    assert response.data["can_retry"] is False
+    assert "sandbox-ответу провайдера" in response.data["message"]
+
+    payment.refresh_from_db()
+    assert payment.status == Payment.Status.SUCCEEDED
+
+
+def test_return_status_can_reconcile_sandbox_authorized_without_paid_order(
+    authenticated_client, user, settings
+):
+    order, payment = create_redirect_payment(user)
+    settings.PAYMENT_PROVIDER_STATUS_OVERRIDES = {
+        "yookassa": {
+            payment.external_payment_id: "waiting_for_capture",
+        }
+    }
+
+    response = authenticated_client.get(
+        f"/api/payments/{payment.id}/return-status/",
+        {"provider": "yookassa"},
+    )
+
+    assert response.status_code == 200
+    assert response.data["return_state"] == "awaiting_webhook"
+    assert response.data["can_retry"] is True
+
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.AUTHORIZED
+    assert order.status == Order.Status.PENDING
+
+
+def test_return_status_provider_fetch_is_idempotent_on_repeat_calls(
+    authenticated_client, user, settings
+):
+    _, payment = create_redirect_payment(user)
+    settings.PAYMENT_PROVIDER_STATUS_OVERRIDES = {
+        "yookassa": {
+            payment.external_payment_id: "succeeded",
+        }
+    }
+
+    first_response = authenticated_client.get(
+        f"/api/payments/{payment.id}/return-status/",
+        {"provider": "yookassa"},
+    )
+    second_response = authenticated_client.get(
+        f"/api/payments/{payment.id}/return-status/",
+        {"provider": "yookassa"},
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    payment.refresh_from_db()
+    assert payment.status == Payment.Status.SUCCEEDED
+    assert (
+        payment.events.filter(
+            external_event_id=f"return-sync:{payment.external_payment_id}:succeeded"
+        ).count()
+        == 1
+    )

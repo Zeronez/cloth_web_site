@@ -50,6 +50,28 @@ Session creation failure cases to verify:
 7. Unsupported currency returns `payment.code = currency_unsupported`.
 8. Reusing the same idempotency key for a different order or method returns `payment.code = idempotency_conflict`.
 
+## Return-status reconciliation contract
+
+Endpoint:
+
+- `GET /api/payments/<payment_id>/return-status/`
+
+Current sandbox expectations:
+
+- The endpoint validates `provider` and optional `external_payment_id` against the stored payment.
+- For non-terminal redirect payments, the provider adapter may reconcile a sandbox status before the response is built.
+- Reconciliation reuses the same payment transition pipeline as webhooks and therefore stays append-only and idempotent.
+- Sandbox provider fetches are controlled through `PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON`.
+
+Return-status reconciliation checks:
+
+1. Without a sandbox override, `session_created` stays `awaiting_webhook`.
+2. A sandbox override of `succeeded` moves the payment to `succeeded` and the order to `paid`.
+3. A sandbox override of `waiting_for_capture` moves the payment to `authorized` but keeps the order non-paid.
+4. A sandbox override of `failed` or `canceled` results in `retry_available`.
+5. Repeating the same `return-status` request does not duplicate `PaymentEvent` rows.
+6. Provider mismatch and external payment id mismatch still fail before reconciliation.
+
 ## Webhook contract
 
 Endpoint:

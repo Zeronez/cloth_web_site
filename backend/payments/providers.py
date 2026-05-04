@@ -17,6 +17,14 @@ class PaymentSessionResult:
     payload: dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class PaymentStatusFetchResult:
+    status: str
+    event_id: str
+    external_payment_id: str = ""
+    payload: dict = field(default_factory=dict)
+
+
 class BasePaymentProviderAdapter:
     provider_code = ""
     supported_session_modes = ()
@@ -29,6 +37,9 @@ class BasePaymentProviderAdapter:
 
     def normalize_webhook_payload(self, payload):
         return payload
+
+    def fetch_payment_status(self, *, payment, external_payment_id=""):
+        return None
 
 
 class PlaceholderProviderAdapter(BasePaymentProviderAdapter):
@@ -155,6 +166,39 @@ class YooKassaSandboxAdapter(BasePaymentProviderAdapter):
             normalized["payment_id"] = int(payment_id)
         return normalized
 
+    def fetch_payment_status(self, *, payment, external_payment_id=""):
+        effective_external_id = external_payment_id or payment.external_payment_id
+        if not effective_external_id:
+            return None
+
+        provider_statuses = getattr(settings, "PAYMENT_PROVIDER_STATUS_OVERRIDES", {})
+        provider_overrides = provider_statuses.get("yookassa", {})
+        raw_status = provider_overrides.get(effective_external_id)
+        if not raw_status:
+            return None
+
+        normalized_status = self.STATUS_MAPPING.get(str(raw_status).strip().lower())
+        if not normalized_status:
+            raise ValidationError(
+                {
+                    "payment": {
+                        "code": "provider_status_unsupported",
+                        "message": "Sandbox-статус провайдера не поддерживается.",
+                    }
+                }
+            )
+
+        return PaymentStatusFetchResult(
+            status=normalized_status,
+            event_id=f"return-sync:{effective_external_id}:{normalized_status}",
+            external_payment_id=effective_external_id,
+            payload={
+                "provider": "yookassa",
+                "status_source": "sandbox_override",
+                "raw_status": raw_status,
+            },
+        )
+
 
 _PLACEHOLDER = PlaceholderProviderAdapter()
 _PROVIDERS = {
@@ -174,3 +218,13 @@ def normalize_payment_webhook_payload(*, provider_code, payload):
     if provider is None:
         return payload
     return provider.normalize_webhook_payload(payload)
+
+
+def fetch_provider_payment_status(*, provider_code, payment, external_payment_id=""):
+    provider = get_payment_provider(provider_code)
+    if provider is None:
+        return None
+    return provider.fetch_payment_status(
+        payment=payment,
+        external_payment_id=external_payment_id,
+    )
