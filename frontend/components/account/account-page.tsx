@@ -14,6 +14,7 @@ import {
   fetchMe,
   fetchOrders,
   getOrderStatusLabel,
+  getOrderStatusNote,
   getOrderStatusTone,
   logoutUser,
   removeFavorite,
@@ -161,6 +162,9 @@ function AddressCard({
 }
 
 function OrderCard({ order }: { order: Order }) {
+  const statusLabel = order.status_label ?? getOrderStatusLabel(order.status);
+  const statusNote = getOrderStatusNote(order.status);
+
   return (
     <article className="border border-white/10 bg-white/[0.04] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -181,7 +185,7 @@ function OrderCard({ order }: { order: Order }) {
               order.status
             )}`}
           >
-            {getOrderStatusLabel(order.status)}
+            {statusLabel}
           </span>
           {order.track_number ? (
             <p className="mt-2 text-xs uppercase text-slate-500">
@@ -190,6 +194,8 @@ function OrderCard({ order }: { order: Order }) {
           ) : null}
         </div>
       </div>
+
+      <p className="mt-4 text-sm leading-6 text-slate-300">{statusNote}</p>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <div className="border border-white/10 bg-ink-900/60 p-4">

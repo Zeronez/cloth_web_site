@@ -31,6 +31,7 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     items_count = serializers.SerializerMethodField()
     shipping_address = serializers.SerializerMethodField()
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
     delivery = OrderDeliverySnapshotSerializer(
         source="delivery_snapshot", read_only=True
     )
@@ -40,6 +41,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "status",
+            "status_label",
             "total_amount",
             "track_number",
             "items_count",

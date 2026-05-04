@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
@@ -79,6 +79,63 @@ class OrderAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("total_amount",)
     inlines = [OrderDeliverySnapshotInline, PaymentInline, OrderItemInline]
+    actions = (
+        "mark_picking",
+        "mark_packed",
+        "mark_shipped",
+        "mark_delivered",
+        "mark_cancelled",
+        "mark_returned",
+    )
+
+    @admin.action(description="Перевести в 'На сборке'")
+    def mark_picking(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.PICKING)
+
+    @admin.action(description="Перевести в 'Упакован'")
+    def mark_packed(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.PACKED)
+
+    @admin.action(description="Перевести в 'Передан в доставку'")
+    def mark_shipped(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.SHIPPED)
+
+    @admin.action(description="Перевести в 'Доставлен'")
+    def mark_delivered(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.DELIVERED)
+
+    @admin.action(description="Перевести в 'Отменён'")
+    def mark_cancelled(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.CANCELLED)
+
+    @admin.action(description="Перевести в 'Возвращён'")
+    def mark_returned(self, request, queryset):
+        self._transition_orders(request, queryset, Order.Status.RETURNED)
+
+    def _transition_orders(self, request, queryset, new_status):
+        updated = 0
+        skipped = 0
+        for order in queryset:
+            try:
+                changed = order.transition_to(new_status)
+            except ValueError:
+                skipped += 1
+                continue
+            if changed:
+                updated += 1
+
+        if updated:
+            self.message_user(
+                request,
+                f"Обновлено заказов: {updated}. Новый статус: {dict(Order.Status.choices)[new_status]}.",
+                level=messages.SUCCESS,
+            )
+        if skipped:
+            self.message_user(
+                request,
+                f"Пропущено заказов из-за недопустимого перехода: {skipped}.",
+                level=messages.WARNING,
+            )
 
 
 @admin.register(OrderItem)

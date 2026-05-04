@@ -140,7 +140,15 @@ export type Product = {
   variants?: ProductVariant[];
 };
 
-export type OrderStatus = "pending" | "paid" | "shipped" | "cancelled";
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "picking"
+  | "packed"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "returned";
 
 export type OrderItem = {
   id: number;
@@ -175,6 +183,7 @@ export type OrderDeliverySnapshot = {
 export type Order = {
   id: number;
   status: OrderStatus;
+  status_label?: string;
   total_amount: string;
   track_number: string;
   items_count: number;
@@ -288,25 +297,54 @@ export type PaymentReturnStatus = {
 };
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "Ожидает оплаты",
-  paid: "Оплачен",
-  shipped: "Отправлен",
-  cancelled: "Отменён"
+  pending: "\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043e\u043f\u043b\u0430\u0442\u044b",
+  paid: "\u041e\u043f\u043b\u0430\u0447\u0435\u043d",
+  picking: "\u041d\u0430 \u0441\u0431\u043e\u0440\u043a\u0435",
+  packed: "\u0423\u043f\u0430\u043a\u043e\u0432\u0430\u043d",
+  shipped: "\u041f\u0435\u0440\u0435\u0434\u0430\u043d \u0432 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0443",
+  delivered: "\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d",
+  cancelled: "\u041e\u0442\u043c\u0435\u043d\u0451\u043d",
+  returned: "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0451\u043d"
 };
 
 const ORDER_STATUS_TONES: Record<OrderStatus, string> = {
   pending: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
   paid: "border-neon-teal/40 bg-neon-teal/10 text-neon-teal",
+  picking: "border-neon-teal/40 bg-neon-teal/10 text-neon-teal",
+  packed: "border-fuchsia-400/40 bg-fuchsia-500/10 text-fuchsia-100",
   shipped: "border-neon-amber/40 bg-neon-amber/10 text-neon-amber",
-  cancelled: "border-red-400/30 bg-red-500/10 text-red-100"
+  delivered: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100",
+  cancelled: "border-red-400/30 bg-red-500/10 text-red-100",
+  returned: "border-red-400/30 bg-red-500/10 text-red-100"
+};
+
+const ORDER_STATUS_NOTES: Record<OrderStatus, string> = {
+  pending: "\u0416\u0434\u0451\u043c \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435 \u043e\u043f\u043b\u0430\u0442\u044b, \u043f\u043e\u0441\u043b\u0435 \u044d\u0442\u043e\u0433\u043e \u0437\u0430\u043a\u0430\u0437 \u0443\u0439\u0434\u0451\u0442 \u0432 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0443.",
+  paid: "\u041e\u043f\u043b\u0430\u0442\u0430 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0430, \u0437\u0430\u043a\u0430\u0437 \u0433\u043e\u0442\u043e\u0432\u0438\u043c \u043a \u0441\u0431\u043e\u0440\u043a\u0435.",
+  picking: "\u041a\u043e\u043c\u0430\u043d\u0434\u0430 AnimeAttire \u0441\u043e\u0431\u0438\u0440\u0430\u0435\u0442 \u043f\u043e\u0437\u0438\u0446\u0438\u0438 \u043f\u043e \u0441\u043a\u043b\u0430\u0434\u0443.",
+  packed: "\u0417\u0430\u043a\u0430\u0437 \u0443\u043f\u0430\u043a\u043e\u0432\u0430\u043d \u0438 \u0436\u0434\u0451\u0442 \u043f\u0435\u0440\u0435\u0434\u0430\u0447\u0443 \u0432 \u0441\u043b\u0443\u0436\u0431\u0443 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438.",
+  shipped: "\u041f\u043e\u0441\u044b\u043b\u043a\u0430 \u0443\u0436\u0435 \u0432 \u043f\u0443\u0442\u0438. \u041e\u0442\u0441\u043b\u0435\u0436\u0438\u0432\u0430\u043d\u0438\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u043f\u043e \u0442\u0440\u0435\u043a-\u043d\u043e\u043c\u0435\u0440\u0443.",
+  delivered: "\u0417\u0430\u043a\u0430\u0437 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d. \u0415\u0441\u043b\u0438 \u0447\u0442\u043e-\u0442\u043e \u043d\u0435 \u043f\u043e\u0434\u043e\u0448\u043b\u043e, \u043c\u043e\u0436\u043d\u043e \u043e\u0444\u043e\u0440\u043c\u0438\u0442\u044c \u0432\u043e\u0437\u0432\u0440\u0430\u0442.",
+  cancelled: "\u0417\u0430\u043a\u0430\u0437 \u043e\u0442\u043c\u0435\u043d\u0451\u043d. \u0415\u0441\u043b\u0438 \u044d\u0442\u043e \u043f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u043e \u043d\u0435\u043e\u0436\u0438\u0434\u0430\u043d\u043d\u043e, \u0441\u0432\u044f\u0436\u0438\u0442\u0435\u0441\u044c \u0441 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u043e\u0439.",
+  returned: "\u041f\u043e \u0437\u0430\u043a\u0430\u0437\u0443 \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d \u0432\u043e\u0437\u0432\u0440\u0430\u0442 \u0438\u043b\u0438 \u043e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u043b\u043e\u0433\u0438\u0441\u0442\u0438\u043a\u0430 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430."
 };
 
 export function getOrderStatusLabel(status: OrderStatus) {
-  return ORDER_STATUS_LABELS[status] ?? "Статус неизвестен";
+  return ORDER_STATUS_LABELS[status] ?? "\u0421\u0442\u0430\u0442\u0443\u0441 \u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043d";
 }
 
 export function getOrderStatusTone(status: OrderStatus) {
-  return ORDER_STATUS_TONES[status] ?? "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson";
+  return (
+    ORDER_STATUS_TONES[status] ??
+    "border-neon-crimson/40 bg-neon-crimson/10 text-neon-crimson"
+  );
+}
+
+export function getOrderStatusNote(status: OrderStatus) {
+  return (
+    ORDER_STATUS_NOTES[status] ??
+    "\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043a\u0430\u0437\u0430 \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u043e\u0437\u0436\u0435 \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."
+  );
 }
 
 const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

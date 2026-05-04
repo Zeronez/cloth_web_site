@@ -143,7 +143,7 @@ Phase 2.6: Delivery and Fulfillment
 [ ] Implement pickup point search/map API if provider supports it.
 [ ] Implement shipment creation after payment.
 [ ] Implement tracking number storage and tracking status sync.
-[ ] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
+[x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
 [ ] Implement warehouse picking list.
 [ ] Implement packing slip generation.
 [ ] Implement stock return on cancellation/refund according to business rules.
@@ -310,7 +310,7 @@ Backend Unit Tests
 [ ] Order total recalculation.
 [x] Delivery price calculation.
 [x] Payment state transition rules.
-[ ] Order state transition rules.
+[x] Order state transition rules.
 [ ] Notification template rendering.
 [ ] Slug generation and uniqueness behavior.
 [ ] Permission helper functions.

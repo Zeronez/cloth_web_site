@@ -57,13 +57,20 @@ RETURN_STATE_MESSAGES = {
 
 def _sync_order_after_payment_status(payment, new_status):
     order = payment.order
-    if new_status == Payment.Status.SUCCEEDED and order.status != Order.Status.PAID:
+    if new_status == Payment.Status.SUCCEEDED and order.status == Order.Status.PENDING:
         order.status = Order.Status.PAID
         order.save(update_fields=["status", "updated_at"])
         return
 
-    if new_status == Payment.Status.REFUNDED and order.status != Order.Status.CANCELLED:
-        order.status = Order.Status.CANCELLED
+    if new_status == Payment.Status.REFUNDED and order.status not in {
+        Order.Status.CANCELLED,
+        Order.Status.RETURNED,
+    }:
+        order.status = (
+            Order.Status.RETURNED
+            if order.status in {Order.Status.SHIPPED, Order.Status.DELIVERED}
+            else Order.Status.CANCELLED
+        )
         order.save(update_fields=["status", "updated_at"])
 
 

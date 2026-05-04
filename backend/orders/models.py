@@ -9,10 +9,48 @@ from catalog.models import ProductVariant
 
 class Order(models.Model):
     class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        PAID = "paid", "Paid"
-        SHIPPED = "shipped", "Shipped"
-        CANCELLED = "cancelled", "Cancelled"
+        PENDING = "pending", "Ожидает оплаты"
+        PAID = "paid", "Оплачен"
+        PICKING = "picking", "На сборке"
+        PACKED = "packed", "Упакован"
+        SHIPPED = "shipped", "Передан в доставку"
+        DELIVERED = "delivered", "Доставлен"
+        CANCELLED = "cancelled", "Отменён"
+        RETURNED = "returned", "Возвращён"
+
+    TERMINAL_STATUSES = {
+        Status.DELIVERED,
+        Status.CANCELLED,
+        Status.RETURNED,
+    }
+    ALLOWED_TRANSITIONS = {
+        Status.PENDING: {Status.PAID, Status.CANCELLED},
+        Status.PAID: {
+            Status.PICKING,
+            Status.PACKED,
+            Status.SHIPPED,
+            Status.CANCELLED,
+            Status.RETURNED,
+        },
+        Status.PICKING: {
+            Status.PACKED,
+            Status.SHIPPED,
+            Status.CANCELLED,
+            Status.RETURNED,
+        },
+        Status.PACKED: {
+            Status.SHIPPED,
+            Status.CANCELLED,
+            Status.RETURNED,
+        },
+        Status.SHIPPED: {
+            Status.DELIVERED,
+            Status.RETURNED,
+        },
+        Status.DELIVERED: {Status.RETURNED},
+        Status.CANCELLED: set(),
+        Status.RETURNED: set(),
+    }
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, related_name="orders", on_delete=models.PROTECT
@@ -50,6 +88,25 @@ class Order(models.Model):
                 name="unique_order_idempotency_per_user",
             )
         ]
+
+    @property
+    def is_terminal(self):
+        return self.status in self.TERMINAL_STATUSES
+
+    def can_transition_to(self, new_status):
+        return new_status in self.ALLOWED_TRANSITIONS.get(self.status, set())
+
+    def transition_to(self, new_status, save=True):
+        if new_status == self.status:
+            return False
+        if not self.can_transition_to(new_status):
+            raise ValueError(
+                f"Order cannot transition from {self.status} to {new_status}."
+            )
+        self.status = new_status
+        if save:
+            self.save(update_fields=["status", "updated_at"])
+        return True
 
     def recalculate_total(self, save=True):
         total = sum((item.line_total for item in self.items.all()), Decimal("0.00"))

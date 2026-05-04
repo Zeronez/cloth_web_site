@@ -161,9 +161,10 @@ describe("AccountPage", () => {
         },
         {
           id: 12,
-          status: "cancelled",
+          status: "delivered",
+          status_label: "\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d",
           total_amount: "14900.00",
-          track_number: "",
+          track_number: "TRACK-4242",
           items_count: 1,
           shipping_address: {
             name: "QA Shopper",
@@ -246,7 +247,11 @@ describe("AccountPage", () => {
     expect(screen.getAllByText("Neon Ronin Shell").length).toBeGreaterThan(0);
     expect(screen.getByText("Заказ #11")).toBeInTheDocument();
     expect(screen.getByText("Ожидает оплаты")).toBeInTheDocument();
-    expect(screen.getByText("Отменён")).toBeInTheDocument();
+    expect(screen.getByText("\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d")).toBeInTheDocument();
+    expect(screen.getByText(/TRACK-4242/)).toBeInTheDocument();
+    expect(
+      screen.getByText("\u0417\u0430\u043a\u0430\u0437 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d. \u0415\u0441\u043b\u0438 \u0447\u0442\u043e-\u0442\u043e \u043d\u0435 \u043f\u043e\u0434\u043e\u0448\u043b\u043e, \u043c\u043e\u0436\u043d\u043e \u043e\u0444\u043e\u0440\u043c\u0438\u0442\u044c \u0432\u043e\u0437\u0432\u0440\u0430\u0442.")
+    ).toBeInTheDocument();
   });
 
   it("smokes the empty orders and favorites sections for an authenticated account", async () => {
