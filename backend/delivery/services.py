@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
+from delivery.providers import fetch_provider_delivery_tracking_status
 from orders.models import Order
 
 
@@ -190,3 +191,56 @@ def sync_order_tracking_status(
     )
     snapshot.refresh_from_db()
     return event, True
+
+
+@transaction.atomic
+def refresh_order_tracking_from_provider(*, order):
+    snapshot = (
+        OrderDeliverySnapshot.objects.select_for_update()
+        .select_related("order")
+        .filter(order=order)
+        .first()
+    )
+    if snapshot is None:
+        raise ValidationError(
+            {
+                "delivery": {
+                    "code": "delivery_snapshot_not_found",
+                    "message": "Для заказа ещё не создан delivery snapshot.",
+                }
+            }
+        )
+
+    fetch_result = fetch_provider_delivery_tracking_status(
+        provider_code=snapshot.provider_code,
+        snapshot=snapshot,
+    )
+    if fetch_result is None:
+        return {
+            "snapshot": snapshot,
+            "updated": False,
+            "message": "Новых событий доставки у провайдера пока нет.",
+        }
+
+    event, created = sync_order_tracking_status(
+        order=order,
+        tracking_status=fetch_result.tracking_status,
+        external_event_id=fetch_result.event_id,
+        external_shipment_id=fetch_result.external_shipment_id,
+        location=fetch_result.location,
+        message=fetch_result.message,
+        provider_code=snapshot.provider_code,
+        payload=fetch_result.payload,
+    )
+    snapshot.refresh_from_db()
+    order.refresh_from_db()
+    return {
+        "snapshot": snapshot,
+        "event": event,
+        "updated": created,
+        "message": (
+            "Статус доставки синхронизирован."
+            if created
+            else "Событие доставки уже было обработано ранее."
+        ),
+    }

@@ -273,6 +273,10 @@ describe("AccountPage", () => {
     expect(screen.getByText("\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d")).toBeInTheDocument();
     expect(screen.getByText(/TRACK-4242/)).toBeInTheDocument();
     expect(screen.getByText("Курьер уже едет: Москва")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Отследить заказ/i })[0]).toHaveAttribute(
+      "href",
+      "/account/orders/11"
+    );
     expect(
       screen.getByText("\u0417\u0430\u043a\u0430\u0437 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d. \u0415\u0441\u043b\u0438 \u0447\u0442\u043e-\u0442\u043e \u043d\u0435 \u043f\u043e\u0434\u043e\u0448\u043b\u043e, \u043c\u043e\u0436\u043d\u043e \u043e\u0444\u043e\u0440\u043c\u0438\u0442\u044c \u0432\u043e\u0437\u0432\u0440\u0430\u0442.")
     ).toBeInTheDocument();

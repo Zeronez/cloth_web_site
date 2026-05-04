@@ -3,7 +3,11 @@ from decimal import Decimal
 import pytest
 
 from delivery.models import DeliveryTrackingEvent, OrderDeliverySnapshot
-from delivery.services import create_shipment_for_order, sync_order_tracking_status
+from delivery.services import (
+    create_shipment_for_order,
+    refresh_order_tracking_from_provider,
+    sync_order_tracking_status,
+)
 from orders.models import Order
 
 
@@ -157,3 +161,59 @@ def test_order_detail_returns_tracking_status_and_events(authenticated_client, u
     assert response.data["delivery"]["tracking_status_label"] == "Курьер уже едет"
     assert response.data["delivery"]["provider_code"] == "cdek"
     assert response.data["delivery"]["tracking_events"][-1]["location"] == "Москва"
+
+
+def test_provider_tracking_refresh_updates_order_from_sandbox_override(user, settings):
+    order = create_order_with_snapshot(user, status=Order.Status.PAID)
+    create_shipment_for_order(
+        order=order,
+        provider_code="cdek",
+        external_shipment_id="SHIP-1005",
+        track_number="TRACK-1005",
+    )
+    settings.DELIVERY_PROVIDER_TRACKING_OVERRIDES = {
+        "cdek": {
+            "SHIP-1005": {
+                "status": "delivered",
+                "location": "Москва, вручено",
+                "message": "Заказ доставлен получателю.",
+            }
+        }
+    }
+
+    result = refresh_order_tracking_from_provider(order=order)
+
+    order.refresh_from_db()
+    snapshot = order.delivery_snapshot
+    assert result["updated"] is True
+    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED
+    assert snapshot.current_location == "Москва, вручено"
+    assert order.status == Order.Status.DELIVERED
+
+
+def test_tracking_refresh_endpoint_returns_updated_order(
+    authenticated_client, user, settings
+):
+    order = create_order_with_snapshot(user, status=Order.Status.PAID)
+    create_shipment_for_order(
+        order=order,
+        provider_code="cdek",
+        external_shipment_id="SHIP-1006",
+        track_number="TRACK-1006",
+    )
+    settings.DELIVERY_PROVIDER_TRACKING_OVERRIDES = {
+        "cdek": {
+            "SHIP-1006": {
+                "status": "courier",
+                "location": "Москва",
+                "message": "Курьер везёт заказ.",
+            }
+        }
+    }
+
+    response = authenticated_client.post(f"/api/orders/{order.id}/tracking-refresh/")
+
+    assert response.status_code == 200
+    assert response.data["track_number"] == "TRACK-1006"
+    assert response.data["delivery"]["tracking_status"] == "out_for_delivery"
+    assert response.data["delivery"]["current_location"] == "Москва"

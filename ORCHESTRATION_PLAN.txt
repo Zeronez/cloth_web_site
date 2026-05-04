@@ -143,6 +143,7 @@ Phase 2.6: Delivery and Fulfillment
 [ ] Implement pickup point search/map API if provider supports it.
 [ ] Implement shipment creation after payment.
 [x] Implement tracking number storage and tracking status sync.
+[x] Add provider-shaped delivery tracking adapter foundation.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
 [ ] Implement warehouse picking list.
 [ ] Implement packing slip generation.
@@ -205,7 +206,7 @@ Phase 3.2: Frontend Production UX
 [x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
-[ ] Implement order tracking page.
+[x] Implement order tracking page.
 [ ] Implement search page with suggestions.
 [ ] Implement SEO metadata for all public pages.
 [ ] Implement sitemap.xml and robots.txt.

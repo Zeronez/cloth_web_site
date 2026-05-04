@@ -609,6 +609,13 @@ export async function fetchOrder(token: string, orderId: number) {
   return apiRequest<Order>(`/api/orders/${orderId}/`, { token });
 }
 
+export async function refreshOrderTracking(token: string, orderId: number) {
+  return apiRequest<Order>(`/api/orders/${orderId}/tracking-refresh/`, {
+    method: "POST",
+    token
+  });
+}
+
 export async function fetchDeliveryMethods() {
   return apiRequest<Paginated<DeliveryMethod>>("/api/delivery-methods/");
 }

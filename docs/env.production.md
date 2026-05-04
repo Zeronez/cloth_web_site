@@ -73,6 +73,12 @@ These define sandbox or hosted checkout confirmation URLs for redirect-based pro
 - `PAYMENT_PROVIDER_RETURN_BASE_URL`
 - `PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON`
 
+## Delivery tracking sandbox contracts
+
+These define sandbox-like tracking responses for provider-shaped shipping adapters.
+
+- `DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON`
+
 ## Local compose helpers
 
 - `BACKEND_PORT`

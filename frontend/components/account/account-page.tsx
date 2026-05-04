@@ -204,6 +204,15 @@ function OrderCard({ order }: { order: Order }) {
 
       <p className="mt-4 text-sm leading-6 text-slate-300">{statusNote}</p>
 
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link
+          href={`/account/orders/${order.id}`}
+          className="inline-flex h-10 items-center border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-neon-teal/60 hover:bg-white/10"
+        >
+          Отследить заказ
+        </Link>
+      </div>
+
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <div className="border border-white/10 bg-ink-900/60 p-4">
           <p className="text-xs uppercase text-slate-500">Доставка</p>

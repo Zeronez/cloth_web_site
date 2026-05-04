@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from delivery.services import refresh_order_tracking_from_provider
 from orders.models import Order
 from orders.serializers import CheckoutSerializer, OrderSerializer
 from orders.services import checkout_cart
@@ -30,4 +31,14 @@ class OrderViewSet(
         return Response(
             OrderSerializer(order, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"], url_path="tracking-refresh")
+    def tracking_refresh(self, request, pk=None):
+        order = self.get_object()
+        refresh_order_tracking_from_provider(order=order)
+        order.refresh_from_db()
+        return Response(
+            OrderSerializer(order, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK,
         )
