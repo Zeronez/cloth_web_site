@@ -141,9 +141,11 @@ Phase 2.6: Delivery and Fulfillment
 [x] Implement delivery method catalog: courier, pickup point, postal.
 [x] Implement delivery price calculation.
 [ ] Implement pickup point search/map API if provider supports it.
-[ ] Implement shipment creation after payment.
+[x] Implement shipment creation after payment.
 [x] Implement tracking number storage and tracking status sync.
 [x] Add provider-shaped delivery tracking adapter foundation.
+[x] Add initial staff actions for shipment creation and tracking refresh.
+[x] Separate shipment registration from carrier handoff in fulfillment state flow.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
 [ ] Implement warehouse picking list.
 [ ] Implement packing slip generation.
@@ -357,6 +359,7 @@ Payment Provider Tests
 [x] Webhook signature validation with valid signature.
 [x] Webhook signature rejection with invalid signature.
 [x] Payment success webhook marks order paid idempotently.
+[x] Payment success webhook does not roll back when shipment bootstrap is unavailable.
 [x] Duplicate webhook does not duplicate effects.
 [x] Payment failure webhook marks payment failed without stock corruption.
 [x] Refund webhook updates order/payment status.
@@ -367,8 +370,8 @@ Delivery Provider Tests
 [ ] Delivery methods API returns available methods for a real address fixture.
 [ ] Delivery cost calculation uses provider sandbox/contract fixture.
 [ ] Pickup point search returns provider-format points.
-[ ] Shipment creation after payment stores tracking number.
-[ ] Tracking sync updates status.
+[x] Shipment creation after payment stores tracking number.
+[x] Tracking sync updates status.
 [ ] Delivery provider failure shows recoverable checkout error.
 
 Frontend Unit and Component Tests

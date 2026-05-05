@@ -5,7 +5,10 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
-from delivery.providers import fetch_provider_delivery_tracking_status
+from delivery.providers import (
+    fetch_provider_delivery_tracking_status,
+    get_delivery_provider,
+)
 from orders.models import Order
 
 
@@ -62,6 +65,9 @@ def create_order_delivery_snapshot(order, method, shipping_data):
 
 
 def _sync_order_with_tracking_status(order, tracking_status):
+    if tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED:
+        return
+
     if tracking_status in {
         OrderDeliverySnapshot.TrackingStatus.HANDED_OVER,
         OrderDeliverySnapshot.TrackingStatus.IN_TRANSIT,
@@ -76,6 +82,12 @@ def _sync_order_with_tracking_status(order, tracking_status):
         return
 
     if tracking_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED:
+        if order.status in {
+            Order.Status.PAID,
+            Order.Status.PICKING,
+            Order.Status.PACKED,
+        }:
+            order.transition_to(Order.Status.SHIPPED)
         if order.status != Order.Status.DELIVERED and order.can_transition_to(
             Order.Status.DELIVERED
         ):
@@ -108,7 +120,7 @@ def create_shipment_for_order(
     snapshot.provider_code = provider_code or snapshot.provider_code
     if external_shipment_id:
         snapshot.external_shipment_id = external_shipment_id
-    snapshot.tracking_status = OrderDeliverySnapshot.TrackingStatus.HANDED_OVER
+    snapshot.tracking_status = OrderDeliverySnapshot.TrackingStatus.CREATED
     snapshot.last_tracking_sync_at = timezone.now()
     snapshot.save(
         update_fields=[
@@ -127,13 +139,56 @@ def create_shipment_for_order(
         event_type="shipment_created",
         previous_status=previous_status,
         new_status=snapshot.tracking_status,
-        message=message or "Заказ передан в доставку.",
+        message=message or "Оформлена накладная и создано отправление.",
         payload=payload or {},
         location=snapshot.city,
         happened_at=timezone.now(),
     )
     snapshot.refresh_from_db()
     return snapshot
+
+
+@transaction.atomic
+def ensure_shipment_for_paid_order(*, order):
+    snapshot = (
+        OrderDeliverySnapshot.objects.select_for_update()
+        .select_related("order")
+        .filter(order=order)
+        .first()
+    )
+    if snapshot is None:
+        raise ValidationError(
+            {
+                "delivery": {
+                    "code": "delivery_snapshot_not_found",
+                    "message": "Для заказа ещё не создан delivery snapshot.",
+                }
+            }
+        )
+    if snapshot.external_shipment_id:
+        return snapshot, False
+
+    provider = get_delivery_provider(snapshot.provider_code)
+    if provider is None:
+        raise ValidationError(
+            {
+                "delivery": {
+                    "code": "delivery_provider_not_configured",
+                    "message": "Провайдер доставки не настроен.",
+                }
+            }
+        )
+
+    shipment = provider.create_shipment(snapshot=snapshot)
+    created_snapshot = create_shipment_for_order(
+        order=order,
+        provider_code=shipment.provider,
+        external_shipment_id=shipment.external_shipment_id,
+        track_number=shipment.track_number,
+        message=shipment.message,
+        payload=shipment.payload,
+    )
+    return created_snapshot, True
 
 
 @transaction.atomic

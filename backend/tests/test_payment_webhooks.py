@@ -2,6 +2,8 @@ from decimal import Decimal
 
 import pytest
 
+from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
+from delivery.services import create_order_delivery_snapshot
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from payments.services import create_payment_session
@@ -36,6 +38,13 @@ def create_payment_fixture(user):
         total_amount=Decimal("125.00"),
         **shipping_payload(),
     )
+    method_delivery = DeliveryMethod.objects.create(
+        code="courier-msk",
+        name="Курьер по Москве",
+        kind=DeliveryMethod.Kind.COURIER,
+        price_amount=Decimal("350.00"),
+    )
+    create_order_delivery_snapshot(order, method_delivery, shipping_payload())
     payment, _, _ = create_payment_session(
         user=user,
         order_id=order.id,
@@ -75,6 +84,17 @@ def test_payment_success_webhook_marks_payment_and_order_paid(api_client, user):
         external_event_id="provider-event-1",
         new_status=Payment.Status.SUCCEEDED,
     ).exists()
+    snapshot = OrderDeliverySnapshot.objects.get(order=order)
+    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED
+    assert snapshot.external_shipment_id == f"manual-shipment-{order.id}"
+    assert order.track_number == f"MANUAL-{order.id}"
+    assert (
+        DeliveryTrackingEvent.objects.filter(
+            snapshot=snapshot,
+            event_type="shipment_created",
+        ).count()
+        == 1
+    )
 
 
 def test_payment_webhook_replay_is_idempotent(api_client, user):
@@ -110,6 +130,42 @@ def test_payment_webhook_replay_is_idempotent(api_client, user):
         PaymentEvent.objects.filter(
             payment=payment,
             external_event_id="provider-event-2",
+        ).count()
+        == 1
+    )
+
+
+def test_payment_success_replay_does_not_duplicate_shipment(api_client, user):
+    order, payment = create_payment_fixture(user)
+
+    first_response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-shipment-1",
+            "status": "succeeded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+    second_response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-shipment-1",
+            "status": "succeeded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    snapshot = OrderDeliverySnapshot.objects.get(order=order)
+    assert (
+        DeliveryTrackingEvent.objects.filter(
+            snapshot=snapshot,
+            event_type="shipment_created",
         ).count()
         == 1
     )
@@ -188,6 +244,45 @@ def test_payment_failure_webhook_marks_payment_failed_without_changing_order_pai
         external_event_id="provider-event-5",
         new_status=Payment.Status.FAILED,
     ).exists()
+
+
+def test_payment_success_webhook_does_not_rollback_without_delivery_snapshot(
+    api_client, user
+):
+    method = PaymentMethod.objects.create(
+        code="local-card-no-delivery",
+        name="Банковская карта",
+        provider_code="placeholder",
+        session_mode=PaymentMethod.SessionMode.PLACEHOLDER,
+    )
+    order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("125.00"),
+        **shipping_payload(),
+    )
+    payment, _, _ = create_payment_session(
+        user=user,
+        order_id=order.id,
+        payment_method_code=method.code,
+        idempotency_key="payment-webhook-no-delivery",
+    )
+
+    response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-no-delivery",
+            "status": "succeeded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.SUCCEEDED
+    assert order.status == Order.Status.PAID
 
 
 def test_payment_refund_webhook_marks_payment_refunded_and_order_cancelled(

@@ -1,5 +1,9 @@
 from django.contrib import admin, messages
 
+from delivery.services import (
+    ensure_shipment_for_paid_order,
+    refresh_order_tracking_from_provider,
+)
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
 from payments.models import Payment
@@ -65,6 +69,13 @@ class PaymentInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    SHIPMENT_READY_STATUSES = {
+        Order.Status.PAID,
+        Order.Status.PICKING,
+        Order.Status.PACKED,
+        Order.Status.SHIPPED,
+    }
+
     list_display = (
         "id",
         "user",
@@ -85,6 +96,8 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ("total_amount",)
     inlines = [OrderDeliverySnapshotInline, PaymentInline, OrderItemInline]
     actions = (
+        "create_shipment",
+        "refresh_tracking",
         "mark_picking",
         "mark_packed",
         "mark_shipped",
@@ -92,6 +105,87 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_cancelled",
         "mark_returned",
     )
+
+    @admin.action(description="Создать отправку")
+    def create_shipment(self, request, queryset):
+        created = 0
+        skipped = 0
+        failed = 0
+        for order in queryset.select_related("user"):
+            if order.status not in self.SHIPMENT_READY_STATUSES:
+                skipped += 1
+                continue
+            try:
+                _, was_created = ensure_shipment_for_paid_order(order=order)
+            except Exception as exc:
+                failed += 1
+                self.message_user(
+                    request,
+                    f"Заказ #{order.id}: не удалось создать отправку ({exc}).",
+                    level=messages.ERROR,
+                )
+                continue
+            if was_created:
+                created += 1
+            else:
+                skipped += 1
+        if created:
+            self.message_user(
+                request,
+                f"Подготовлено отправок: {created}.",
+                level=messages.SUCCESS,
+            )
+        if skipped:
+            self.message_user(
+                request,
+                f"Пропущено заказов без новой отправки или в неподходящем статусе: {skipped}.",
+                level=messages.WARNING,
+            )
+        if failed:
+            self.message_user(
+                request,
+                f"Заказов с ошибкой создания отправки: {failed}.",
+                level=messages.ERROR,
+            )
+
+    @admin.action(description="Обновить трекинг")
+    def refresh_tracking(self, request, queryset):
+        updated = 0
+        skipped = 0
+        failed = 0
+        for order in queryset.select_related("user"):
+            try:
+                result = refresh_order_tracking_from_provider(order=order)
+            except Exception as exc:
+                failed += 1
+                self.message_user(
+                    request,
+                    f"Заказ #{order.id}: не удалось обновить трекинг ({exc}).",
+                    level=messages.ERROR,
+                )
+                continue
+            if result["updated"]:
+                updated += 1
+            else:
+                skipped += 1
+        if updated:
+            self.message_user(
+                request,
+                f"Синхронизировано заказов: {updated}.",
+                level=messages.SUCCESS,
+            )
+        if skipped:
+            self.message_user(
+                request,
+                f"Без новых событий доставки: {skipped}.",
+                level=messages.WARNING,
+            )
+        if failed:
+            self.message_user(
+                request,
+                f"Заказов с ошибкой обновления трекинга: {failed}.",
+                level=messages.ERROR,
+            )
 
     @admin.action(description="Перевести в 'На сборке'")
     def mark_picking(self, request, queryset):

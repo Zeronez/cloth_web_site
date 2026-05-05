@@ -37,6 +37,7 @@ class DeliveryMethod(models.Model):
 class OrderDeliverySnapshot(models.Model):
     class TrackingStatus(models.TextChoices):
         PENDING = "pending", "Ожидает передачи"
+        CREATED = "created", "Оформлена накладная"
         HANDED_OVER = "handed_over", "Передан в службу доставки"
         IN_TRANSIT = "in_transit", "В пути"
         OUT_FOR_DELIVERY = "out_for_delivery", "Курьер уже едет"

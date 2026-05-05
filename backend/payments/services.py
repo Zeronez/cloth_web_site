@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, NotFound, ValidationError
 
+from delivery.services import ensure_shipment_for_paid_order
 from orders.models import Order
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from payments.providers import fetch_provider_payment_status, get_payment_provider
@@ -60,6 +61,13 @@ def _sync_order_after_payment_status(payment, new_status):
     if new_status == Payment.Status.SUCCEEDED and order.status == Order.Status.PENDING:
         order.status = Order.Status.PAID
         order.save(update_fields=["status", "updated_at"])
+        if hasattr(order, "delivery_snapshot"):
+            try:
+                ensure_shipment_for_paid_order(order=order)
+            except ValidationError:
+                # Оплата уже подтверждена провайдером, поэтому не откатываем payment flow
+                # из-за проблем подготовки доставки. Staff сможет дооформить shipment позже.
+                pass
         return
 
     if new_status == Payment.Status.REFUNDED and order.status not in {

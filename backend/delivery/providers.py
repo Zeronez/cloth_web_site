@@ -16,8 +16,20 @@ class DeliveryTrackingFetchResult:
     payload: dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ShipmentCreationResult:
+    provider: str
+    external_shipment_id: str
+    track_number: str
+    message: str = ""
+    payload: dict = field(default_factory=dict)
+
+
 class BaseDeliveryProviderAdapter:
     provider_code = ""
+
+    def create_shipment(self, *, snapshot):
+        raise NotImplementedError
 
     def fetch_tracking_status(self, *, snapshot):
         return None
@@ -25,6 +37,16 @@ class BaseDeliveryProviderAdapter:
 
 class ManualDeliveryProviderAdapter(BaseDeliveryProviderAdapter):
     provider_code = "manual"
+
+    def create_shipment(self, *, snapshot):
+        shipment_id = snapshot.external_shipment_id or f"manual-shipment-{snapshot.order_id}"
+        return ShipmentCreationResult(
+            provider=self.provider_code,
+            external_shipment_id=shipment_id,
+            track_number=f"MANUAL-{snapshot.order_id}",
+            message="Отправка подготовлена в локальном режиме. Внешний delivery provider ещё не подключён.",
+            payload={"provider": self.provider_code, "mode": "local"},
+        )
 
 
 class CDEKSandboxDeliveryAdapter(BaseDeliveryProviderAdapter):
@@ -42,6 +64,20 @@ class CDEKSandboxDeliveryAdapter(BaseDeliveryProviderAdapter):
         "returned": OrderDeliverySnapshot.TrackingStatus.RETURNED,
         "returning": OrderDeliverySnapshot.TrackingStatus.RETURNED,
     }
+
+    def create_shipment(self, *, snapshot):
+        shipment_id = snapshot.external_shipment_id or f"cdek-sandbox-{snapshot.order_id}"
+        return ShipmentCreationResult(
+            provider=self.provider_code,
+            external_shipment_id=shipment_id,
+            track_number=f"CDEK-{snapshot.order_id}",
+            message="CDEK sandbox-отправка подготовлена.",
+            payload={
+                "provider": self.provider_code,
+                "mode": "sandbox",
+                "shipment_id": shipment_id,
+            },
+        )
 
     def fetch_tracking_status(self, *, snapshot):
         effective_external_id = snapshot.external_shipment_id

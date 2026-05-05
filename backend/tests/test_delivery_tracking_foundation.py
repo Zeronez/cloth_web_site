@@ -5,6 +5,7 @@ import pytest
 from delivery.models import DeliveryTrackingEvent, OrderDeliverySnapshot
 from delivery.services import (
     create_shipment_for_order,
+    ensure_shipment_for_paid_order,
     refresh_order_tracking_from_provider,
     sync_order_tracking_status,
 )
@@ -39,7 +40,7 @@ def create_delivery_method():
     )
 
 
-def create_order_with_snapshot(user, status=Order.Status.PAID):
+def create_order_with_snapshot(user, status=Order.Status.PAID, provider_code="manual"):
     from delivery.services import create_order_delivery_snapshot
 
     order = Order.objects.create(
@@ -48,11 +49,15 @@ def create_order_with_snapshot(user, status=Order.Status.PAID):
         status=status,
         **shipping_payload(),
     )
-    create_order_delivery_snapshot(order, create_delivery_method(), shipping_payload())
+    snapshot = create_order_delivery_snapshot(
+        order, create_delivery_method(), shipping_payload()
+    )
+    snapshot.provider_code = provider_code
+    snapshot.save(update_fields=["provider_code"])
     return order
 
 
-def test_create_shipment_marks_order_shipped_and_sets_tracking_number(user):
+def test_create_shipment_registers_shipment_and_sets_tracking_number(user):
     order = create_order_with_snapshot(user, status=Order.Status.PAID)
 
     snapshot = create_shipment_for_order(
@@ -63,14 +68,41 @@ def test_create_shipment_marks_order_shipped_and_sets_tracking_number(user):
     )
 
     order.refresh_from_db()
-    assert order.status == Order.Status.SHIPPED
+    assert order.status == Order.Status.PAID
     assert order.track_number == "TRACK-1001"
     assert snapshot.provider_code == "cdek"
-    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.HANDED_OVER
+    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED
     assert DeliveryTrackingEvent.objects.filter(
         snapshot=snapshot,
         event_type="shipment_created",
     ).exists()
+
+
+def test_ensure_shipment_for_paid_order_is_idempotent(user):
+    order = create_order_with_snapshot(user, status=Order.Status.PAID)
+
+    first_snapshot, first_created = ensure_shipment_for_paid_order(order=order)
+    second_snapshot, second_created = ensure_shipment_for_paid_order(order=order)
+
+    assert first_created is True
+    assert second_created is False
+    assert first_snapshot.id == second_snapshot.id
+    assert first_snapshot.external_shipment_id == f"manual-shipment-{order.id}"
+
+
+def test_ensure_shipment_uses_provider_shaped_contract(user):
+    order = create_order_with_snapshot(
+        user, status=Order.Status.PAID, provider_code="cdek"
+    )
+
+    snapshot, created = ensure_shipment_for_paid_order(order=order)
+
+    order.refresh_from_db()
+    assert created is True
+    assert snapshot.provider_code == "cdek"
+    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED
+    assert snapshot.external_shipment_id == f"cdek-sandbox-{order.id}"
+    assert order.track_number == f"CDEK-{order.id}"
 
 
 def test_tracking_sync_to_delivered_updates_order_and_snapshot(user):
