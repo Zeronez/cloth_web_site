@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.db.models import Q
+from django.utils.html import format_html
 
 from delivery.services import (
     ensure_shipment_for_paid_order,
@@ -69,6 +71,7 @@ class PaymentInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    change_list_template = "admin/orders/order/change_list.html"
     SHIPMENT_READY_STATUSES = {
         Order.Status.PAID,
         Order.Status.PICKING,
@@ -80,12 +83,21 @@ class OrderAdmin(admin.ModelAdmin):
         "id",
         "user",
         "status",
+        "payment_status_badge",
+        "delivery_status_badge",
+        "fulfillment_next_step",
         "total_amount",
         "track_number",
         "created_at",
     )
-    list_filter = ("status", "created_at")
-    list_select_related = ("user",)
+    list_filter = (
+        "status",
+        "delivery_snapshot__method_code",
+        "delivery_snapshot__provider_code",
+        "delivery_snapshot__tracking_status",
+        "created_at",
+    )
+    list_select_related = ("user", "delivery_snapshot")
     search_fields = (
         "id",
         "user__username",
@@ -105,6 +117,187 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_cancelled",
         "mark_returned",
     )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related("user", "delivery_snapshot").prefetch_related(
+            "payments", "items"
+        )
+
+    def _get_delivery_snapshot(self, order):
+        try:
+            return order.delivery_snapshot
+        except OrderDeliverySnapshot.DoesNotExist:
+            return None
+
+    def changelist_view(self, request, extra_context=None):
+        queue_mode = request.GET.get("queue", "overview")
+        mutable_get = request.GET.copy()
+        mutable_get.pop("queue", None)
+        request.GET = mutable_get
+        response = super().changelist_view(request, extra_context=extra_context)
+        if not hasattr(response, "context_data"):
+            return response
+
+        base_queryset = self.get_queryset(request)
+        response.context_data["fulfillment_summary"] = self._build_fulfillment_summary(
+            base_queryset
+        )
+        response.context_data["queue_mode"] = queue_mode
+        response.context_data["queue_orders"] = self._build_queue_rows(
+            base_queryset, queue_mode
+        )
+        response.context_data["queue_links"] = (
+            ("overview", "Обзор"),
+            ("picking", "На сборку"),
+            ("packing", "На упаковку"),
+            ("shipping", "К отгрузке"),
+            ("issues", "Нужны действия"),
+        )
+        return response
+
+    @admin.display(description="Оплата")
+    def payment_status_badge(self, obj):
+        payment = obj.payments.first()
+        if payment is None:
+            return format_html(
+                '<span style="padding:2px 8px;border-radius:999px;'
+                'background:#3f3f46;color:#fafafa;">{}</span>',
+                "Без сессии",
+            )
+        palette = {
+            "succeeded": ("#0f766e", "#ecfeff"),
+            "authorized": ("#155e75", "#ecfeff"),
+            "session_created": ("#92400e", "#fffbeb"),
+            "pending": ("#92400e", "#fffbeb"),
+            "failed": ("#991b1b", "#fef2f2"),
+            "cancelled": ("#7f1d1d", "#fef2f2"),
+            "refunded": ("#7f1d1d", "#fef2f2"),
+            "expired": ("#7f1d1d", "#fef2f2"),
+        }
+        background, color = palette.get(payment.status, ("#312e81", "#eef2ff"))
+        return format_html(
+            '<span style="padding:2px 8px;border-radius:999px;'
+            'background:{};color:{};">{}</span>',
+            background,
+            color,
+            payment.get_status_display(),
+        )
+
+    @admin.display(description="Доставка")
+    def delivery_status_badge(self, obj):
+        snapshot = self._get_delivery_snapshot(obj)
+        if snapshot is None:
+            return format_html(
+                '<span style="padding:2px 8px;border-radius:999px;'
+                'background:#3f3f46;color:#fafafa;">{}</span>',
+                "Нет snapshot",
+            )
+        palette = {
+            "pending": ("#3f3f46", "#fafafa"),
+            "created": ("#1d4ed8", "#eff6ff"),
+            "handed_over": ("#155e75", "#ecfeff"),
+            "in_transit": ("#7c3aed", "#f5f3ff"),
+            "out_for_delivery": ("#b45309", "#fffbeb"),
+            "delivered": ("#166534", "#f0fdf4"),
+            "failed": ("#991b1b", "#fef2f2"),
+            "returned": ("#7f1d1d", "#fef2f2"),
+        }
+        background, color = palette.get(
+            snapshot.tracking_status, ("#312e81", "#eef2ff")
+        )
+        return format_html(
+            '<span style="padding:2px 8px;border-radius:999px;'
+            'background:{};color:{};">{}</span>',
+            background,
+            color,
+            snapshot.get_tracking_status_display(),
+        )
+
+    @admin.display(description="Следующий шаг")
+    def fulfillment_next_step(self, obj):
+        snapshot = self._get_delivery_snapshot(obj)
+        payment = obj.payments.first()
+        if payment and payment.status in {"failed", "cancelled", "expired"}:
+            return "Проверить оплату и связаться с клиентом"
+        if obj.status == Order.Status.PAID:
+            return "Передать на сборку"
+        if obj.status == Order.Status.PICKING:
+            return "Проверить SKU и упаковать"
+        if obj.status == Order.Status.PACKED and (
+            snapshot is None or not snapshot.external_shipment_id
+        ):
+            return "Создать отправку"
+        if snapshot and snapshot.tracking_status == snapshot.TrackingStatus.CREATED:
+            return "Передать перевозчику"
+        if snapshot and snapshot.tracking_status == snapshot.TrackingStatus.FAILED:
+            return "Разобрать проблему доставки"
+        if obj.status == Order.Status.SHIPPED:
+            return "Следить за трекингом"
+        return "Контур в норме"
+
+    def _build_fulfillment_summary(self, queryset):
+        return {
+            "paid_ready": queryset.filter(status=Order.Status.PAID).count(),
+            "picking_queue": queryset.filter(
+                status__in=[Order.Status.PAID, Order.Status.PICKING]
+            ).count(),
+            "packing_queue": queryset.filter(status=Order.Status.PACKED).count(),
+            "awaiting_shipment": queryset.filter(
+                status__in=[
+                    Order.Status.PAID,
+                    Order.Status.PICKING,
+                    Order.Status.PACKED,
+                ]
+            )
+            .filter(
+                Q(delivery_snapshot__external_shipment_id="")
+                | Q(delivery_snapshot__external_shipment_id__isnull=True)
+            )
+            .count(),
+            "handoff_queue": queryset.filter(
+                delivery_snapshot__tracking_status="created"
+            ).count(),
+            "delivery_issues": queryset.filter(
+                delivery_snapshot__tracking_status="failed"
+            ).count(),
+        }
+
+    def _build_queue_rows(self, queryset, queue_mode):
+        if queue_mode == "picking":
+            filtered = queryset.filter(
+                status__in=[Order.Status.PAID, Order.Status.PICKING]
+            )
+        elif queue_mode == "packing":
+            filtered = queryset.filter(status=Order.Status.PACKED)
+        elif queue_mode == "shipping":
+            filtered = queryset.filter(
+                Q(delivery_snapshot__tracking_status="created")
+                | Q(delivery_snapshot__tracking_status="handed_over")
+            )
+        elif queue_mode == "issues":
+            filtered = queryset.filter(
+                Q(delivery_snapshot__tracking_status="failed")
+                | Q(payments__status__in=["failed", "cancelled", "expired"])
+            ).distinct()
+        else:
+            filtered = queryset.filter(
+                status__in=[
+                    Order.Status.PAID,
+                    Order.Status.PICKING,
+                    Order.Status.PACKED,
+                    Order.Status.SHIPPED,
+                ]
+            )
+
+        return [
+            {
+                "order": order,
+                "snapshot": self._get_delivery_snapshot(order),
+                "next_step": self.fulfillment_next_step(order),
+            }
+            for order in filtered.order_by("-created_at")[:12]
+        ]
 
     @admin.action(description="Создать отправку")
     def create_shipment(self, request, queryset):

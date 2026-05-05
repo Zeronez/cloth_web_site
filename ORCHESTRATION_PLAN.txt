@@ -147,10 +147,10 @@ Phase 2.6: Delivery and Fulfillment
 [x] Add initial staff actions for shipment creation and tracking refresh.
 [x] Separate shipment registration from carrier handoff in fulfillment state flow.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
-[ ] Implement warehouse picking list.
+[x] Implement warehouse picking list.
 [ ] Implement packing slip generation.
 [ ] Implement stock return on cancellation/refund according to business rules.
-[ ] Implement admin fulfillment dashboard.
+[x] Implement admin fulfillment dashboard.
 
 Phase 2.7: Notifications and Support
 ------------------------------------
@@ -225,7 +225,7 @@ Phase 4: Admin and Operations Product
 [ ] Add order manager workflow.
 [ ] Add inventory manager workflow.
 [ ] Add support agent workflow.
-[ ] Add dashboards: revenue, orders, conversion, low stock, failed payments.
+[~] Add dashboards: revenue, orders, conversion, low stock, failed payments.
 [ ] Add export reports: orders, customers, SKU stock, payments.
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
 [ ] Add admin inline order items, payment events, shipment events.

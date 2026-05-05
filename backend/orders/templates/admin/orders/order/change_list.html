@@ -1,0 +1,205 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .fulfillment-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin: 0 0 20px;
+    }
+
+    .fulfillment-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 16px;
+      color: #f9fafb;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .fulfillment-card strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1.1;
+      margin-top: 8px;
+    }
+
+    .fulfillment-card span {
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .queue-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .queue-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      text-decoration: none;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .queue-link.is-active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+    }
+
+    .queue-panel {
+      margin: 0 0 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .queue-panel__header {
+      padding: 14px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .queue-panel__header h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .queue-panel__header p {
+      margin: 0;
+      color: #475569;
+    }
+
+    .queue-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .queue-table th,
+    .queue-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .queue-table th {
+      text-align: left;
+      font-size: 12px;
+      letter-spacing: 0;
+      color: #475569;
+      text-transform: uppercase;
+    }
+
+    .queue-table td small {
+      display: block;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .queue-empty {
+      padding: 16px;
+      color: #475569;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  {% if fulfillment_summary %}
+    <div class="fulfillment-grid">
+      <div class="fulfillment-card">
+        <span>Оплачены, ждут старта</span>
+        <strong>{{ fulfillment_summary.paid_ready }}</strong>
+      </div>
+      <div class="fulfillment-card">
+        <span>Очередь на сборку</span>
+        <strong>{{ fulfillment_summary.picking_queue }}</strong>
+      </div>
+      <div class="fulfillment-card">
+        <span>Очередь на упаковку</span>
+        <strong>{{ fulfillment_summary.packing_queue }}</strong>
+      </div>
+      <div class="fulfillment-card">
+        <span>Ждут создания отправки</span>
+        <strong>{{ fulfillment_summary.awaiting_shipment }}</strong>
+      </div>
+      <div class="fulfillment-card">
+        <span>Нужно передать перевозчику</span>
+        <strong>{{ fulfillment_summary.handoff_queue }}</strong>
+      </div>
+      <div class="fulfillment-card">
+        <span>Проблемы доставки</span>
+        <strong>{{ fulfillment_summary.delivery_issues }}</strong>
+      </div>
+    </div>
+
+    <div class="queue-panel">
+      <div class="queue-panel__header">
+        <h2>Fulfillment Queue</h2>
+        <p>Быстрый операционный срез для сборки, упаковки, отгрузки и проблемных заказов.</p>
+      </div>
+      <div class="queue-toolbar">
+        {% for value, label in queue_links %}
+          <a
+            class="queue-link{% if queue_mode == value %} is-active{% endif %}"
+            href="?queue={{ value }}"
+          >
+            {{ label }}
+          </a>
+        {% endfor %}
+      </div>
+
+      {% if queue_orders %}
+        <table class="queue-table">
+          <thead>
+            <tr>
+              <th>Заказ</th>
+              <th>Клиент</th>
+              <th>Статус</th>
+              <th>Доставка</th>
+              <th>Трек</th>
+              <th>Следующий шаг</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in queue_orders %}
+              <tr>
+                <td>
+                  <a href="{% url 'admin:orders_order_change' row.order.id %}">#{{ row.order.id }}</a>
+                  <small>{{ row.order.created_at }}</small>
+                </td>
+                <td>
+                  {{ row.order.shipping_name }}
+                  <small>{{ row.order.shipping_city }}, {{ row.order.shipping_phone }}</small>
+                </td>
+                <td>{{ row.order.get_status_display }}</td>
+                <td>
+                  {% if row.snapshot %}
+                    {{ row.snapshot.method_name }}
+                    <small>{{ row.snapshot.get_tracking_status_display }}</small>
+                  {% else %}
+                    Нет snapshot
+                  {% endif %}
+                </td>
+                <td>{{ row.order.track_number|default:"—" }}</td>
+                <td>{{ row.next_step }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="queue-empty">Для этого среза сейчас нет заказов.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {{ block.super }}
+{% endblock %}

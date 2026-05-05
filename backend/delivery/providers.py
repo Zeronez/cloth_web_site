@@ -39,7 +39,9 @@ class ManualDeliveryProviderAdapter(BaseDeliveryProviderAdapter):
     provider_code = "manual"
 
     def create_shipment(self, *, snapshot):
-        shipment_id = snapshot.external_shipment_id or f"manual-shipment-{snapshot.order_id}"
+        shipment_id = (
+            snapshot.external_shipment_id or f"manual-shipment-{snapshot.order_id}"
+        )
         return ShipmentCreationResult(
             provider=self.provider_code,
             external_shipment_id=shipment_id,
@@ -66,7 +68,9 @@ class CDEKSandboxDeliveryAdapter(BaseDeliveryProviderAdapter):
     }
 
     def create_shipment(self, *, snapshot):
-        shipment_id = snapshot.external_shipment_id or f"cdek-sandbox-{snapshot.order_id}"
+        shipment_id = (
+            snapshot.external_shipment_id or f"cdek-sandbox-{snapshot.order_id}"
+        )
         return ShipmentCreationResult(
             provider=self.provider_code,
             external_shipment_id=shipment_id,
