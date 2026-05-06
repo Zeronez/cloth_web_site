@@ -27,7 +27,7 @@ Phase 0: Product Scope and Release Decisions
 [ ] Define delivery providers: CDEK/Boxberry/Russian Post/PickPoint/local courier/etc.
 [ ] Define tax/fiscalization requirements with a legal/accounting specialist before implementation.
 [ ] Define return/refund policy, privacy policy, offer agreement, terms of sale, and cookie policy.
-[~] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant.
+[~] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant, inventory manager.
 [ ] Define launch SLOs: uptime, max checkout error rate, API latency, page performance, recovery time.
 [ ] Define production environments: dev, staging, production.
 [ ] Define DNS/domain, transactional email domain, S3/MinIO bucket naming, CDN strategy.
@@ -103,7 +103,7 @@ Phase 2.3: Catalog and Merchandising
 [ ] Add SEO fields: title, description, canonical, OpenGraph image.
 [ ] Add related products and recommendations.
 [ ] Add inventory reservations with expiration for checkout.
-[ ] Add low-stock alerts.
+[~] Add low-stock alerts.
 [ ] Add bulk import/export for products and variants.
 [ ] Add admin actions for mass price/stock/status updates.
 
@@ -221,15 +221,15 @@ Phase 4: Admin and Operations Product
 -------------------------------------
 [ ] Improve Django Admin branding and navigation for AnimeAttire.
 [x] Add staff roles/groups and permissions.
-[~] Add catalog manager workflow.
+[x] Add catalog manager workflow.
 [x] Add order manager workflow.
-[ ] Add inventory manager workflow.
+[x] Add inventory manager workflow.
 [x] Add support agent workflow.
 [~] Add dashboards: revenue, orders, conversion, low stock, failed payments.
 [ ] Add export reports: orders, customers, SKU stock, payments.
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
 [ ] Add admin inline order items, payment events, shipment events.
-[ ] Add admin-only stock adjustment with audit reason.
+[x] Add admin-only stock adjustment with audit reason.
 [x] Add admin comments/internal notes on orders.
 [ ] Add moderation/validation for uploaded media.
 
@@ -464,7 +464,7 @@ Operational Acceptance Tests
 [ ] Health/readiness endpoint test.
 [ ] Monitoring alert test.
 [ ] Sentry/error reporting test.
-[ ] Staff can create product, variant, image, stock adjustment in admin.
+[x] Staff can create product, variant, image, stock adjustment in admin.
 [ ] Staff can process order through fulfillment statuses.
 [ ] Staff can issue refund/cancel order according to rules.
 [x] Support can find customer/order and add internal note.

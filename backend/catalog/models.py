@@ -132,6 +132,46 @@ class ProductVariant(TimeStampedModel):
         return f"{self.product.name} / {self.color} / {self.size}"
 
 
+class InventoryAdjustment(TimeStampedModel):
+    class Reason(models.TextChoices):
+        RESTOCK = "restock", "Пополнение"
+        COUNT = "count", "Инвентаризация"
+        DAMAGE = "damage", "Списание брака"
+        RETURN = "return", "Возврат на склад"
+        MANUAL = "manual", "Ручная корректировка"
+
+    variant = models.ForeignKey(
+        ProductVariant,
+        related_name="inventory_adjustments",
+        on_delete=models.PROTECT,
+    )
+    performed_by = models.ForeignKey(
+        "users.User",
+        related_name="inventory_adjustments",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    reason = models.CharField(max_length=24, choices=Reason.choices)
+    delta = models.IntegerField()
+    previous_quantity = models.PositiveIntegerField()
+    new_quantity = models.PositiveIntegerField()
+    note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["variant", "created_at"],
+                name="catalog_inv_variant_a5f6d3_idx",
+            ),
+            models.Index(fields=["reason"], name="catalog_inv_reason_3db8dd_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.variant.sku}: {self.delta:+d} -> {self.new_quantity}"
+
+
 class ProductImage(TimeStampedModel):
     product = models.ForeignKey(
         Product, related_name="images", on_delete=models.CASCADE

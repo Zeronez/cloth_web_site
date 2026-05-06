@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group, Permission
 ROLE_OWNER = "owner"
 ROLE_CATALOG_MANAGER = "catalog_manager"
 ROLE_ORDER_MANAGER = "order_manager"
+ROLE_INVENTORY_MANAGER = "inventory_manager"
 ROLE_WAREHOUSE_OPERATOR = "warehouse_operator"
 ROLE_SUPPORT_AGENT = "support_agent"
 ROLE_ACCOUNTANT = "accountant"
@@ -12,6 +13,7 @@ STAFF_ROLE_GROUPS = (
     ROLE_OWNER,
     ROLE_CATALOG_MANAGER,
     ROLE_ORDER_MANAGER,
+    ROLE_INVENTORY_MANAGER,
     ROLE_WAREHOUSE_OPERATOR,
     ROLE_SUPPORT_AGENT,
     ROLE_ACCOUNTANT,
@@ -49,6 +51,15 @@ ROLE_PERMISSION_MAP = {
         "payments.view_paymentmethod",
         "support.change_contactrequest",
         "support.view_contactrequest",
+    },
+    ROLE_INVENTORY_MANAGER: {
+        "catalog.view_product",
+        "catalog.view_productvariant",
+        "catalog.change_productvariant",
+        "catalog.view_inventoryadjustment",
+        "catalog.add_inventoryadjustment",
+        "catalog.view_category",
+        "catalog.view_animefranchise",
     },
     ROLE_WAREHOUSE_OPERATOR: {
         "orders.change_order",
