@@ -1,5 +1,8 @@
 from django.contrib import admin, messages
 from django.db.models import Q
+from django.http import Http404
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 from django.utils.html import format_html
 
 from delivery.services import (
@@ -83,6 +86,8 @@ class OrderAdmin(admin.ModelAdmin):
         "id",
         "user",
         "status",
+        "priority_badge",
+        "assignee",
         "payment_status_badge",
         "delivery_status_badge",
         "fulfillment_next_step",
@@ -92,6 +97,8 @@ class OrderAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "status",
+        "priority",
+        "assignee",
         "delivery_snapshot__method_code",
         "delivery_snapshot__provider_code",
         "delivery_snapshot__tracking_status",
@@ -105,7 +112,7 @@ class OrderAdmin(admin.ModelAdmin):
         "track_number",
         "items__sku",
     )
-    readonly_fields = ("total_amount",)
+    readonly_fields = ("total_amount", "packing_slip_link")
     inlines = [OrderDeliverySnapshotInline, PaymentInline, OrderItemInline]
     actions = (
         "create_shipment",
@@ -117,12 +124,53 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_cancelled",
         "mark_returned",
     )
+    fieldsets = (
+        (
+            "Операционный контур",
+            {
+                "fields": (
+                    "status",
+                    "priority",
+                    "assignee",
+                    "internal_note",
+                    "packing_slip_link",
+                )
+            },
+        ),
+        (
+            "Доставка клиента",
+            {
+                "fields": (
+                    "total_amount",
+                    "track_number",
+                    "shipping_name",
+                    "shipping_phone",
+                    "shipping_country",
+                    "shipping_city",
+                    "shipping_postal_code",
+                    "shipping_line1",
+                    "shipping_line2",
+                )
+            },
+        ),
+    )
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related("user", "delivery_snapshot").prefetch_related(
             "payments", "items"
         )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "<int:order_id>/packing-slip/",
+                self.admin_site.admin_view(self.packing_slip_view),
+                name="orders_order_packing_slip",
+            )
+        ]
+        return custom_urls + urls
 
     def _get_delivery_snapshot(self, order):
         try:
@@ -155,6 +203,22 @@ class OrderAdmin(admin.ModelAdmin):
             ("issues", "Нужны действия"),
         )
         return response
+
+    @admin.display(description="Приоритет")
+    def priority_badge(self, obj):
+        palette = {
+            Order.Priority.NORMAL: ("#334155", "#f8fafc"),
+            Order.Priority.HIGH: ("#b45309", "#fffbeb"),
+            Order.Priority.URGENT: ("#991b1b", "#fef2f2"),
+        }
+        background, color = palette.get(obj.priority, ("#334155", "#f8fafc"))
+        return format_html(
+            '<span style="padding:2px 8px;border-radius:999px;'
+            'background:{};color:{};">{}</span>',
+            background,
+            color,
+            obj.get_priority_display(),
+        )
 
     @admin.display(description="Оплата")
     def payment_status_badge(self, obj):
@@ -236,6 +300,13 @@ class OrderAdmin(admin.ModelAdmin):
             return "Следить за трекингом"
         return "Контур в норме"
 
+    @admin.display(description="Packing slip")
+    def packing_slip_link(self, obj):
+        if not obj or not obj.pk:
+            return "Сохраните заказ, чтобы открыть packing slip."
+        url = reverse("admin:orders_order_packing_slip", args=[obj.pk])
+        return format_html('<a href="{}" target="_blank">Открыть packing slip</a>', url)
+
     def _build_fulfillment_summary(self, queryset):
         return {
             "paid_ready": queryset.filter(status=Order.Status.PAID).count(),
@@ -261,6 +332,7 @@ class OrderAdmin(admin.ModelAdmin):
             "delivery_issues": queryset.filter(
                 delivery_snapshot__tracking_status="failed"
             ).count(),
+            "urgent_orders": queryset.filter(priority=Order.Priority.URGENT).count(),
         }
 
     def _build_queue_rows(self, queryset, queue_mode):
@@ -298,6 +370,31 @@ class OrderAdmin(admin.ModelAdmin):
             }
             for order in filtered.order_by("-created_at")[:12]
         ]
+
+    def packing_slip_view(self, request, order_id):
+        order = (
+            self.get_queryset(request)
+            .filter(pk=order_id)
+            .select_related("assignee")
+            .first()
+        )
+        if order is None:
+            raise Http404("Order not found.")
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "original": order,
+            "title": f"Packing slip for order #{order.id}",
+            "order": order,
+            "snapshot": self._get_delivery_snapshot(order),
+            "items": list(order.items.all()),
+        }
+        return TemplateResponse(
+            request,
+            "admin/orders/order/packing_slip.html",
+            context,
+        )
 
     @admin.action(description="Создать отправку")
     def create_shipment(self, request, queryset):

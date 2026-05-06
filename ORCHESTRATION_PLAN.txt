@@ -148,7 +148,7 @@ Phase 2.6: Delivery and Fulfillment
 [x] Separate shipment registration from carrier handoff in fulfillment state flow.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
 [x] Implement warehouse picking list.
-[ ] Implement packing slip generation.
+[x] Implement packing slip generation.
 [ ] Implement stock return on cancellation/refund according to business rules.
 [x] Implement admin fulfillment dashboard.
 
@@ -162,7 +162,7 @@ Phase 2.7: Notifications and Support
 [ ] Add low-stock/internal admin email.
 [ ] Add SMS/Telegram notifications if provider selected.
 [x] Add support request/contact form.
-[ ] Add support/admin notes on orders.
+[x] Add support/admin notes on orders.
 [x] Add notification delivery log and idempotent order confirmation task.
 
 Phase 3: Frontend Core
@@ -230,7 +230,7 @@ Phase 4: Admin and Operations Product
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
 [ ] Add admin inline order items, payment events, shipment events.
 [ ] Add admin-only stock adjustment with audit reason.
-[ ] Add admin comments/internal notes on orders.
+[x] Add admin comments/internal notes on orders.
 [ ] Add moderation/validation for uploaded media.
 
 Phase 5: Security and Compliance
@@ -467,7 +467,7 @@ Operational Acceptance Tests
 [ ] Staff can create product, variant, image, stock adjustment in admin.
 [ ] Staff can process order through fulfillment statuses.
 [ ] Staff can issue refund/cancel order according to rules.
-[ ] Support can find customer/order and add internal note.
+[x] Support can find customer/order and add internal note.
 
 Manual Pre-Launch Checklist
 ---------------------------

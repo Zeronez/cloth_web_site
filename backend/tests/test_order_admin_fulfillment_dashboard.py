@@ -168,3 +168,54 @@ def test_order_admin_queue_mode_picking_returns_actionable_orders(
     assert picking_order.id in order_ids
     assert packed_order.id not in order_ids
     assert any(row["next_step"] == "Проверить SKU и упаковать" for row in queue_orders)
+
+
+def test_packing_slip_admin_view_is_read_only_and_staff_only(
+    admin_client, api_client, user, product_factory
+):
+    order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PACKED, sku="ADMIN-SLIP-M"
+    )
+    order.priority = Order.Priority.URGENT
+    order.internal_note = "Позвонить клиенту перед отгрузкой."
+    order.assignee = user
+    order.save(update_fields=["priority", "internal_note", "assignee", "updated_at"])
+    before_updated_at = order.updated_at
+
+    response = admin_client.get(
+        reverse("admin:orders_order_packing_slip", args=[order.id])
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "Packing Slip" in content
+    assert "Позвонить клиенту перед отгрузкой." in content
+    assert "ADMIN-SLIP-M" in content
+
+    order.refresh_from_db()
+    assert order.updated_at == before_updated_at
+    assert order.status == Order.Status.PACKED
+
+    anon_response = api_client.get(
+        reverse("admin:orders_order_packing_slip", args=[order.id])
+    )
+    assert anon_response.status_code == 302
+
+
+def test_order_api_does_not_expose_internal_staff_fields(
+    authenticated_client, user, product_factory
+):
+    order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PAID, sku="ADMIN-PRIVATE-M"
+    )
+    order.priority = Order.Priority.HIGH
+    order.internal_note = "Внутренняя заметка staff."
+    order.assignee = user
+    order.save(update_fields=["priority", "internal_note", "assignee", "updated_at"])
+
+    response = authenticated_client.get(f"/api/orders/{order.id}/")
+
+    assert response.status_code == 200
+    assert "internal_note" not in response.data
+    assert "priority" not in response.data
+    assert "assignee" not in response.data

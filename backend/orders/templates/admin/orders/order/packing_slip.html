@@ -1,0 +1,136 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .packing-slip {
+      max-width: 960px;
+      margin: 24px auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      color: #0f172a;
+    }
+
+    .packing-slip__header,
+    .packing-slip__grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .packing-slip__card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      background: #f8fafc;
+    }
+
+    .packing-slip__meta {
+      margin-bottom: 16px;
+    }
+
+    .packing-slip__meta h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .packing-slip__items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .packing-slip__items th,
+    .packing-slip__items td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .packing-slip__items th {
+      font-size: 12px;
+      color: #475569;
+      text-transform: uppercase;
+    }
+
+    @media print {
+      #header,
+      .breadcrumbs,
+      .object-tools,
+      .messagelist,
+      .module,
+      .submit-row,
+      .nav-sidebar {
+        display: none !important;
+      }
+
+      .packing-slip {
+        margin: 0;
+        border: 0;
+        padding: 0;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="packing-slip">
+    <div class="packing-slip__meta">
+      <h1>Packing Slip #{{ order.id }}</h1>
+      <p>
+        AnimeAttire · {{ order.created_at }} · Статус: {{ order.get_status_display }}
+        · Приоритет: {{ order.get_priority_display }}
+      </p>
+    </div>
+
+    <div class="packing-slip__header">
+      <div class="packing-slip__card">
+        <strong>Получатель</strong>
+        <p>{{ order.shipping_name }}</p>
+        <p>{{ order.shipping_phone }}</p>
+        <p>{{ order.shipping_country }}, {{ order.shipping_city }}, {{ order.shipping_postal_code }}</p>
+        <p>{{ order.shipping_line1 }}</p>
+        {% if order.shipping_line2 %}
+          <p>{{ order.shipping_line2 }}</p>
+        {% endif %}
+      </div>
+      <div class="packing-slip__card">
+        <strong>Операционный контур</strong>
+        <p>Assignee: {{ order.assignee|default:"Не назначен" }}</p>
+        <p>Трек-номер: {{ order.track_number|default:"—" }}</p>
+        <p>Способ доставки: {% if snapshot %}{{ snapshot.method_name }}{% else %}Не выбран{% endif %}</p>
+        <p>Статус доставки: {% if snapshot %}{{ snapshot.get_tracking_status_display }}{% else %}Нет snapshot{% endif %}</p>
+      </div>
+      <div class="packing-slip__card">
+        <strong>Внутренняя заметка</strong>
+        <p>{{ order.internal_note|default:"Заметка не заполнена."|linebreaksbr }}</p>
+      </div>
+    </div>
+
+    <table class="packing-slip__items">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Товар</th>
+          <th>Размер</th>
+          <th>Цвет</th>
+          <th>Кол-во</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.size }}</td>
+            <td>{{ item.color }}</td>
+            <td>{{ item.quantity }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

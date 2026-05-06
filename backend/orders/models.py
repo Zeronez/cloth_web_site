@@ -18,6 +18,11 @@ class Order(models.Model):
         CANCELLED = "cancelled", "Отменён"
         RETURNED = "returned", "Возвращён"
 
+    class Priority(models.TextChoices):
+        NORMAL = "normal", "Обычный"
+        HIGH = "high", "Приоритетный"
+        URGENT = "urgent", "Срочный"
+
     TERMINAL_STATUSES = {
         Status.DELIVERED,
         Status.CANCELLED,
@@ -59,6 +64,17 @@ class Order(models.Model):
     status = models.CharField(
         max_length=24, choices=Status.choices, default=Status.PENDING
     )
+    priority = models.CharField(
+        max_length=16, choices=Priority.choices, default=Priority.NORMAL
+    )
+    assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="assigned_orders",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    internal_note = models.TextField(blank=True)
     track_number = models.CharField(max_length=120, blank=True)
     shipping_name = models.CharField(max_length=160)
     shipping_phone = models.CharField(max_length=32)
