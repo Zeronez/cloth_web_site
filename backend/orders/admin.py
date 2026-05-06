@@ -12,6 +12,13 @@ from delivery.services import (
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
 from payments.models import Payment
+from users.staff_roles import (
+    ROLE_ORDER_MANAGER,
+    ROLE_OWNER,
+    ROLE_SUPPORT_AGENT,
+    ROLE_WAREHOUSE_OPERATOR,
+    user_has_staff_role,
+)
 
 
 class OrderItemInline(admin.TabularInline):
@@ -80,6 +87,28 @@ class OrderAdmin(admin.ModelAdmin):
         Order.Status.PICKING,
         Order.Status.PACKED,
         Order.Status.SHIPPED,
+    }
+    SUPPORT_EDITABLE_FIELDS = {"internal_note", "priority"}
+    WAREHOUSE_EDITABLE_FIELDS = {
+        "assignee",
+        "internal_note",
+        "track_number",
+        "priority",
+    }
+    WAREHOUSE_ACTIONS = {
+        "mark_picking",
+        "mark_packed",
+        "mark_shipped",
+    }
+    ORDER_MANAGER_ACTIONS = {
+        "create_shipment",
+        "refresh_tracking",
+        "mark_picking",
+        "mark_packed",
+        "mark_shipped",
+        "mark_delivered",
+        "mark_cancelled",
+        "mark_returned",
     }
 
     list_display = (
@@ -160,6 +189,82 @@ class OrderAdmin(admin.ModelAdmin):
         return queryset.select_related("user", "delivery_snapshot").prefetch_related(
             "payments", "items"
         )
+
+    def _can_manage_orders(self, user):
+        return user_has_staff_role(
+            user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_WAREHOUSE_OPERATOR,
+            ROLE_SUPPORT_AGENT,
+        )
+
+    def _is_order_manager(self, user):
+        return user_has_staff_role(user, ROLE_OWNER, ROLE_ORDER_MANAGER)
+
+    def _is_warehouse(self, user):
+        return user_has_staff_role(user, ROLE_OWNER, ROLE_WAREHOUSE_OPERATOR)
+
+    def _is_support(self, user):
+        return user_has_staff_role(user, ROLE_OWNER, ROLE_SUPPORT_AGENT)
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return self._can_manage_orders(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        return self._can_manage_orders(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        return self._can_manage_orders(request.user)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if request.user.is_superuser or self._is_order_manager(request.user):
+            return readonly
+
+        local_field_names = [field.name for field in self.model._meta.fields]
+        editable = set()
+        if self._is_support(request.user):
+            editable = self.SUPPORT_EDITABLE_FIELDS
+        elif self._is_warehouse(request.user):
+            editable = self.WAREHOUSE_EDITABLE_FIELDS
+
+        readonly.extend(
+            field_name
+            for field_name in local_field_names
+            if field_name not in editable and field_name not in readonly
+        )
+        return readonly
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if request.user.is_superuser:
+            return actions
+        if self._is_order_manager(request.user):
+            return {
+                name: action
+                for name, action in actions.items()
+                if name in self.ORDER_MANAGER_ACTIONS
+            }
+        if self._is_warehouse(request.user):
+            return {
+                name: action
+                for name, action in actions.items()
+                if name in self.WAREHOUSE_ACTIONS
+            }
+        return {}
 
     def get_urls(self):
         urls = super().get_urls()

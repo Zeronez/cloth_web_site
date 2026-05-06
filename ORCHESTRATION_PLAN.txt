@@ -27,7 +27,7 @@ Phase 0: Product Scope and Release Decisions
 [ ] Define delivery providers: CDEK/Boxberry/Russian Post/PickPoint/local courier/etc.
 [ ] Define tax/fiscalization requirements with a legal/accounting specialist before implementation.
 [ ] Define return/refund policy, privacy policy, offer agreement, terms of sale, and cookie policy.
-[ ] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant.
+[~] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant.
 [ ] Define launch SLOs: uptime, max checkout error rate, API latency, page performance, recovery time.
 [ ] Define production environments: dev, staging, production.
 [ ] Define DNS/domain, transactional email domain, S3/MinIO bucket naming, CDN strategy.
@@ -220,11 +220,11 @@ Phase 3.2: Frontend Production UX
 Phase 4: Admin and Operations Product
 -------------------------------------
 [ ] Improve Django Admin branding and navigation for AnimeAttire.
-[ ] Add staff roles/groups and permissions.
-[ ] Add catalog manager workflow.
-[ ] Add order manager workflow.
+[x] Add staff roles/groups and permissions.
+[~] Add catalog manager workflow.
+[x] Add order manager workflow.
 [ ] Add inventory manager workflow.
-[ ] Add support agent workflow.
+[x] Add support agent workflow.
 [~] Add dashboards: revenue, orders, conversion, low stock, failed payments.
 [ ] Add export reports: orders, customers, SKU stock, payments.
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.

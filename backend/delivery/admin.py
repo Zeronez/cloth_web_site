@@ -1,6 +1,14 @@
 from django.contrib import admin
 
 from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
+from users.staff_roles import (
+    ROLE_ACCOUNTANT,
+    ROLE_ORDER_MANAGER,
+    ROLE_OWNER,
+    ROLE_SUPPORT_AGENT,
+    ROLE_WAREHOUSE_OPERATOR,
+    user_has_staff_role,
+)
 
 
 class DeliveryTrackingEventInline(admin.TabularInline):
@@ -36,6 +44,23 @@ class DeliveryMethodAdmin(admin.ModelAdmin):
     list_filter = ("kind", "is_active", "currency")
     search_fields = ("code", "name")
     ordering = ("sort_order", "name")
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(request.user, ROLE_OWNER, ROLE_ORDER_MANAGER)
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
 
 @admin.register(OrderDeliverySnapshot)
@@ -86,6 +111,32 @@ class OrderDeliverySnapshotAdmin(admin.ModelAdmin):
     )
     inlines = [DeliveryTrackingEventInline]
 
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(
+            request.user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_WAREHOUSE_OPERATOR,
+            ROLE_SUPPORT_AGENT,
+            ROLE_ACCOUNTANT,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser or user_has_staff_role(
+            request.user, ROLE_OWNER, ROLE_ORDER_MANAGER
+        )
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
 
 @admin.register(DeliveryTrackingEvent)
 class DeliveryTrackingEventAdmin(admin.ModelAdmin):
@@ -113,3 +164,27 @@ class DeliveryTrackingEventAdmin(admin.ModelAdmin):
         "happened_at",
         "created_at",
     )
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(
+            request.user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_WAREHOUSE_OPERATOR,
+            ROLE_SUPPORT_AGENT,
+            ROLE_ACCOUNTANT,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser

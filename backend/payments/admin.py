@@ -1,6 +1,13 @@
 from django.contrib import admin
 
 from payments.models import Payment, PaymentEvent, PaymentMethod
+from users.staff_roles import (
+    ROLE_ACCOUNTANT,
+    ROLE_ORDER_MANAGER,
+    ROLE_OWNER,
+    ROLE_SUPPORT_AGENT,
+    user_has_staff_role,
+)
 
 
 @admin.register(PaymentMethod)
@@ -17,6 +24,28 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     list_filter = ("session_mode", "provider_code", "is_active", "currency")
     search_fields = ("code", "name", "provider_code")
     ordering = ("sort_order", "name")
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(
+            request.user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_ACCOUNTANT,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
 
 class PaymentEventInline(admin.TabularInline):
@@ -61,8 +90,45 @@ class PaymentAdmin(admin.ModelAdmin):
         "external_payment_id",
         "idempotency_key",
     )
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = (
+        "order",
+        "user",
+        "method",
+        "method_code",
+        "provider_code",
+        "status",
+        "amount",
+        "currency",
+        "external_payment_id",
+        "idempotency_key",
+        "session_expires_at",
+        "created_at",
+        "updated_at",
+    )
     inlines = [PaymentEventInline]
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(
+            request.user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_SUPPORT_AGENT,
+            ROLE_ACCOUNTANT,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
 
 @admin.register(PaymentEvent)
@@ -87,3 +153,26 @@ class PaymentEventAdmin(admin.ModelAdmin):
         "external_event_id",
         "created_at",
     )
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return user_has_staff_role(
+            request.user,
+            ROLE_OWNER,
+            ROLE_ORDER_MANAGER,
+            ROLE_SUPPORT_AGENT,
+            ROLE_ACCOUNTANT,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
