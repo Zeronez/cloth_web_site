@@ -22,7 +22,15 @@ class PaymentMethodAdmin(admin.ModelAdmin):
         "is_active",
         "sort_order",
     )
-    list_filter = ("session_mode", "provider_code", "is_active", "currency")
+    list_filter = (
+        "session_mode",
+        "provider_code",
+        "is_active",
+        "currency",
+        "created_at",
+        "updated_at",
+    )
+    date_hierarchy = "created_at"
     search_fields = ("code", "name", "provider_code")
     ordering = ("sort_order", "name")
 
@@ -80,7 +88,17 @@ class PaymentAdmin(admin.ModelAdmin):
         "currency",
         "created_at",
     )
-    list_filter = ("status", "provider_code", "currency", "created_at")
+    list_filter = (
+        "status",
+        "method_code",
+        "provider_code",
+        "currency",
+        "order__status",
+        "session_expires_at",
+        "created_at",
+        "updated_at",
+    )
+    date_hierarchy = "created_at"
     list_select_related = ("order", "user", "method")
     search_fields = (
         "id",

@@ -70,7 +70,8 @@ class InventoryAdjustmentInline(admin.TabularInline):
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
-    list_filter = ("is_active",)
+    list_filter = ("is_active", "created_at", "updated_at")
+    date_hierarchy = "created_at"
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name",)
 
@@ -92,7 +93,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(AnimeFranchise)
 class AnimeFranchiseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
-    list_filter = ("is_active",)
+    list_filter = ("is_active", "created_at", "updated_at")
+    date_hierarchy = "created_at"
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name",)
 
@@ -121,7 +123,15 @@ class ProductAdmin(admin.ModelAdmin):
         "is_active",
         "is_featured",
     )
-    list_filter = ("is_active", "is_featured", "category", "franchise")
+    list_filter = (
+        "is_active",
+        "is_featured",
+        "category",
+        "franchise",
+        "created_at",
+        "updated_at",
+    )
+    date_hierarchy = "created_at"
     list_select_related = ("category", "franchise")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "description", "variants__sku")
@@ -157,9 +167,13 @@ class ProductVariantAdmin(admin.ModelAdmin):
         "size",
         "color",
         "product__category",
+        "product__franchise",
         LowStockListFilter,
+        "created_at",
+        "updated_at",
     )
-    list_select_related = ("product", "product__category")
+    date_hierarchy = "created_at"
+    list_select_related = ("product", "product__category", "product__franchise")
     search_fields = ("sku", "product__name", "color")
     inlines = [InventoryAdjustmentInline]
     actions = ("export_sku_stock_csv",)

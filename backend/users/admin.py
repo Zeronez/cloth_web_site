@@ -16,6 +16,8 @@ class AnimeAttireUserAdmin(UserAdmin):
         ("AnimeAttire profile", {"fields": ("phone", "avatar")}),
     )
     list_display = ("username", "email", "phone", "is_staff", "is_active")
+    list_filter = UserAdmin.list_filter + ("date_joined", "last_login")
+    date_hierarchy = "date_joined"
     search_fields = ("username", "email", "phone", "first_name", "last_name")
     inlines = [AddressInline]
     actions = ("export_customers_csv",)
@@ -58,5 +60,6 @@ class AnimeAttireUserAdmin(UserAdmin):
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ("recipient_name", "user", "city", "postal_code", "is_default")
-    list_filter = ("country", "city", "is_default")
+    list_filter = ("country", "city", "is_default", "created_at", "updated_at")
+    date_hierarchy = "created_at"
     search_fields = ("recipient_name", "phone", "city", "line1", "postal_code")

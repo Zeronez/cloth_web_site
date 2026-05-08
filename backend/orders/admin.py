@@ -131,6 +131,24 @@ class PaymentInline(admin.TabularInline):
         )
 
 
+class OrderSkuListFilter(admin.SimpleListFilter):
+    title = "SKU"
+    parameter_name = "sku"
+
+    def lookups(self, request, model_admin):
+        skus = (
+            OrderItem.objects.order_by("sku")
+            .values_list("sku", flat=True)
+            .distinct()[:100]
+        )
+        return tuple((sku, sku) for sku in skus if sku)
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(items__sku=self.value()).distinct()
+        return queryset
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     change_list_template = "admin/orders/order/change_list.html"
@@ -182,17 +200,27 @@ class OrderAdmin(admin.ModelAdmin):
         "status",
         "priority",
         "assignee",
+        "payments__status",
         "delivery_snapshot__method_code",
+        "delivery_snapshot__method_kind",
         "delivery_snapshot__provider_code",
         "delivery_snapshot__tracking_status",
+        "shipping_country",
+        "shipping_city",
+        OrderSkuListFilter,
         "created_at",
+        "updated_at",
+        "stock_restored_at",
     )
+    date_hierarchy = "created_at"
     list_select_related = ("user", "delivery_snapshot")
     search_fields = (
         "id",
         "user__username",
         "user__email",
         "track_number",
+        "shipping_phone",
+        "shipping_city",
         "items__sku",
     )
     readonly_fields = ("total_amount", "stock_restored_at", "packing_slip_link")
@@ -827,4 +855,13 @@ class OrderItemAdmin(admin.ModelAdmin):
         "price_at_purchase",
     )
     list_select_related = ("order", "variant")
-    search_fields = ("sku", "product_name")
+    list_filter = (
+        "size",
+        "color",
+        "order__status",
+        "order__created_at",
+        "variant__product__category",
+        "variant__product__franchise",
+    )
+    search_fields = ("sku", "product_name", "order__id")
+    date_hierarchy = "order__created_at"
