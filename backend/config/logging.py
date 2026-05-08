@@ -57,9 +57,11 @@ def get_log_context():
 def scrub_log_payload(value):
     if isinstance(value, dict):
         return {
-            key: REDACTED
-            if str(key).lower() in SENSITIVE_LOG_KEYS
-            else scrub_log_payload(item)
+            key: (
+                REDACTED
+                if str(key).lower() in SENSITIVE_LOG_KEYS
+                else scrub_log_payload(item)
+            )
             for key, item in value.items()
         }
     if isinstance(value, list):
