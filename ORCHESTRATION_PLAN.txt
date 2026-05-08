@@ -228,7 +228,7 @@ Phase 4: Admin and Operations Product
 [x] Add support agent workflow.
 [~] Add dashboards: revenue, orders, conversion, low stock, failed payments.
 [x] Add fulfillment dashboard queues for returns and payment issues.
-[ ] Add export reports: orders, customers, SKU stock, payments.
+[x] Add export reports: orders, customers, SKU stock, payments.
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
 [x] Add admin inline order items, payment events, shipment events.
 [x] Add admin-only stock adjustment with audit reason.

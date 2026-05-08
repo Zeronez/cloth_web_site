@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from config.admin_exports import export_as_csv
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from users.staff_roles import (
     ROLE_ACCOUNTANT,
@@ -106,6 +107,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "updated_at",
     )
     inlines = [PaymentEventInline]
+    actions = ("export_payments_csv",)
 
     def has_module_permission(self, request):
         if request.user.is_superuser:
@@ -129,6 +131,42 @@ class PaymentAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+    @admin.action(description="Экспортировать выбранные платежи в CSV")
+    def export_payments_csv(self, request, queryset):
+        rows = []
+        queryset = queryset.select_related("order", "user")
+        for payment in queryset:
+            rows.append(
+                [
+                    payment.id,
+                    payment.order_id,
+                    payment.user.email,
+                    payment.method_code,
+                    payment.provider_code,
+                    payment.status,
+                    payment.amount,
+                    payment.currency,
+                    payment.external_payment_id,
+                    payment.created_at.isoformat(),
+                ]
+            )
+        return export_as_csv(
+            filename="animeattire-payments.csv",
+            headers=[
+                "payment_id",
+                "order_id",
+                "customer_email",
+                "method_code",
+                "provider_code",
+                "status",
+                "amount",
+                "currency",
+                "external_payment_id",
+                "created_at",
+            ],
+            rows=rows,
+        )
 
 
 @admin.register(PaymentEvent)

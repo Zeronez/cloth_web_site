@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from rest_framework.exceptions import ValidationError
 
+from config.admin_exports import export_as_csv
 from delivery.services import (
     ensure_shipment_for_paid_order,
     refresh_order_tracking_from_provider,
@@ -210,6 +211,7 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_cancelled",
         "mark_returned",
         "confirm_return_received",
+        "export_orders_csv",
     )
     fieldsets = (
         (
@@ -736,6 +738,41 @@ class OrderAdmin(admin.ModelAdmin):
                 f"Заказов с ошибкой приемки возврата: {failed}.",
                 level=messages.ERROR,
             )
+
+    @admin.action(description="Экспортировать выбранные заказы в CSV")
+    def export_orders_csv(self, request, queryset):
+        rows = []
+        queryset = queryset.select_related("user").prefetch_related("payments")
+        for order in queryset:
+            payment = order.payments.first()
+            rows.append(
+                [
+                    order.id,
+                    order.created_at.isoformat(),
+                    order.user.email,
+                    order.status,
+                    dict(Order.Status.choices).get(order.status, order.status),
+                    order.total_amount,
+                    order.shipping_city,
+                    order.track_number,
+                    payment.status if payment else "",
+                ]
+            )
+        return export_as_csv(
+            filename="animeattire-orders.csv",
+            headers=[
+                "order_id",
+                "created_at",
+                "customer_email",
+                "status",
+                "status_label",
+                "total_amount",
+                "shipping_city",
+                "track_number",
+                "payment_status",
+            ],
+            rows=rows,
+        )
 
     def _transition_orders(self, request, queryset, new_status):
         updated = 0

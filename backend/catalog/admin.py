@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 
+from config.admin_exports import export_as_csv
 from catalog.models import (
     AnimeFranchise,
     Category,
@@ -161,6 +162,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_select_related = ("product", "product__category")
     search_fields = ("sku", "product__name", "color")
     inlines = [InventoryAdjustmentInline]
+    actions = ("export_sku_stock_csv",)
 
     def has_module_permission(self, request):
         if request.user.is_superuser:
@@ -201,6 +203,40 @@ class ProductVariantAdmin(admin.ModelAdmin):
         if is_low_stock(obj):
             return f"{obj.stock_quantity} · low"
         return str(obj.stock_quantity)
+
+    @admin.action(description="Экспортировать выбранные SKU-остатки в CSV")
+    def export_sku_stock_csv(self, request, queryset):
+        rows = []
+        queryset = queryset.select_related("product", "product__category")
+        for variant in queryset:
+            rows.append(
+                [
+                    variant.sku,
+                    variant.product.name,
+                    variant.product.category.name,
+                    variant.size,
+                    variant.color,
+                    variant.stock_quantity,
+                    "yes" if is_low_stock(variant) else "no",
+                    variant.is_active,
+                    variant.price,
+                ]
+            )
+        return export_as_csv(
+            filename="animeattire-sku-stock.csv",
+            headers=[
+                "sku",
+                "product_name",
+                "category",
+                "size",
+                "color",
+                "stock_quantity",
+                "low_stock",
+                "is_active",
+                "price",
+            ],
+            rows=rows,
+        )
 
 
 @admin.register(InventoryAdjustment)
