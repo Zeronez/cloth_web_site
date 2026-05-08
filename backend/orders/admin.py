@@ -311,6 +311,8 @@ class OrderAdmin(admin.ModelAdmin):
             ("picking", "На сборку"),
             ("packing", "На упаковку"),
             ("shipping", "К отгрузке"),
+            ("returns", "Возвраты"),
+            ("payment_issues", "Проблемы оплаты"),
             ("issues", "Нужны действия"),
         )
         return response
@@ -444,6 +446,15 @@ class OrderAdmin(admin.ModelAdmin):
             "handoff_queue": queryset.filter(
                 delivery_snapshot__tracking_status="created"
             ).count(),
+            "return_intake_queue": queryset.filter(
+                status=Order.Status.RETURNED,
+                stock_restored_at__isnull=True,
+            ).count(),
+            "payment_issues": queryset.filter(
+                payments__status__in=["failed", "cancelled", "expired"]
+            )
+            .distinct()
+            .count(),
             "delivery_issues": queryset.filter(
                 delivery_snapshot__tracking_status="failed"
             ).count(),
@@ -462,9 +473,19 @@ class OrderAdmin(admin.ModelAdmin):
                 Q(delivery_snapshot__tracking_status="created")
                 | Q(delivery_snapshot__tracking_status="handed_over")
             )
+        elif queue_mode == "returns":
+            filtered = queryset.filter(
+                status=Order.Status.RETURNED,
+                stock_restored_at__isnull=True,
+            )
+        elif queue_mode == "payment_issues":
+            filtered = queryset.filter(
+                payments__status__in=["failed", "cancelled", "expired"]
+            ).distinct()
         elif queue_mode == "issues":
             filtered = queryset.filter(
                 Q(delivery_snapshot__tracking_status="failed")
+                | Q(status=Order.Status.RETURNED, stock_restored_at__isnull=True)
                 | Q(payments__status__in=["failed", "cancelled", "expired"])
             ).distinct()
         else:

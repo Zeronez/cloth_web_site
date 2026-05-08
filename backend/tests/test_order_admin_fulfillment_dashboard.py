@@ -130,10 +130,14 @@ def test_order_admin_changelist_exposes_fulfillment_summary(
         OrderDeliverySnapshot.TrackingStatus.FAILED
     )
     issue_order.delivery_snapshot.save(update_fields=["tracking_status"])
+    returned_order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.RETURNED, sku="ADMIN-RETURN-Q-M"
+    )
     create_payment(issue_order, status=Payment.Status.FAILED)
     create_payment(paid_order, status=Payment.Status.SUCCEEDED)
     create_payment(packed_order, status=Payment.Status.SUCCEEDED)
     create_payment(handoff_order, status=Payment.Status.SUCCEEDED)
+    create_payment(returned_order, status=Payment.Status.REFUNDED)
 
     response = admin_client.get(reverse("admin:orders_order_changelist"))
 
@@ -143,6 +147,8 @@ def test_order_admin_changelist_exposes_fulfillment_summary(
     assert summary["packing_queue"] == 2
     assert summary["awaiting_shipment"] == 2
     assert summary["handoff_queue"] == 1
+    assert summary["return_intake_queue"] == 1
+    assert summary["payment_issues"] == 1
     assert summary["delivery_issues"] == 1
 
 
@@ -168,6 +174,108 @@ def test_order_admin_queue_mode_picking_returns_actionable_orders(
     assert picking_order.id in order_ids
     assert packed_order.id not in order_ids
     assert any(row["next_step"] == "Проверить SKU и упаковать" for row in queue_orders)
+
+
+def test_order_admin_queue_mode_returns_only_needs_return_intake(
+    admin_client, user, product_factory
+):
+    pending_return = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.RETURNED, sku="ADMIN-RET-PENDING-M"
+    )
+    completed_return = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.RETURNED, sku="ADMIN-RET-DONE-M"
+    )
+    completed_return.stock_restored_at = completed_return.updated_at
+    completed_return.save(update_fields=["stock_restored_at"])
+
+    response = admin_client.get(
+        f"{reverse('admin:orders_order_changelist')}?queue=returns"
+    )
+
+    assert response.status_code == 200
+    assert response.context_data["queue_mode"] == "returns"
+    queue_orders = response.context_data["queue_orders"]
+    order_ids = [row["order"].id for row in queue_orders]
+    assert pending_return.id in order_ids
+    assert completed_return.id not in order_ids
+    assert any(
+        row["next_step"] == "Подтвердить приемку возврата на склад"
+        for row in queue_orders
+    )
+
+
+def test_order_admin_queue_mode_payment_issues_only_shows_payment_problem_orders(
+    admin_client, user, product_factory
+):
+    issue_order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PENDING, sku="ADMIN-PAY-ISSUE-M"
+    )
+    healthy_order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PAID, sku="ADMIN-PAY-OK-M"
+    )
+    create_payment(issue_order, status=Payment.Status.FAILED)
+    create_payment(healthy_order, status=Payment.Status.SUCCEEDED)
+
+    response = admin_client.get(
+        f"{reverse('admin:orders_order_changelist')}?queue=payment_issues"
+    )
+
+    assert response.status_code == 200
+    assert response.context_data["queue_mode"] == "payment_issues"
+    queue_orders = response.context_data["queue_orders"]
+    order_ids = [row["order"].id for row in queue_orders]
+    assert issue_order.id in order_ids
+    assert healthy_order.id not in order_ids
+    assert any(
+        row["next_step"] == "Проверить оплату и связаться с клиентом"
+        for row in queue_orders
+    )
+
+
+def test_order_admin_queue_mode_issues_combines_actionable_problem_orders_without_duplicates(
+    admin_client, user, product_factory
+):
+    payment_issue = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PENDING, sku="ADMIN-ISSUES-PAY-M"
+    )
+    delivery_issue = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.SHIPPED, sku="ADMIN-ISSUES-DEL-M"
+    )
+    return_issue = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.RETURNED, sku="ADMIN-ISSUES-RET-M"
+    )
+    combined_issue = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.SHIPPED, sku="ADMIN-ISSUES-BOTH-M"
+    )
+    create_payment(payment_issue, status=Payment.Status.FAILED)
+    create_payment(delivery_issue, status=Payment.Status.SUCCEEDED)
+    create_payment(return_issue, status=Payment.Status.REFUNDED)
+    create_payment(combined_issue, status=Payment.Status.FAILED)
+    delivery_issue.delivery_snapshot.tracking_status = (
+        OrderDeliverySnapshot.TrackingStatus.FAILED
+    )
+    delivery_issue.delivery_snapshot.save(update_fields=["tracking_status"])
+    combined_issue.delivery_snapshot.tracking_status = (
+        OrderDeliverySnapshot.TrackingStatus.FAILED
+    )
+    combined_issue.delivery_snapshot.save(update_fields=["tracking_status"])
+
+    response = admin_client.get(
+        f"{reverse('admin:orders_order_changelist')}?queue=issues"
+    )
+
+    assert response.status_code == 200
+    assert response.context_data["queue_mode"] == "issues"
+    queue_orders = response.context_data["queue_orders"]
+    order_ids = [row["order"].id for row in queue_orders]
+    assert payment_issue.id in order_ids
+    assert delivery_issue.id in order_ids
+    assert return_issue.id in order_ids
+    assert order_ids.count(combined_issue.id) == 1
+    assert any(
+        row["next_step"] == "Подтвердить приемку возврата на склад"
+        for row in queue_orders
+    )
 
 
 def test_packing_slip_admin_view_is_read_only_and_staff_only(
