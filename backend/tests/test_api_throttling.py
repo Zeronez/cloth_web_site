@@ -67,7 +67,11 @@ def assert_throttled_after_two_attempts(
     assert first_response.status_code != 429
     assert second_response.status_code != 429
     assert throttled_response.status_code == 429
-    assert throttled_response.data["detail"].code == "throttled"
+    assert throttled_response.data["error"]["code"] == "throttled"
+    assert throttled_response.data["error"]["message"] == (
+        "Слишком много запросов. Повторите позже."
+    )
+    assert throttled_response.data["error"]["details"]["detail"]["code"] == "throttled"
 
     return first_response, second_response, throttled_response
 

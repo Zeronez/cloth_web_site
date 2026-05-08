@@ -83,7 +83,8 @@ def test_foreign_user_cannot_resolve_another_users_payment_return_status(
     )
 
     assert response.status_code == 404
-    assert response.data["payment"]["code"] == "payment_not_found"
+    assert response.data["error"]["code"] == "payment_not_found"
+    assert response.data["error"]["details"]["payment"]["code"] == "payment_not_found"
 
 
 def test_return_status_rejects_provider_mismatch(authenticated_client, user):
@@ -95,7 +96,8 @@ def test_return_status_rejects_provider_mismatch(authenticated_client, user):
     )
 
     assert response.status_code == 409
-    assert response.data["webhook"]["code"] == "provider_mismatch"
+    assert response.data["error"]["code"] == "provider_mismatch"
+    assert response.data["error"]["details"]["webhook"]["code"] == "provider_mismatch"
 
 
 def test_return_status_rejects_external_payment_mismatch(authenticated_client, user):
@@ -107,7 +109,11 @@ def test_return_status_rejects_external_payment_mismatch(authenticated_client, u
     )
 
     assert response.status_code == 409
-    assert response.data["webhook"]["code"] == "external_payment_mismatch"
+    assert response.data["error"]["code"] == "external_payment_mismatch"
+    assert (
+        response.data["error"]["details"]["webhook"]["code"]
+        == "external_payment_mismatch"
+    )
 
 
 def test_return_status_after_success_webhook_returns_paid_state(

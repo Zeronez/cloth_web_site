@@ -129,7 +129,8 @@ def test_webhook_rejects_missing_signature_for_strict_provider(
     )
 
     assert response.status_code == 403
-    assert response.data["webhook"]["code"] == "signature_missing"
+    assert response.data["error"]["code"] == "signature_missing"
+    assert response.data["error"]["details"]["webhook"]["code"] == "signature_missing"
 
 
 def test_webhook_rejects_invalid_signature_for_strict_provider(
@@ -153,4 +154,5 @@ def test_webhook_rejects_invalid_signature_for_strict_provider(
     )
 
     assert response.status_code == 403
-    assert response.data["webhook"]["code"] == "signature_invalid"
+    assert response.data["error"]["code"] == "signature_invalid"
+    assert response.data["error"]["details"]["webhook"]["code"] == "signature_invalid"

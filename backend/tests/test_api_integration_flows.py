@@ -429,8 +429,9 @@ def test_checkout_rejects_empty_cart(authenticated_client, user):
     )
 
     assert checkout_response.status_code == 400
-    assert checkout_response.data["cart"]["code"] == "cart_empty"
-    assert checkout_response.data["cart"]["message"] == "Корзина пуста."
+    assert checkout_response.data["error"]["code"] == "cart_empty"
+    assert checkout_response.data["error"]["message"] == "Корзина пуста."
+    assert checkout_response.data["error"]["details"]["cart"]["code"] == "cart_empty"
     assert not Order.objects.filter(user=user).exists()
     assert not CartItem.objects.filter(cart__user=user).exists()
 
@@ -596,9 +597,9 @@ def test_checkout_rejects_overstock_without_creating_order_or_clearing_cart(
     )
 
     assert checkout_response.status_code == 400
-    assert checkout_response.data["cart"]["code"] == "insufficient_stock"
+    assert checkout_response.data["error"]["code"] == "insufficient_stock"
     assert (
-        checkout_response.data["cart"]["message"]
+        checkout_response.data["error"]["message"]
         == "Недостаточно товара на складе для артикула EVA-TEE-PUR-M."
     )
     assert not Order.objects.filter(user=user).exists()

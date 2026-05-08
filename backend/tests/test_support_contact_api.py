@@ -57,4 +57,5 @@ def test_contact_request_requires_meaningful_message(api_client):
     )
 
     assert response.status_code == 400
-    assert "message" in response.data
+    assert "message" in response.data["error"]["details"]
+    assert response.data["error"]["details"]["message"][0]["code"] == "invalid"

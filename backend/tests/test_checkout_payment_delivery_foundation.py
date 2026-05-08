@@ -272,7 +272,11 @@ def test_payment_sessions_are_scoped_to_the_authenticated_user(
     )
 
     assert foreign_order_response.status_code == 400
-    assert foreign_order_response.data["payment"]["code"] == "order_not_found"
+    assert foreign_order_response.data["error"]["code"] == "order_not_found"
+    assert (
+        foreign_order_response.data["error"]["details"]["payment"]["code"]
+        == "order_not_found"
+    )
 
 
 def test_payment_session_idempotency_key_conflicts_across_orders(
@@ -316,7 +320,11 @@ def test_payment_session_idempotency_key_conflicts_across_orders(
 
     assert first_response.status_code == 201
     assert conflict_response.status_code == 400
-    assert conflict_response.data["payment"]["code"] == "idempotency_conflict"
+    assert conflict_response.data["error"]["code"] == "idempotency_conflict"
+    assert (
+        conflict_response.data["error"]["details"]["payment"]["code"]
+        == "idempotency_conflict"
+    )
     assert Payment.objects.filter(user=user, idempotency_key="shared-key").count() == 1
 
 

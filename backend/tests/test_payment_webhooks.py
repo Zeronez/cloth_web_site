@@ -230,7 +230,8 @@ def test_payment_webhook_rejects_invalid_transition_after_success(api_client, us
     )
 
     assert response.status_code == 409
-    assert response.data["webhook"]["code"] == "invalid_transition"
+    assert response.data["error"]["code"] == "invalid_transition"
+    assert response.data["error"]["details"]["webhook"]["code"] == "invalid_transition"
     payment.refresh_from_db()
     assert payment.status == Payment.Status.SUCCEEDED
 
@@ -251,7 +252,8 @@ def test_payment_webhook_requires_matching_provider(api_client, user):
     )
 
     assert response.status_code == 400
-    assert "provider" in response.data
+    assert "provider" in response.data["error"]["details"]
+    assert response.data["error"]["details"]["provider"][0]["code"] == "invalid"
 
 
 def test_payment_failure_webhook_marks_payment_failed_without_changing_order_paid_state(

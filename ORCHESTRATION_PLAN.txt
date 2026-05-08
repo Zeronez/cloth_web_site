@@ -60,7 +60,7 @@ Phase 2.1: Backend Production Hardening
 [x] Split settings into base/development/test/staging/production with strict production defaults.
 [x] Fail startup when required production secrets are missing.
 [x] Add structured logging with request ids and user/order correlation ids.
-[ ] Add error handling format for DRF: stable error codes, translated messages, validation details.
+[x] Add error handling format for DRF: stable error codes, translated messages, validation details.
 [x] Add health endpoints: liveness, readiness, database check, Redis check.
 [x] Add Celery health/readiness check.
 [x] Add OpenAPI schema generation and published API docs.
@@ -256,7 +256,7 @@ Phase 5: Security and Compliance
 Phase 6: Observability, Reliability, and Performance
 ----------------------------------------------------
 [ ] Add Sentry or equivalent for backend/frontend errors.
-[ ] Add structured JSON logs for production.
+[x] Add structured JSON logs for production.
 [ ] Add metrics endpoint or OpenTelemetry instrumentation.
 [ ] Add dashboards for API latency, error rate, payment failures, Celery failures.
 [ ] Add uptime checks for frontend, backend, checkout, payment webhook endpoint.
@@ -428,7 +428,7 @@ API Contract Tests
 [ ] Validate schema has all public endpoints.
 [ ] Validate frontend typed client matches schema.
 [ ] Run backward compatibility check for API changes.
-[ ] Validate error response shapes.
+[x] Validate error response shapes.
 
 Security Tests
 --------------
