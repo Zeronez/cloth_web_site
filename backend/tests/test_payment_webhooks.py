@@ -2,9 +2,16 @@ from decimal import Decimal
 
 import pytest
 
+from catalog.models import (
+    AnimeFranchise,
+    Category,
+    InventoryAdjustment,
+    Product,
+    ProductVariant,
+)
 from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
 from delivery.services import create_order_delivery_snapshot
-from orders.models import Order
+from orders.models import Order, OrderItem
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from payments.services import create_payment_session
 
@@ -37,6 +44,35 @@ def create_payment_fixture(user):
         user=user,
         total_amount=Decimal("125.00"),
         **shipping_payload(),
+    )
+    category = Category.objects.create(name=f"Webhook Category {order.id}")
+    franchise = AnimeFranchise.objects.create(name=f"Webhook Franchise {order.id}")
+    product = Product.objects.create(
+        category=category,
+        franchise=franchise,
+        name=f"Webhook Tee {order.id}",
+        description="Webhook stock fixture.",
+        base_price=Decimal("125.00"),
+        is_active=True,
+    )
+    variant = ProductVariant.objects.create(
+        product=product,
+        sku=f"WEBHOOK-{order.id}",
+        size=ProductVariant.Size.M,
+        color="Black",
+        stock_quantity=1,
+        price_delta=Decimal("0.00"),
+        is_active=True,
+    )
+    OrderItem.objects.create(
+        order=order,
+        variant=variant,
+        product_name=product.name,
+        sku=variant.sku,
+        size=variant.size,
+        color=variant.color,
+        quantity=1,
+        price_at_purchase=variant.price,
     )
     method_delivery = DeliveryMethod.objects.create(
         code="courier-msk",
@@ -289,6 +325,7 @@ def test_payment_refund_webhook_marks_payment_refunded_and_order_cancelled(
     api_client, user
 ):
     order, payment = create_payment_fixture(user)
+    variant = order.items.select_related("variant").get().variant
     payment.transition_to(
         Payment.Status.SUCCEEDED,
         event_type="manual_success",
@@ -312,10 +349,108 @@ def test_payment_refund_webhook_marks_payment_refunded_and_order_cancelled(
     assert response.status_code == 200
     payment.refresh_from_db()
     order.refresh_from_db()
+    variant.refresh_from_db()
     assert payment.status == Payment.Status.REFUNDED
     assert order.status == Order.Status.CANCELLED
+    assert order.stock_restored_at is not None
+    assert variant.stock_quantity == 2
+    assert (
+        InventoryAdjustment.objects.filter(
+            variant=variant,
+            reason=InventoryAdjustment.Reason.RETURN,
+        ).count()
+        == 1
+    )
     assert PaymentEvent.objects.filter(
         payment=payment,
         external_event_id="provider-event-6",
         new_status=Payment.Status.REFUNDED,
     ).exists()
+
+
+def test_refund_after_shipment_does_not_immediately_restock_inventory(api_client, user):
+    order, payment = create_payment_fixture(user)
+    variant = order.items.select_related("variant").get().variant
+    payment.transition_to(
+        Payment.Status.SUCCEEDED,
+        event_type="manual_success",
+        message="Manual success for shipped refund test.",
+        external_event_id="manual-success-shipped-refund",
+    )
+    order.transition_to(Order.Status.PAID)
+    order.transition_to(Order.Status.PICKING)
+    order.transition_to(Order.Status.PACKED)
+    order.transition_to(Order.Status.SHIPPED)
+
+    response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-7",
+            "status": "refunded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert payment.status == Payment.Status.REFUNDED
+    assert order.status == Order.Status.RETURNED
+    assert order.stock_restored_at is None
+    assert variant.stock_quantity == 1
+    assert InventoryAdjustment.objects.filter(variant=variant).count() == 0
+
+
+def test_repeated_refund_with_new_event_id_does_not_duplicate_restock(api_client, user):
+    order, payment = create_payment_fixture(user)
+    variant = order.items.select_related("variant").get().variant
+    payment.transition_to(
+        Payment.Status.SUCCEEDED,
+        event_type="manual_success",
+        message="Manual success for repeated refund test.",
+        external_event_id="manual-success-repeat-refund",
+    )
+    order.status = Order.Status.PAID
+    order.save(update_fields=["status", "updated_at"])
+
+    first_response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-8a",
+            "status": "refunded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+    second_response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-8b",
+            "status": "refunded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert second_response.data["code"] == "status_unchanged"
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert payment.status == Payment.Status.REFUNDED
+    assert order.status == Order.Status.CANCELLED
+    assert order.stock_restored_at is not None
+    assert variant.stock_quantity == 2
+    assert (
+        InventoryAdjustment.objects.filter(
+            variant=variant,
+            reason=InventoryAdjustment.Reason.RETURN,
+        ).count()
+        == 1
+    )

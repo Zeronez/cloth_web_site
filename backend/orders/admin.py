@@ -11,6 +11,7 @@ from delivery.services import (
 )
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
+from orders.services import restore_order_stock
 from payments.models import Payment
 from users.staff_roles import (
     ROLE_ORDER_MANAGER,
@@ -609,6 +610,7 @@ class OrderAdmin(admin.ModelAdmin):
     def _transition_orders(self, request, queryset, new_status):
         updated = 0
         skipped = 0
+        restocked = 0
         for order in queryset:
             try:
                 changed = order.transition_to(new_status)
@@ -617,11 +619,25 @@ class OrderAdmin(admin.ModelAdmin):
                 continue
             if changed:
                 updated += 1
+                if new_status == Order.Status.CANCELLED:
+                    was_restocked = restore_order_stock(
+                        order=order,
+                        note=f"Возврат стока после ручной отмены заказа #{order.id} из admin.",
+                        performed_by=request.user,
+                    )
+                    if was_restocked:
+                        restocked += 1
 
         if updated:
             self.message_user(
                 request,
                 f"Обновлено заказов: {updated}. Новый статус: {dict(Order.Status.choices)[new_status]}.",
+                level=messages.SUCCESS,
+            )
+        if restocked:
+            self.message_user(
+                request,
+                f"Возвращено на склад заказов: {restocked}.",
                 level=messages.SUCCESS,
             )
         if skipped:

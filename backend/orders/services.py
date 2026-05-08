@@ -1,8 +1,11 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from catalog.models import InventoryAdjustment
+from catalog.stock import adjust_variant_stock
 from cart.models import Cart, CartItem
 from catalog.models import ProductVariant
 from delivery.services import (
@@ -16,6 +19,33 @@ from notifications.tasks import send_order_confirmation_email
 
 def _cart_error(code, message):
     return ValidationError({"cart": {"code": code, "message": message}})
+
+
+@transaction.atomic
+def restore_order_stock(
+    *, order, reason=InventoryAdjustment.Reason.RETURN, note="", performed_by=None
+):
+    locked_order = (
+        Order.objects.select_for_update()
+        .prefetch_related("items__variant")
+        .get(pk=order.pk)
+    )
+    if locked_order.stock_restored_at is not None:
+        return False
+
+    for item in locked_order.items.all():
+        adjust_variant_stock(
+            variant_id=item.variant_id,
+            delta=item.quantity,
+            reason=reason,
+            performed_by=performed_by,
+            note=note
+            or f"Возврат остатка по заказу #{locked_order.id} для SKU {item.sku}.",
+        )
+
+    locked_order.stock_restored_at = timezone.now()
+    locked_order.save(update_fields=["stock_restored_at", "updated_at"])
+    return True
 
 
 @transaction.atomic

@@ -7,6 +7,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 
 from delivery.services import ensure_shipment_for_paid_order
 from orders.models import Order
+from orders.services import restore_order_stock
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from payments.providers import fetch_provider_payment_status, get_payment_provider
 
@@ -74,12 +75,19 @@ def _sync_order_after_payment_status(payment, new_status):
         Order.Status.CANCELLED,
         Order.Status.RETURNED,
     }:
+        should_restock = order.status not in {
+            Order.Status.SHIPPED,
+            Order.Status.DELIVERED,
+        }
         order.status = (
-            Order.Status.RETURNED
-            if order.status in {Order.Status.SHIPPED, Order.Status.DELIVERED}
-            else Order.Status.CANCELLED
+            Order.Status.RETURNED if not should_restock else Order.Status.CANCELLED
         )
         order.save(update_fields=["status", "updated_at"])
+        if should_restock:
+            restore_order_stock(
+                order=order,
+                note=f"Возврат стока после refund платежа по заказу #{order.id}.",
+            )
 
 
 def _resolve_return_state(payment):

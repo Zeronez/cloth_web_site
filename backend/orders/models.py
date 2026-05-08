@@ -84,6 +84,7 @@ class Order(models.Model):
     shipping_line1 = models.CharField(max_length=255)
     shipping_line2 = models.CharField(max_length=255, blank=True)
     idempotency_key = models.CharField(max_length=120, blank=True)
+    stock_restored_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
