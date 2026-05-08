@@ -18,6 +18,7 @@ from cart.services import (
 
 class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = CartSerializer
+    throttle_scope = "cart"
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -35,7 +36,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         cart = self.get_queryset().first()
         return Response(self.get_serializer(cart).data)
 
-    @action(detail=False, methods=["post"], url_path="items")
+    @action(detail=False, methods=["post"], url_path="items", throttle_scope="cart")
     def add_item(self, request):
         serializer = AddCartItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -51,6 +52,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         detail=False,
         methods=["patch", "delete"],
         url_path=r"items/(?P<item_id>\d+)",
+        throttle_scope="cart",
     )
     def item_detail(self, request, item_id=None):
         cart = get_or_create_cart(request)

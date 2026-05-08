@@ -7,6 +7,7 @@ from delivery.serializers import DeliveryMethodSerializer
 
 class DeliveryMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = DeliveryMethodSerializer
+    throttle_scope = "catalog"
 
     @extend_schema(auth=[])
     def list(self, request, *args, **kwargs):

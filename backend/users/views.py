@@ -3,6 +3,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import Address
@@ -12,6 +13,7 @@ from users.serializers import AddressSerializer, RegisterSerializer, UserSeriali
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = (AllowAny,)
+    throttle_scope = "auth"
 
     @extend_schema(auth=[])
     def post(self, request, *args, **kwargs):
@@ -29,6 +31,7 @@ class UserMeView(generics.RetrieveUpdateAPIView):
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer
     permission_classes = (IsAuthenticated,)
+    throttle_scope = "cart"
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -50,3 +53,11 @@ def logout(request):
     token = RefreshToken(refresh)
     token.blacklist()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ScopedTokenObtainPairView(TokenObtainPairView):
+    throttle_scope = "auth"
+
+
+class ScopedTokenRefreshView(TokenRefreshView):
+    throttle_scope = "auth"

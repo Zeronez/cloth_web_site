@@ -17,6 +17,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     lookup_field = "slug"
     search_fields = ("name",)
+    throttle_scope = "catalog"
 
 
 @extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
@@ -25,6 +26,7 @@ class AnimeFranchiseViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AnimeFranchiseSerializer
     lookup_field = "slug"
     search_fields = ("name",)
+    throttle_scope = "catalog"
 
 
 @extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
@@ -39,6 +41,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ("base_price", "created_at", "name")
     ordering = ("-is_featured", "-created_at")
     lookup_field = "slug"
+    throttle_scope = "catalog"
 
     def get_serializer_class(self):
         if self.action == "retrieve":

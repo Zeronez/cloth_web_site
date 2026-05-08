@@ -26,6 +26,7 @@ from payments.services import (
 
 class PaymentMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = PaymentMethodSerializer
+    throttle_scope = "catalog"
 
     @extend_schema(auth=[])
     def list(self, request, *args, **kwargs):
@@ -42,6 +43,7 @@ class PaymentViewSet(
 ):
     serializer_class = PaymentSerializer
     permission_classes = (IsAuthenticated,)
+    throttle_scope = "payment"
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -53,7 +55,9 @@ class PaymentViewSet(
             .order_by("-created_at")
         )
 
-    @action(detail=False, methods=["post"], url_path="sessions")
+    @action(
+        detail=False, methods=["post"], url_path="sessions", throttle_scope="checkout"
+    )
     def create_session(self, request):
         serializer = PaymentSessionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -74,7 +78,9 @@ class PaymentViewSet(
             status=response_status,
         )
 
-    @action(detail=True, methods=["get"], url_path="return-status")
+    @action(
+        detail=True, methods=["get"], url_path="return-status", throttle_scope="payment"
+    )
     def return_status(self, request, pk=None):
         query_serializer = PaymentReturnStatusQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
@@ -94,6 +100,7 @@ class PaymentViewSet(
 class PaymentWebhookView(APIView):
     authentication_classes = []
     permission_classes = (AllowAny,)
+    throttle_scope = "webhook"
 
     @extend_schema(
         auth=[],

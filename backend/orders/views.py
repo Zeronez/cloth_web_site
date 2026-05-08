@@ -14,6 +14,7 @@ class OrderViewSet(
 ):
     serializer_class = OrderSerializer
     permission_classes = (IsAuthenticated,)
+    throttle_scope = "cart"
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -25,7 +26,9 @@ class OrderViewSet(
             .order_by("-created_at")
         )
 
-    @action(detail=False, methods=["post"], url_path="checkout")
+    @action(
+        detail=False, methods=["post"], url_path="checkout", throttle_scope="checkout"
+    )
     def checkout(self, request):
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -35,7 +38,12 @@ class OrderViewSet(
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="tracking-refresh")
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="tracking-refresh",
+        throttle_scope="cart",
+    )
     def tracking_refresh(self, request, pk=None):
         order = self.get_object()
         refresh_order_tracking_from_provider(order=order)

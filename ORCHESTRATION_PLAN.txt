@@ -65,7 +65,7 @@ Phase 2.1: Backend Production Hardening
 [ ] Add Celery health/readiness check.
 [x] Add OpenAPI schema generation and published API docs.
 [ ] Add API versioning: /api/v1/.
-[ ] Add throttling/rate limits for auth, cart, checkout, and public catalog.
+[x] Add throttling/rate limits for auth, cart, checkout, and public catalog.
 [ ] Add CORS/CSRF policy for production domains.
 [ ] Add secure cookie/JWT storage strategy.
 [ ] Add permission classes and object-level access checks.
@@ -439,7 +439,7 @@ Security Tests
 [ ] SAST frontend.
 [ ] Container image scan backend.
 [ ] Container image scan frontend.
-[ ] Auth rate-limit tests.
+[x] Auth rate-limit tests.
 [ ] Permission bypass tests.
 [ ] IDOR tests for orders/addresses.
 [ ] CSRF/CORS production config tests.

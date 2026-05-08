@@ -17,6 +17,7 @@ class ContactRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = ContactRequest.objects.none()
     serializer_class = ContactRequestSerializer
     permission_classes = (AllowAny,)
+    throttle_scope = "support"
 
     @extend_schema(auth=[])
     def create(self, request, *args, **kwargs):

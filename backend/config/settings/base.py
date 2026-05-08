@@ -105,6 +105,22 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env_value("DRF_THROTTLE_ANON_RATE", "1000/min"),
+        "user": env_value("DRF_THROTTLE_USER_RATE", "5000/min"),
+        "auth": env_value("DRF_THROTTLE_AUTH_RATE", "60/min"),
+        "catalog": env_value("DRF_THROTTLE_CATALOG_RATE", "600/min"),
+        "cart": env_value("DRF_THROTTLE_CART_RATE", "300/min"),
+        "checkout": env_value("DRF_THROTTLE_CHECKOUT_RATE", "60/min"),
+        "payment": env_value("DRF_THROTTLE_PAYMENT_RATE", "300/min"),
+        "support": env_value("DRF_THROTTLE_SUPPORT_RATE", "30/min"),
+        "webhook": env_value("DRF_THROTTLE_WEBHOOK_RATE", "1200/min"),
+    },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",

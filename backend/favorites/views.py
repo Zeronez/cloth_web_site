@@ -17,6 +17,7 @@ class FavoriteProductViewSet(
 ):
     permission_classes = (IsAuthenticated,)
     serializer_class = FavoriteProductSerializer
+    throttle_scope = "cart"
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
