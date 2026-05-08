@@ -1,5 +1,8 @@
 from django.contrib import admin, messages
 
+from audit.admin_mixins import AuditedModelAdminMixin
+from audit.models import AuditLog
+from audit.services import log_admin_event, model_snapshot
 from config.admin_exports import export_as_csv
 from catalog.models import (
     AnimeFranchise,
@@ -68,7 +71,7 @@ class InventoryAdjustmentInline(admin.TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
     list_filter = ("is_active", "created_at", "updated_at")
     date_hierarchy = "created_at"
@@ -91,7 +94,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 @admin.register(AnimeFranchise)
-class AnimeFranchiseAdmin(admin.ModelAdmin):
+class AnimeFranchiseAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
     list_filter = ("is_active", "created_at", "updated_at")
     date_hierarchy = "created_at"
@@ -114,7 +117,7 @@ class AnimeFranchiseAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "category",
@@ -153,7 +156,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProductVariant)
-class ProductVariantAdmin(admin.ModelAdmin):
+class ProductVariantAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = (
         "sku",
         "product",
@@ -222,6 +225,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
     def export_sku_stock_csv(self, request, queryset):
         rows = []
         queryset = queryset.select_related("product", "product__category")
+        selected_count = queryset.count()
         for variant in queryset:
             rows.append(
                 [
@@ -235,6 +239,17 @@ class ProductVariantAdmin(admin.ModelAdmin):
                     variant.is_active,
                     variant.price,
                 ]
+            )
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=variant,
+                request=request,
+                metadata={
+                    "admin_action": "export_sku_stock_csv",
+                    "selected_count": selected_count,
+                    "sku": variant.sku,
+                },
             )
         return export_as_csv(
             filename="animeattire-sku-stock.csv",
@@ -313,10 +328,33 @@ class InventoryAdjustmentAdmin(admin.ModelAdmin):
             f"Остаток {variant.sku} обновлён: {adjustment.previous_quantity} -> {adjustment.new_quantity}.",
             level=messages.SUCCESS,
         )
+        log_admin_event(
+            actor=request.user,
+            action=AuditLog.Action.ADMIN_ACTION,
+            obj=adjustment,
+            request=request,
+            snapshot=model_snapshot(
+                adjustment,
+                (
+                    "variant_id",
+                    "reason",
+                    "delta",
+                    "previous_quantity",
+                    "new_quantity",
+                    "performed_by_id",
+                    "note",
+                ),
+            ),
+            metadata={
+                "admin_action": "inventory_adjustment_add",
+                "variant_id": variant.id,
+                "sku": variant.sku,
+            },
+        )
 
 
 @admin.register(ProductImage)
-class ProductImageAdmin(admin.ModelAdmin):
+class ProductImageAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = ("alt_text", "product", "is_main", "sort_order")
     list_filter = ("is_main",)
     list_select_related = ("product",)

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "favorites",
     "notifications",
     "support",
+    "audit",
 ]
 
 MIDDLEWARE = [

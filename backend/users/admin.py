@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
+from audit.admin_mixins import AuditedModelAdminMixin
+from audit.models import AuditLog
+from audit.services import log_admin_event
 from config.admin_exports import export_as_csv
 from users.models import Address, User
 
@@ -11,7 +14,7 @@ class AddressInline(admin.TabularInline):
 
 
 @admin.register(User)
-class AnimeAttireUserAdmin(UserAdmin):
+class AnimeAttireUserAdmin(AuditedModelAdminMixin, UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("AnimeAttire profile", {"fields": ("phone", "avatar")}),
     )
@@ -26,6 +29,7 @@ class AnimeAttireUserAdmin(UserAdmin):
     def export_customers_csv(self, request, queryset):
         rows = []
         queryset = queryset.prefetch_related("orders")
+        selected_count = queryset.count()
         for user in queryset:
             rows.append(
                 [
@@ -39,6 +43,16 @@ class AnimeAttireUserAdmin(UserAdmin):
                     user.date_joined.isoformat(),
                     user.orders.count(),
                 ]
+            )
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=user,
+                request=request,
+                metadata={
+                    "admin_action": "export_customers_csv",
+                    "selected_count": selected_count,
+                },
             )
         return export_as_csv(
             filename="animeattire-customers.csv",
@@ -58,7 +72,7 @@ class AnimeAttireUserAdmin(UserAdmin):
 
 
 @admin.register(Address)
-class AddressAdmin(admin.ModelAdmin):
+class AddressAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = ("recipient_name", "user", "city", "postal_code", "is_default")
     list_filter = ("country", "city", "is_default", "created_at", "updated_at")
     date_hierarchy = "created_at"

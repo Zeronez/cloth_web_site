@@ -7,6 +7,9 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from rest_framework.exceptions import ValidationError
 
+from audit.admin_mixins import AuditedModelAdminMixin
+from audit.models import AuditLog
+from audit.services import log_admin_event
 from config.admin_exports import export_as_csv
 from delivery.services import (
     ensure_shipment_for_paid_order,
@@ -150,7 +153,7 @@ class OrderSkuListFilter(admin.SimpleListFilter):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     change_list_template = "admin/orders/order/change_list.html"
     SHIPMENT_READY_STATUSES = {
         Order.Status.PAID,
@@ -636,6 +639,13 @@ class OrderAdmin(admin.ModelAdmin):
                 continue
             if was_created:
                 created += 1
+                log_admin_event(
+                    actor=request.user,
+                    action=AuditLog.Action.ADMIN_ACTION,
+                    obj=order,
+                    request=request,
+                    metadata={"admin_action": "create_shipment"},
+                )
             else:
                 skipped += 1
         if created:
@@ -675,6 +685,16 @@ class OrderAdmin(admin.ModelAdmin):
                 continue
             if result["updated"]:
                 updated += 1
+                log_admin_event(
+                    actor=request.user,
+                    action=AuditLog.Action.ADMIN_ACTION,
+                    obj=order,
+                    request=request,
+                    metadata={
+                        "admin_action": "refresh_tracking",
+                        "tracking_events": result.get("events", 0),
+                    },
+                )
             else:
                 skipped += 1
         if updated:
@@ -745,6 +765,13 @@ class OrderAdmin(admin.ModelAdmin):
                 continue
             if was_confirmed:
                 confirmed += 1
+                log_admin_event(
+                    actor=request.user,
+                    action=AuditLog.Action.ADMIN_ACTION,
+                    obj=order,
+                    request=request,
+                    metadata={"admin_action": "confirm_return_received"},
+                )
             else:
                 skipped += 1
 
@@ -771,6 +798,7 @@ class OrderAdmin(admin.ModelAdmin):
     def export_orders_csv(self, request, queryset):
         rows = []
         queryset = queryset.select_related("user").prefetch_related("payments")
+        selected_count = queryset.count()
         for order in queryset:
             payment = order.payments.first()
             rows.append(
@@ -785,6 +813,16 @@ class OrderAdmin(admin.ModelAdmin):
                     order.track_number,
                     payment.status if payment else "",
                 ]
+            )
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=order,
+                request=request,
+                metadata={
+                    "admin_action": "export_orders_csv",
+                    "selected_count": selected_count,
+                },
             )
         return export_as_csv(
             filename="animeattire-orders.csv",
@@ -807,6 +845,7 @@ class OrderAdmin(admin.ModelAdmin):
         skipped = 0
         restocked = 0
         for order in queryset:
+            old_status = order.status
             try:
                 changed = order.transition_to(new_status)
             except ValueError:
@@ -822,6 +861,22 @@ class OrderAdmin(admin.ModelAdmin):
                     )
                     if was_restocked:
                         restocked += 1
+                log_admin_event(
+                    actor=request.user,
+                    action=AuditLog.Action.ADMIN_ACTION,
+                    obj=order,
+                    request=request,
+                    changes={
+                        "status": {
+                            "old": old_status,
+                            "new": new_status,
+                        }
+                    },
+                    metadata={
+                        "admin_action": "transition_order_status",
+                        "new_status": new_status,
+                    },
+                )
 
         if updated:
             self.message_user(

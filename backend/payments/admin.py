@@ -1,5 +1,8 @@
 from django.contrib import admin
 
+from audit.admin_mixins import AuditedModelAdminMixin
+from audit.models import AuditLog
+from audit.services import log_admin_event
 from config.admin_exports import export_as_csv
 from payments.models import Payment, PaymentEvent, PaymentMethod
 from users.staff_roles import (
@@ -12,7 +15,7 @@ from users.staff_roles import (
 
 
 @admin.register(PaymentMethod)
-class PaymentMethodAdmin(admin.ModelAdmin):
+class PaymentMethodAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_display = (
         "code",
         "name",
@@ -154,6 +157,7 @@ class PaymentAdmin(admin.ModelAdmin):
     def export_payments_csv(self, request, queryset):
         rows = []
         queryset = queryset.select_related("order", "user")
+        selected_count = queryset.count()
         for payment in queryset:
             rows.append(
                 [
@@ -168,6 +172,16 @@ class PaymentAdmin(admin.ModelAdmin):
                     payment.external_payment_id,
                     payment.created_at.isoformat(),
                 ]
+            )
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=payment,
+                request=request,
+                metadata={
+                    "admin_action": "export_payments_csv",
+                    "selected_count": selected_count,
+                },
             )
         return export_as_csv(
             filename="animeattire-payments.csv",
