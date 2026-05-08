@@ -1,8 +1,12 @@
+import redis
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from config.celery import app as celery_app
 
 
 @extend_schema(auth=[], responses={200: dict})
@@ -18,6 +22,7 @@ def ready(request):
         "database": _check_database(),
         "redis": _check_redis(),
     }
+    checks.update(_check_celery())
     status_code = 200 if all(checks.values()) else 503
     return Response(
         {
@@ -43,5 +48,41 @@ def _check_redis():
         key = "health:ready"
         cache.set(key, "ok", timeout=5)
         return cache.get(key) == "ok"
+    except Exception:
+        return False
+
+
+def _check_celery():
+    if not settings.HEALTH_CHECK_CELERY_ENABLED:
+        return {}
+
+    checks = {"celery_broker": _check_redis_url(settings.CELERY_BROKER_URL)}
+    if settings.HEALTH_CHECK_CELERY_RESULT_BACKEND_ENABLED:
+        checks["celery_result_backend"] = _check_redis_url(
+            settings.CELERY_RESULT_BACKEND
+        )
+    if settings.HEALTH_CHECK_CELERY_WORKERS_ENABLED:
+        checks["celery_workers"] = _check_celery_workers()
+    return checks
+
+
+def _check_redis_url(url, timeout=None):
+    try:
+        timeout = timeout or settings.HEALTH_CHECK_CELERY_TIMEOUT_SECONDS
+        client = redis.Redis.from_url(
+            url,
+            socket_connect_timeout=timeout,
+            socket_timeout=timeout,
+        )
+        return client.ping() is True
+    except Exception:
+        return False
+
+
+def _check_celery_workers(timeout=None):
+    try:
+        timeout = timeout or settings.HEALTH_CHECK_CELERY_WORKER_TIMEOUT_SECONDS
+        replies = celery_app.control.ping(timeout=timeout)
+        return len(replies) >= settings.HEALTH_CHECK_CELERY_MIN_WORKERS
     except Exception:
         return False

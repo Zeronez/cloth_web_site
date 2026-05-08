@@ -62,7 +62,7 @@ Phase 2.1: Backend Production Hardening
 [ ] Add structured logging with request ids and user/order correlation ids.
 [ ] Add error handling format for DRF: stable error codes, translated messages, validation details.
 [x] Add health endpoints: liveness, readiness, database check, Redis check.
-[ ] Add Celery health/readiness check.
+[x] Add Celery health/readiness check.
 [x] Add OpenAPI schema generation and published API docs.
 [ ] Add API versioning: /api/v1/.
 [x] Add throttling/rate limits for auth, cart, checkout, and public catalog.

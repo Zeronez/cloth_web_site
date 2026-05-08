@@ -6,6 +6,7 @@ import redis
 from celery.contrib.testing.worker import start_worker
 
 from config.celery import app as celery_app
+from config.health import _check_celery_workers
 
 
 pytestmark = pytest.mark.skipif(
@@ -55,6 +56,8 @@ def test_celery_worker_round_trip_uses_redis_broker_and_backend(settings, tmp_pa
             ping_task_timeout=10,
             shutdown_timeout=10,
         ):
+            assert _check_celery_workers(timeout=10) is True
+
             result = ping.apply_async()
             assert result.get(timeout=10) == "pong"
     except Exception as exc:
