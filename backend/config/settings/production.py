@@ -4,7 +4,30 @@ from urllib.parse import urlparse
 import dj_database_url
 
 from config.settings.base import *  # noqa: F403
-from config.settings.env import env_bool, env_csv, env_int, env_required, env_value
+from config.settings.env import (
+    env_bool,
+    env_csv,
+    env_int,
+    env_json,
+    env_required,
+    env_value,
+)
+
+
+UNSAFE_SECRET_KEY_MARKERS = {
+    "unsafe",
+    "local",
+    "dev",
+    "test",
+    "example",
+    "change-me",
+    "changeme",
+    "prod-secret-key",
+}
+
+UNSAFE_HOSTNAMES = {"localhost", "127.0.0.1", "0.0.0.0", "example.com"}
+UNSAFE_DOMAIN_SUFFIXES = (".example", ".example.com", ".test", ".local")
+UNSAFE_WEBHOOK_BYPASS_PROVIDERS = {"manual", "placeholder", "local", "test"}
 
 
 def _require_non_empty(name, value):
@@ -12,23 +35,42 @@ def _require_non_empty(name, value):
         raise RuntimeError(f"{name} must be set in production")
 
 
+def _validate_secret_key(value):
+    _require_non_empty("SECRET_KEY", value)
+    normalized = value.lower()
+    if len(value) < 50:
+        raise RuntimeError("SECRET_KEY must be at least 50 characters in production")
+    if any(marker in normalized for marker in UNSAFE_SECRET_KEY_MARKERS):
+        raise RuntimeError("SECRET_KEY contains an unsafe marker for production")
+
+
 def _validate_database_url(value):
     parsed = urlparse(value)
     if not parsed.scheme.startswith("postgres"):
         raise RuntimeError("DATABASE_URL must use a PostgreSQL scheme in production")
+    if parsed.hostname in UNSAFE_HOSTNAMES:
+        raise RuntimeError("DATABASE_URL cannot point at a local/example host")
+    if not parsed.username or not parsed.password:
+        raise RuntimeError("DATABASE_URL must include credentials in production")
 
 
 def _validate_redis_url(name, value):
     parsed = urlparse(value)
     if parsed.scheme not in {"redis", "rediss"}:
         raise RuntimeError(f"{name} must use redis:// or rediss:// in production")
+    if parsed.hostname in UNSAFE_HOSTNAMES:
+        raise RuntimeError(f"{name} cannot point at a local/example host")
 
 
 def _validate_hosts(name, values):
     if not values:
         raise RuntimeError(f"{name} must be set in production")
-    if "*" in values:
-        raise RuntimeError(f"{name} cannot include a wildcard host in production")
+    for host in values:
+        if "*" in host:
+            raise RuntimeError(f"{name} cannot include a wildcard host in production")
+        if "://" in host:
+            raise RuntimeError(f"{name} must contain hostnames without URL schemes")
+        _validate_public_hostname(name, host)
 
 
 def _validate_http_origins(name, values):
@@ -40,6 +82,9 @@ def _validate_http_origins(name, values):
             raise RuntimeError(
                 f"{name} entries must be absolute http or https URLs in production"
             )
+        if parsed.scheme != "https":
+            raise RuntimeError(f"{name} entries must use HTTPS in production")
+        _validate_public_hostname(name, parsed.hostname)
         if (
             parsed.path not in {"", "/"}
             or parsed.params
@@ -49,6 +94,21 @@ def _validate_http_origins(name, values):
             raise RuntimeError(
                 f"{name} entries must not include paths or query strings"
             )
+
+
+def _validate_public_hostname(name, hostname):
+    if not hostname:
+        raise RuntimeError(f"{name} must include a hostname")
+    if hostname in UNSAFE_HOSTNAMES or hostname.endswith(UNSAFE_DOMAIN_SUFFIXES):
+        raise RuntimeError(f"{name} cannot use local, test, or example hosts")
+
+
+def _validate_https_url(name, value):
+    _require_non_empty(name, value)
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise RuntimeError(f"{name} must be an absolute HTTPS URL in production")
+    _validate_public_hostname(name, parsed.hostname)
 
 
 def _validate_smtp_settings():
@@ -67,6 +127,46 @@ def _validate_s3_settings():
     _require_non_empty("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID)
     _require_non_empty("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY)
     _require_non_empty("AWS_S3_REGION_NAME", AWS_S3_REGION_NAME)
+    if AWS_S3_REGION_NAME.lower() in {"example", "test", "local"}:
+        raise RuntimeError("AWS_S3_REGION_NAME cannot be a placeholder")
+    if AWS_S3_ENDPOINT_URL:
+        _validate_https_url("AWS_S3_ENDPOINT_URL", AWS_S3_ENDPOINT_URL)
+
+
+def _validate_payment_webhook_settings():
+    unsafe_bypass = (
+        set(PAYMENT_WEBHOOK_BYPASS_PROVIDERS) & UNSAFE_WEBHOOK_BYPASS_PROVIDERS
+    )
+    if unsafe_bypass:
+        providers = ", ".join(sorted(unsafe_bypass))
+        raise RuntimeError(
+            f"PAYMENT_WEBHOOK_BYPASS_PROVIDERS cannot include {providers} in production"
+        )
+    if not PAYMENT_WEBHOOK_SECRETS:
+        raise RuntimeError("PAYMENT_WEBHOOK_SECRETS_JSON must be set in production")
+    for provider_code, secret in PAYMENT_WEBHOOK_SECRETS.items():
+        if not str(secret).strip() or len(str(secret)) < 32:
+            raise RuntimeError(
+                f"Payment webhook secret for {provider_code} is too short"
+            )
+    for provider_code, url in PAYMENT_PROVIDER_CONFIRMATION_URLS.items():
+        _validate_https_url(
+            f"PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON[{provider_code}]", url
+        )
+    _validate_https_url(
+        "PAYMENT_PROVIDER_RETURN_BASE_URL", PAYMENT_PROVIDER_RETURN_BASE_URL
+    )
+
+
+def _validate_no_sandbox_overrides():
+    if PAYMENT_PROVIDER_STATUS_OVERRIDES:
+        raise RuntimeError(
+            "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON must be empty in production"
+        )
+    if DELIVERY_PROVIDER_TRACKING_OVERRIDES:
+        raise RuntimeError(
+            "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON must be empty in production"
+        )
 
 
 DEBUG = False
@@ -107,7 +207,23 @@ AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")
 AWS_ACCESS_KEY_ID = env_value("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = env_value("AWS_SECRET_ACCESS_KEY", "")
 AWS_S3_REGION_NAME = env_value("AWS_S3_REGION_NAME", "us-east-1")
+PAYMENT_WEBHOOK_BYPASS_PROVIDERS = env_csv("PAYMENT_WEBHOOK_BYPASS_PROVIDERS", "")
+PAYMENT_WEBHOOK_SECRETS = env_json("PAYMENT_WEBHOOK_SECRETS_JSON", {})
+PAYMENT_WEBHOOK_SIGNATURE_HEADERS = env_json(
+    "PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON", {}
+)
+PAYMENT_PROVIDER_CONFIRMATION_URLS = env_json(
+    "PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON", {}
+)
+PAYMENT_PROVIDER_RETURN_BASE_URL = env_required("PAYMENT_PROVIDER_RETURN_BASE_URL")
+PAYMENT_PROVIDER_STATUS_OVERRIDES = env_json(
+    "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON", {}
+)
+DELIVERY_PROVIDER_TRACKING_OVERRIDES = env_json(
+    "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON", {}
+)
 
+_validate_secret_key(SECRET_KEY)
 _validate_database_url(DATABASE_URL)
 _validate_redis_url("REDIS_URL", REDIS_URL)
 _validate_redis_url("CELERY_BROKER_URL", CELERY_BROKER_URL)
@@ -117,6 +233,8 @@ _validate_http_origins("CSRF_TRUSTED_ORIGINS", CSRF_TRUSTED_ORIGINS)
 _validate_http_origins("CORS_ALLOWED_ORIGINS", CORS_ALLOWED_ORIGINS)
 _validate_smtp_settings()
 _validate_s3_settings()
+_validate_payment_webhook_settings()
+_validate_no_sandbox_overrides()
 
 DATABASES = {
     "default": dj_database_url.config(

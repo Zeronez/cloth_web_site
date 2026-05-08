@@ -58,7 +58,7 @@ Phase 2: Backend Core
 Phase 2.1: Backend Production Hardening
 ---------------------------------------
 [x] Split settings into base/development/test/staging/production with strict production defaults.
-[ ] Fail startup when required production secrets are missing.
+[x] Fail startup when required production secrets are missing.
 [ ] Add structured logging with request ids and user/order correlation ids.
 [ ] Add error handling format for DRF: stable error codes, translated messages, validation details.
 [x] Add health endpoints: liveness, readiness, database check, Redis check.
