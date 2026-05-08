@@ -454,3 +454,55 @@ def test_repeated_refund_with_new_event_id_does_not_duplicate_restock(api_client
         ).count()
         == 1
     )
+
+
+def test_refund_after_shipment_can_be_restocked_after_manual_return_confirmation(
+    api_client, user
+):
+    from orders.services import confirm_order_return_received
+
+    order, payment = create_payment_fixture(user)
+    variant = order.items.select_related("variant").get().variant
+    payment.transition_to(
+        Payment.Status.SUCCEEDED,
+        event_type="manual_success",
+        message="Manual success for warehouse return test.",
+        external_event_id="manual-success-warehouse-return",
+    )
+    order.transition_to(Order.Status.PAID)
+    order.transition_to(Order.Status.PICKING)
+    order.transition_to(Order.Status.PACKED)
+    order.transition_to(Order.Status.SHIPPED)
+
+    response = api_client.post(
+        "/api/payments/webhooks/placeholder/",
+        {
+            "event_id": "provider-event-9",
+            "status": "refunded",
+            "order_id": order.id,
+            "payment_id": payment.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert order.status == Order.Status.RETURNED
+    assert order.stock_restored_at is None
+    assert variant.stock_quantity == 1
+
+    was_confirmed = confirm_order_return_received(order=order)
+
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert was_confirmed is True
+    assert order.stock_restored_at is not None
+    assert variant.stock_quantity == 2
+    assert (
+        InventoryAdjustment.objects.filter(
+            variant=variant,
+            reason=InventoryAdjustment.Reason.RETURN,
+        ).count()
+        == 1
+    )

@@ -150,6 +150,7 @@ Phase 2.6: Delivery and Fulfillment
 [x] Implement warehouse picking list.
 [x] Implement packing slip generation.
 [x] Implement stock return on cancellation/refund according to business rules.
+[x] Implement physical return confirmation before restocking shipped refunds.
 [x] Implement admin fulfillment dashboard.
 
 Phase 2.7: Notifications and Support
@@ -466,7 +467,7 @@ Operational Acceptance Tests
 [ ] Sentry/error reporting test.
 [x] Staff can create product, variant, image, stock adjustment in admin.
 [ ] Staff can process order through fulfillment statuses.
-[ ] Staff can issue refund/cancel order according to rules.
+[x] Staff can issue refund/cancel order according to rules.
 [x] Support can find customer/order and add internal note.
 
 Manual Pre-Launch Checklist

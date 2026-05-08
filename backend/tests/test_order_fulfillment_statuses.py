@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from rest_framework.exceptions import ValidationError
 
 from catalog.models import (
     AnimeFranchise,
@@ -10,7 +11,7 @@ from catalog.models import (
     ProductVariant,
 )
 from orders.models import Order
-from orders.services import restore_order_stock
+from orders.services import confirm_order_return_received, restore_order_stock
 from payments.models import Payment, PaymentMethod
 from payments.services import create_payment_session
 
@@ -182,3 +183,38 @@ def test_restore_order_stock_is_idempotent(user):
     )
     assert adjustments.count() == 1
     assert adjustments.get().delta == 2
+
+
+def test_confirm_order_return_received_requires_returned_status(user):
+    order, _variant = create_stocked_order(
+        user, status=Order.Status.SHIPPED, quantity=1
+    )
+
+    with pytest.raises(ValidationError):
+        confirm_order_return_received(order=order)
+
+    order.refresh_from_db()
+    assert order.stock_restored_at is None
+
+
+def test_confirm_order_return_received_restocks_returned_order_once(user):
+    order, variant = create_stocked_order(
+        user, status=Order.Status.RETURNED, stock_quantity=0, quantity=2
+    )
+
+    first_result = confirm_order_return_received(order=order)
+    second_result = confirm_order_return_received(order=order)
+
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert first_result is True
+    assert second_result is False
+    assert order.stock_restored_at is not None
+    assert variant.stock_quantity == 2
+    assert (
+        InventoryAdjustment.objects.filter(
+            variant=variant,
+            reason=InventoryAdjustment.Reason.RETURN,
+        ).count()
+        == 1
+    )

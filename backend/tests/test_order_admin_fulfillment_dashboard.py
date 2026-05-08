@@ -219,3 +219,35 @@ def test_order_api_does_not_expose_internal_staff_fields(
     assert "internal_note" not in response.data
     assert "priority" not in response.data
     assert "assignee" not in response.data
+
+
+def test_order_admin_confirm_return_received_action_restocks_inventory(
+    admin_client, admin_user, user, product_factory
+):
+    order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.RETURNED, sku="ADMIN-RETURN-M"
+    )
+    variant = order.items.select_related("variant").get().variant
+    variant.stock_quantity = 0
+    variant.save(update_fields=["stock_quantity", "updated_at"])
+
+    response = admin_client.post(
+        reverse("admin:orders_order_changelist"),
+        {
+            "action": "confirm_return_received",
+            "_selected_action": [str(order.id)],
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    order.refresh_from_db()
+    variant.refresh_from_db()
+    assert order.stock_restored_at is not None
+    assert variant.stock_quantity == 2
+    adjustment = variant.inventory_adjustments.get()
+    assert adjustment.performed_by == admin_user
+    assert adjustment.reason == "return"
+    assert "Подтверждено возвратов на склад: 1." in response.content.decode(
+        "utf-8", errors="ignore"
+    )

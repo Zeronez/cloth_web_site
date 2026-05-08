@@ -117,7 +117,12 @@ def test_warehouse_operator_actions_are_limited_and_catalog_hidden(
     catalog_admin: ProductAdmin = admin.site._registry[Product]
     action_names = set(order_admin.get_actions(request).keys())
 
-    assert {"mark_picking", "mark_packed", "mark_shipped"} <= action_names
+    assert {
+        "mark_picking",
+        "mark_packed",
+        "mark_shipped",
+        "confirm_return_received",
+    } <= action_names
     assert "mark_cancelled" not in action_names
     assert "mark_returned" not in action_names
     assert "create_shipment" not in action_names

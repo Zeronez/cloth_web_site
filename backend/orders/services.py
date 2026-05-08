@@ -49,6 +49,28 @@ def restore_order_stock(
 
 
 @transaction.atomic
+def confirm_order_return_received(*, order, performed_by=None, note=""):
+    locked_order = Order.objects.select_for_update().get(pk=order.pk)
+    if locked_order.status != Order.Status.RETURNED:
+        raise ValidationError(
+            {
+                "order": {
+                    "code": "return_confirmation_invalid_status",
+                    "message": "Подтвердить приемку возврата можно только для заказа в статусе 'Возвращён'.",
+                }
+            }
+        )
+
+    return restore_order_stock(
+        order=locked_order,
+        reason=InventoryAdjustment.Reason.RETURN,
+        note=note
+        or f"Подтверждена приемка возврата заказа #{locked_order.id} на склад.",
+        performed_by=performed_by,
+    )
+
+
+@transaction.atomic
 def checkout_cart(user, shipping_data):
     shipping_data = dict(shipping_data)
     idempotency_key = shipping_data.pop("idempotency_key", "")

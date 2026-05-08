@@ -4,6 +4,7 @@ from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
+from rest_framework.exceptions import ValidationError
 
 from delivery.services import (
     ensure_shipment_for_paid_order,
@@ -11,7 +12,7 @@ from delivery.services import (
 )
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
-from orders.services import restore_order_stock
+from orders.services import confirm_order_return_received, restore_order_stock
 from payments.models import Payment
 from users.staff_roles import (
     ROLE_ORDER_MANAGER,
@@ -100,6 +101,7 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_picking",
         "mark_packed",
         "mark_shipped",
+        "confirm_return_received",
     }
     ORDER_MANAGER_ACTIONS = {
         "create_shipment",
@@ -110,6 +112,7 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_delivered",
         "mark_cancelled",
         "mark_returned",
+        "confirm_return_received",
     }
 
     list_display = (
@@ -142,7 +145,7 @@ class OrderAdmin(admin.ModelAdmin):
         "track_number",
         "items__sku",
     )
-    readonly_fields = ("total_amount", "packing_slip_link")
+    readonly_fields = ("total_amount", "stock_restored_at", "packing_slip_link")
     inlines = [OrderDeliverySnapshotInline, PaymentInline, OrderItemInline]
     actions = (
         "create_shipment",
@@ -153,6 +156,7 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_delivered",
         "mark_cancelled",
         "mark_returned",
+        "confirm_return_received",
     )
     fieldsets = (
         (
@@ -163,6 +167,7 @@ class OrderAdmin(admin.ModelAdmin):
                     "priority",
                     "assignee",
                     "internal_note",
+                    "stock_restored_at",
                     "packing_slip_link",
                 )
             },
@@ -404,6 +409,10 @@ class OrderAdmin(admin.ModelAdmin):
             return "Разобрать проблему доставки"
         if obj.status == Order.Status.SHIPPED:
             return "Следить за трекингом"
+        if obj.status == Order.Status.RETURNED and not obj.stock_restored_at:
+            return "Подтвердить приемку возврата на склад"
+        if obj.status == Order.Status.RETURNED and obj.stock_restored_at:
+            return "Возврат оприходован"
         return "Контур в норме"
 
     @admin.display(description="Packing slip")
@@ -606,6 +615,53 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.action(description="Перевести в 'Возвращён'")
     def mark_returned(self, request, queryset):
         self._transition_orders(request, queryset, Order.Status.RETURNED)
+
+    @admin.action(description="Подтвердить приемку возврата на склад")
+    def confirm_return_received(self, request, queryset):
+        confirmed = 0
+        skipped = 0
+        failed = 0
+        for order in queryset:
+            try:
+                was_confirmed = confirm_order_return_received(
+                    order=order,
+                    performed_by=request.user,
+                    note=f"Приемка возврата заказа #{order.id} подтверждена через admin.",
+                )
+            except ValidationError:
+                skipped += 1
+                continue
+            except Exception as exc:
+                failed += 1
+                self.message_user(
+                    request,
+                    f"Заказ #{order.id}: не удалось подтвердить приемку возврата ({exc}).",
+                    level=messages.ERROR,
+                )
+                continue
+            if was_confirmed:
+                confirmed += 1
+            else:
+                skipped += 1
+
+        if confirmed:
+            self.message_user(
+                request,
+                f"Подтверждено возвратов на склад: {confirmed}.",
+                level=messages.SUCCESS,
+            )
+        if skipped:
+            self.message_user(
+                request,
+                f"Пропущено заказов без новой приемки возврата: {skipped}.",
+                level=messages.WARNING,
+            )
+        if failed:
+            self.message_user(
+                request,
+                f"Заказов с ошибкой приемки возврата: {failed}.",
+                level=messages.ERROR,
+            )
 
     def _transition_orders(self, request, queryset, new_status):
         updated = 0
