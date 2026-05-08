@@ -230,7 +230,7 @@ Phase 4: Admin and Operations Product
 [x] Add fulfillment dashboard queues for returns and payment issues.
 [ ] Add export reports: orders, customers, SKU stock, payments.
 [ ] Add admin filters for dates, statuses, franchises, categories, SKU, delivery method.
-[ ] Add admin inline order items, payment events, shipment events.
+[x] Add admin inline order items, payment events, shipment events.
 [x] Add admin-only stock adjustment with audit reason.
 [x] Add admin comments/internal notes on orders.
 [ ] Add moderation/validation for uploaded media.

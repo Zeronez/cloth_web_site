@@ -1,11 +1,13 @@
 from decimal import Decimal
 
 import pytest
+from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from delivery.models import DeliveryMethod, OrderDeliverySnapshot
 from delivery.services import create_order_delivery_snapshot, create_shipment_for_order
+from orders.admin import OrderAdmin
 from orders.models import Order, OrderItem
 from payments.models import Payment, PaymentMethod
 
@@ -327,6 +329,37 @@ def test_order_api_does_not_expose_internal_staff_fields(
     assert "internal_note" not in response.data
     assert "priority" not in response.data
     assert "assignee" not in response.data
+
+
+def test_order_admin_change_view_shows_payment_and_delivery_event_context(
+    admin_client, user, product_factory
+):
+    order = create_order_with_snapshot(
+        user, product_factory, status=Order.Status.PAID, sku="ADMIN-CONTEXT-M"
+    )
+    payment = create_payment(order, status=Payment.Status.PENDING)
+    payment.transition_to(
+        Payment.Status.SUCCEEDED,
+        event_type="manual_success",
+        message="Оплата подтверждена оператором.",
+        external_event_id="admin-context-payment",
+    )
+    create_shipment_for_order(
+        order=order,
+        provider_code="cdek",
+        external_shipment_id="SHIP-CONTEXT-1",
+        track_number="TRACK-CONTEXT-1",
+    )
+
+    response = admin_client.get(reverse("admin:orders_order_change", args=[order.id]))
+
+    assert response.status_code == 200
+    content = response.content.decode("utf-8", errors="ignore")
+    assert "Оплата подтверждена оператором." in content
+    order_admin: OrderAdmin = admin.site._registry[Order]
+    delivery_inline = order_admin.inlines[0](Order, admin.site)
+    tracking_summary = delivery_inline.tracking_events_summary(order.delivery_snapshot)
+    assert "Оформлена накладная и создано отправление." in str(tracking_summary)
 
 
 def test_order_admin_confirm_return_received_action_restocks_inventory(

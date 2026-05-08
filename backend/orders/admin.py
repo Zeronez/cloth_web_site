@@ -4,6 +4,7 @@ from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from rest_framework.exceptions import ValidationError
 
 from delivery.services import (
@@ -26,7 +27,13 @@ from users.staff_roles import (
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ("line_total",)
+    readonly_fields = ("line_total_display",)
+
+    @admin.display(description="Сумма позиции")
+    def line_total_display(self, obj):
+        if obj is None or obj.price_at_purchase is None or obj.quantity is None:
+            return "-"
+        return obj.line_total
 
 
 class OrderDeliverySnapshotInline(admin.StackedInline):
@@ -47,6 +54,7 @@ class OrderDeliverySnapshotInline(admin.StackedInline):
         "external_shipment_id",
         "current_location",
         "last_tracking_sync_at",
+        "tracking_events_summary",
         "recipient_name",
         "recipient_phone",
         "country",
@@ -59,6 +67,26 @@ class OrderDeliverySnapshotInline(admin.StackedInline):
 
     def has_add_permission(self, request, obj=None):
         return False
+
+    @admin.display(description="Последние события доставки")
+    def tracking_events_summary(self, obj):
+        events = list(obj.tracking_events.order_by("-created_at", "-id")[:5])
+        if not events:
+            return "Событий доставки пока нет."
+        return format_html(
+            "{}",
+            mark_safe(
+                "<br>".join(
+                    "{}: {} -> {} ({})".format(
+                        event.created_at.strftime("%d.%m %H:%M"),
+                        event.get_previous_status_display() or "старт",
+                        event.get_new_status_display(),
+                        event.message or event.event_type,
+                    )
+                    for event in events
+                )
+            ),
+        )
 
 
 class PaymentInline(admin.TabularInline):
@@ -73,12 +101,33 @@ class PaymentInline(admin.TabularInline):
         "currency",
         "external_payment_id",
         "session_expires_at",
+        "recent_events_summary",
         "created_at",
         "updated_at",
     )
 
     def has_add_permission(self, request, obj=None):
         return False
+
+    @admin.display(description="Последние события оплаты")
+    def recent_events_summary(self, obj):
+        events = list(obj.events.order_by("-created_at", "-id")[:5])
+        if not events:
+            return "Событий оплаты пока нет."
+        return format_html(
+            "{}",
+            mark_safe(
+                "<br>".join(
+                    "{}: {} -> {} ({})".format(
+                        event.created_at.strftime("%d.%m %H:%M"),
+                        event.get_previous_status_display() or "старт",
+                        event.get_new_status_display(),
+                        event.message or event.event_type,
+                    )
+                    for event in events
+                )
+            ),
+        )
 
 
 @admin.register(Order)
@@ -146,7 +195,11 @@ class OrderAdmin(admin.ModelAdmin):
         "items__sku",
     )
     readonly_fields = ("total_amount", "stock_restored_at", "packing_slip_link")
-    inlines = [OrderDeliverySnapshotInline, PaymentInline, OrderItemInline]
+    inlines = [
+        OrderDeliverySnapshotInline,
+        PaymentInline,
+        OrderItemInline,
+    ]
     actions = (
         "create_shipment",
         "refresh_tracking",
