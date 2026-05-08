@@ -1,9 +1,10 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.contrib import admin, messages
 
 from audit.admin_mixins import AuditedModelAdminMixin
 from audit.models import AuditLog
 from audit.services import log_admin_event, model_snapshot
-from config.admin_exports import export_as_csv
 from catalog.models import (
     AnimeFranchise,
     Category,
@@ -13,6 +14,7 @@ from catalog.models import (
     ProductVariant,
 )
 from catalog.stock import LOW_STOCK_THRESHOLD, adjust_variant_stock, is_low_stock
+from config.admin_exports import export_as_csv
 from users.staff_roles import (
     ROLE_CATALOG_MANAGER,
     ROLE_INVENTORY_MANAGER,
@@ -118,6 +120,8 @@ class AnimeFranchiseAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
+    PRICE_QUANT = Decimal("0.01")
+
     list_display = (
         "name",
         "category",
@@ -139,6 +143,14 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "description", "variants__sku")
     inlines = [ProductVariantInline, ProductImageInline]
+    actions = (
+        "activate_selected_products",
+        "deactivate_selected_products",
+        "feature_selected_products",
+        "unfeature_selected_products",
+        "increase_selected_product_prices_10_percent",
+        "decrease_selected_product_prices_10_percent",
+    )
 
     def has_module_permission(self, request):
         if request.user.is_superuser:
@@ -153,6 +165,123 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+    def _bulk_set_boolean(self, request, queryset, *, field_name, value, action_name):
+        selected_count = queryset.count()
+        updated = 0
+        for product in queryset:
+            old_value = getattr(product, field_name)
+            if old_value == value:
+                continue
+            setattr(product, field_name, value)
+            product.save(update_fields=[field_name, "updated_at"])
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=product,
+                request=request,
+                changes={field_name: {"old": old_value, "new": value}},
+                metadata={
+                    "admin_action": action_name,
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "product_id": product.id,
+                    "slug": product.slug,
+                },
+            )
+        self.message_user(request, f"Обновлено товаров: {updated}.", messages.SUCCESS)
+
+    def _bulk_adjust_price(self, request, queryset, *, multiplier, action_name):
+        selected_count = queryset.count()
+        updated = 0
+        for product in queryset:
+            old_price = product.base_price
+            new_price = (old_price * multiplier).quantize(
+                self.PRICE_QUANT,
+                rounding=ROUND_HALF_UP,
+            )
+            if new_price == old_price:
+                continue
+            product.base_price = new_price
+            product.save(update_fields=["base_price", "updated_at"])
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=product,
+                request=request,
+                changes={"base_price": {"old": str(old_price), "new": str(new_price)}},
+                metadata={
+                    "admin_action": action_name,
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "product_id": product.id,
+                    "slug": product.slug,
+                    "multiplier": str(multiplier),
+                },
+            )
+        self.message_user(
+            request, f"Обновлено цен товаров: {updated}.", messages.SUCCESS
+        )
+
+    @admin.action(description="Опубликовать выбранные товары")
+    def activate_selected_products(self, request, queryset):
+        self._bulk_set_boolean(
+            request,
+            queryset,
+            field_name="is_active",
+            value=True,
+            action_name="activate_selected_products",
+        )
+
+    @admin.action(description="Снять выбранные товары с публикации")
+    def deactivate_selected_products(self, request, queryset):
+        self._bulk_set_boolean(
+            request,
+            queryset,
+            field_name="is_active",
+            value=False,
+            action_name="deactivate_selected_products",
+        )
+
+    @admin.action(description="Добавить выбранные товары в избранное")
+    def feature_selected_products(self, request, queryset):
+        self._bulk_set_boolean(
+            request,
+            queryset,
+            field_name="is_featured",
+            value=True,
+            action_name="feature_selected_products",
+        )
+
+    @admin.action(description="Убрать выбранные товары из избранного")
+    def unfeature_selected_products(self, request, queryset):
+        self._bulk_set_boolean(
+            request,
+            queryset,
+            field_name="is_featured",
+            value=False,
+            action_name="unfeature_selected_products",
+        )
+
+    @admin.action(description="Поднять базовую цену выбранных товаров на 10%%")
+    def increase_selected_product_prices_10_percent(self, request, queryset):
+        self._bulk_adjust_price(
+            request,
+            queryset,
+            multiplier=Decimal("1.10"),
+            action_name="increase_selected_product_prices_10_percent",
+        )
+
+    @admin.action(description="Снизить базовую цену выбранных товаров на 10%%")
+    def decrease_selected_product_prices_10_percent(self, request, queryset):
+        self._bulk_adjust_price(
+            request,
+            queryset,
+            multiplier=Decimal("0.90"),
+            action_name="decrease_selected_product_prices_10_percent",
+        )
 
 
 @admin.register(ProductVariant)
@@ -179,7 +308,16 @@ class ProductVariantAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_select_related = ("product", "product__category", "product__franchise")
     search_fields = ("sku", "product__name", "color")
     inlines = [InventoryAdjustmentInline]
-    actions = ("export_sku_stock_csv",)
+    actions = (
+        "activate_selected_variants",
+        "deactivate_selected_variants",
+        "mark_zero_stock_variants_inactive",
+        "restock_selected_variants_by_1",
+        "restock_selected_variants_by_5",
+        "write_off_selected_variants_by_1",
+        "set_selected_variants_price_delta_zero",
+        "export_sku_stock_csv",
+    )
 
     def has_module_permission(self, request):
         if request.user.is_superuser:
@@ -220,6 +358,178 @@ class ProductVariantAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         if is_low_stock(obj):
             return f"{obj.stock_quantity} · low"
         return str(obj.stock_quantity)
+
+    def _bulk_set_variant_active(self, request, queryset, *, value, action_name):
+        selected_count = queryset.count()
+        updated = 0
+        for variant in queryset.select_related("product"):
+            old_value = variant.is_active
+            if old_value == value:
+                continue
+            variant.is_active = value
+            variant.save(update_fields=["is_active", "updated_at"])
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=variant,
+                request=request,
+                changes={"is_active": {"old": old_value, "new": value}},
+                metadata={
+                    "admin_action": action_name,
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "variant_id": variant.id,
+                    "sku": variant.sku,
+                },
+            )
+        self.message_user(request, f"Обновлено SKU: {updated}.", messages.SUCCESS)
+
+    def _bulk_adjust_variant_stock(
+        self, request, queryset, *, delta, reason, action_name
+    ):
+        selected_count = queryset.count()
+        updated = 0
+        skipped = 0
+        for variant in queryset.select_related("product"):
+            if variant.stock_quantity + delta < 0:
+                skipped += 1
+                continue
+            _variant, adjustment = adjust_variant_stock(
+                variant_id=variant.id,
+                delta=delta,
+                reason=reason,
+                performed_by=request.user,
+                note=f"Массовое admin-действие {action_name} для SKU {variant.sku}.",
+            )
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=adjustment,
+                request=request,
+                snapshot=model_snapshot(
+                    adjustment,
+                    (
+                        "variant_id",
+                        "reason",
+                        "delta",
+                        "previous_quantity",
+                        "new_quantity",
+                        "performed_by_id",
+                        "note",
+                    ),
+                ),
+                metadata={
+                    "admin_action": action_name,
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "skipped_count": skipped,
+                    "variant_id": variant.id,
+                    "sku": variant.sku,
+                    "delta": delta,
+                    "reason": reason,
+                    "adjustment_id": adjustment.id,
+                },
+            )
+        if skipped:
+            self.message_user(
+                request,
+                f"Пропущено SKU без достаточного остатка: {skipped}.",
+                messages.WARNING,
+            )
+        self.message_user(
+            request, f"Обновлено остатков SKU: {updated}.", messages.SUCCESS
+        )
+
+    @admin.action(description="Активировать выбранные SKU")
+    def activate_selected_variants(self, request, queryset):
+        self._bulk_set_variant_active(
+            request,
+            queryset,
+            value=True,
+            action_name="activate_selected_variants",
+        )
+
+    @admin.action(description="Деактивировать выбранные SKU")
+    def deactivate_selected_variants(self, request, queryset):
+        self._bulk_set_variant_active(
+            request,
+            queryset,
+            value=False,
+            action_name="deactivate_selected_variants",
+        )
+
+    @admin.action(description="Деактивировать выбранные SKU с нулевым остатком")
+    def mark_zero_stock_variants_inactive(self, request, queryset):
+        self._bulk_set_variant_active(
+            request,
+            queryset.filter(stock_quantity=0),
+            value=False,
+            action_name="mark_zero_stock_variants_inactive",
+        )
+
+    @admin.action(description="Пополнить выбранные SKU на 1 единицу")
+    def restock_selected_variants_by_1(self, request, queryset):
+        self._bulk_adjust_variant_stock(
+            request,
+            queryset,
+            delta=1,
+            reason=InventoryAdjustment.Reason.RESTOCK,
+            action_name="restock_selected_variants_by_1",
+        )
+
+    @admin.action(description="Пополнить выбранные SKU на 5 единиц")
+    def restock_selected_variants_by_5(self, request, queryset):
+        self._bulk_adjust_variant_stock(
+            request,
+            queryset,
+            delta=5,
+            reason=InventoryAdjustment.Reason.RESTOCK,
+            action_name="restock_selected_variants_by_5",
+        )
+
+    @admin.action(description="Списать 1 единицу у выбранных SKU")
+    def write_off_selected_variants_by_1(self, request, queryset):
+        self._bulk_adjust_variant_stock(
+            request,
+            queryset,
+            delta=-1,
+            reason=InventoryAdjustment.Reason.DAMAGE,
+            action_name="write_off_selected_variants_by_1",
+        )
+
+    @admin.action(description="Обнулить price_delta у выбранных SKU")
+    def set_selected_variants_price_delta_zero(self, request, queryset):
+        selected_count = queryset.count()
+        updated = 0
+        for variant in queryset.select_related("product"):
+            old_value = variant.price_delta
+            if old_value == 0:
+                continue
+            variant.price_delta = Decimal("0.00")
+            variant.save(update_fields=["price_delta", "updated_at"])
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=variant,
+                request=request,
+                changes={
+                    "price_delta": {
+                        "old": str(old_value),
+                        "new": "0.00",
+                    }
+                },
+                metadata={
+                    "admin_action": "set_selected_variants_price_delta_zero",
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "variant_id": variant.id,
+                    "sku": variant.sku,
+                },
+            )
+        self.message_user(request, f"Обновлено SKU: {updated}.", messages.SUCCESS)
 
     @admin.action(description="Экспортировать выбранные SKU-остатки в CSV")
     def export_sku_stock_csv(self, request, queryset):

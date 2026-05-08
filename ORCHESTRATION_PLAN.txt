@@ -105,7 +105,7 @@ Phase 2.3: Catalog and Merchandising
 [ ] Add inventory reservations with expiration for checkout.
 [~] Add low-stock alerts.
 [ ] Add bulk import/export for products and variants.
-[ ] Add admin actions for mass price/stock/status updates.
+[x] Add admin actions for mass price/stock/status updates.
 
 Phase 2.4: Pricing, Promotions, and Taxes
 -----------------------------------------
