@@ -16,6 +16,8 @@ class OrderViewSet(
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
         return (
             Order.objects.filter(user=self.request.user)
             .select_related("delivery_snapshot")

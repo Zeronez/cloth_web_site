@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
 from catalog.filters import ProductFilter
@@ -10,6 +11,7 @@ from catalog.serializers import (
 )
 
 
+@extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.filter(is_active=True)
     serializer_class = CategorySerializer
@@ -17,6 +19,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ("name",)
 
 
+@extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
 class AnimeFranchiseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AnimeFranchise.objects.filter(is_active=True)
     serializer_class = AnimeFranchiseSerializer
@@ -24,6 +27,7 @@ class AnimeFranchiseViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ("name",)
 
 
+@extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
         Product.objects.filter(is_active=True)

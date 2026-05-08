@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -26,6 +27,10 @@ from payments.services import (
 class PaymentMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = PaymentMethodSerializer
 
+    @extend_schema(auth=[])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         return PaymentMethod.objects.filter(is_active=True).order_by(
             "sort_order", "name"
@@ -39,6 +44,8 @@ class PaymentViewSet(
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Payment.objects.none()
         return (
             Payment.objects.filter(user=self.request.user)
             .select_related("order", "method")
@@ -88,6 +95,11 @@ class PaymentWebhookView(APIView):
     authentication_classes = []
     permission_classes = (AllowAny,)
 
+    @extend_schema(
+        auth=[],
+        request=PaymentWebhookSerializer,
+        responses=PaymentWebhookResponseSerializer,
+    )
     def post(self, request, provider_code):
         verify_payment_webhook_signature(
             provider_code=provider_code,

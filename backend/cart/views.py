@@ -3,7 +3,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from cart.models import CartItem
+from cart.models import Cart, CartItem
 from cart.serializers import (
     AddCartItemSerializer,
     CartSerializer,
@@ -20,6 +20,8 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = CartSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Cart.objects.none()
         cart = get_or_create_cart(self.request)
         return (
             type(cart)

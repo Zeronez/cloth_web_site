@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import AllowAny
 
@@ -16,6 +17,10 @@ class ContactRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = ContactRequest.objects.none()
     serializer_class = ContactRequestSerializer
     permission_classes = (AllowAny,)
+
+    @extend_schema(auth=[])
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None

@@ -1,5 +1,6 @@
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,8 @@ class FavoriteProductViewSet(
     serializer_class = FavoriteProductSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return FavoriteProduct.objects.none()
         return (
             FavoriteProduct.objects.filter(user=self.request.user)
             .select_related("product", "product__category", "product__franchise")
@@ -31,6 +34,9 @@ class FavoriteProductViewSet(
         )
         return Response(serializer.data)
 
+    @extend_schema(
+        request=FavoriteCreateSerializer, responses=FavoriteProductSerializer
+    )
     def create(self, request):
         serializer = FavoriteCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

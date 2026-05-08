@@ -1,19 +1,25 @@
 from django.core.cache import cache
 from django.db import connection
-from django.http import JsonResponse
+from drf_spectacular.utils import extend_schema
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
+@extend_schema(auth=[], responses={200: dict})
+@api_view(["GET"])
 def live(request):
-    return JsonResponse({"status": "ok", "service": "animeattire-api"})
+    return Response({"status": "ok", "service": "animeattire-api"})
 
 
+@extend_schema(auth=[], responses={200: dict, 503: dict})
+@api_view(["GET"])
 def ready(request):
     checks = {
         "database": _check_database(),
         "redis": _check_redis(),
     }
     status_code = 200 if all(checks.values()) else 503
-    return JsonResponse(
+    return Response(
         {
             "status": "ok" if status_code == 200 else "degraded",
             "checks": checks,
