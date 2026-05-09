@@ -1,8 +1,10 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -45,12 +47,17 @@ class AddressViewSet(viewsets.ModelViewSet):
 def logout(request):
     refresh = request.data.get("refresh")
     if not refresh:
-        return Response(
-            {"refresh": "Refresh token is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        raise ValidationError({"refresh": "Refresh token is required."})
 
-    token = RefreshToken(refresh)
+    try:
+        token = RefreshToken(refresh)
+    except TokenError as exc:
+        raise ValidationError({"refresh": "Refresh token is invalid."}) from exc
+
+    token_user_id = str(token.get("user_id", ""))
+    if token_user_id != str(request.user.pk):
+        raise ValidationError({"refresh": "Refresh token is invalid."})
+
     token.blacklist()
     return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -1,5 +1,6 @@
 import importlib
 import sys
+from datetime import timedelta
 
 import pytest
 
@@ -228,6 +229,13 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.CSRF_COOKIE_SAMESITE == "Lax"
     assert settings_module.X_FRAME_OPTIONS == "DENY"
     assert settings_module.SECURE_CROSS_ORIGIN_OPENER_POLICY == "same-origin"
+    assert settings_module.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] == (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    )
+    assert settings_module.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"] == timedelta(minutes=30)
+    assert settings_module.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] == timedelta(days=14)
+    assert settings_module.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"] is True
+    assert settings_module.SIMPLE_JWT["BLACKLIST_AFTER_ROTATION"] is True
 
 
 def test_production_cors_middleware_order_is_safe(monkeypatch):

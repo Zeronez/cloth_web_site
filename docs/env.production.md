@@ -39,6 +39,20 @@ a separate auth change with explicit CSRF handling.
 - `SIMPLE_JWT_ROTATE_REFRESH_TOKENS`
 - `SIMPLE_JWT_BLACKLIST_AFTER_ROTATION`
 
+Current auth transport is a no-cookie bearer JWT contract:
+
+- Login returns `access` and `refresh` in JSON from `/api/v1/auth/token/`.
+- Protected API requests send `Authorization: Bearer <access>`.
+- Refresh uses `/api/v1/auth/token/refresh/` with the refresh token in JSON.
+- Logout uses `/api/v1/auth/logout/` and blacklists the refresh token server-side.
+- The browser must not send credentialed CORS requests for auth in this mode.
+- Frontend access tokens are memory-only; the refresh token is limited to
+  `sessionStorage` so it does not survive a closed browser session.
+
+Refresh rotation and blacklist-after-rotation must remain enabled in production.
+Moving refresh tokens into HttpOnly cookies is a separate auth migration because
+it requires credentialed CORS, cookie domain policy, and CSRF tests.
+
 ## Email
 
 These are used by Django email settings and are required when you switch to SMTP in production.

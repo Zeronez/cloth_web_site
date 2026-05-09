@@ -22,6 +22,17 @@ def test_allowed_frontend_origin_receives_cors_headers(client):
     assert "access-control-allow-credentials" not in response
 
 
+def test_allowed_frontend_origin_receives_no_cookie_cors_on_actual_api_response(client):
+    response = client.get(
+        "/api/v1/products/",
+        HTTP_ORIGIN="http://localhost:3000",
+    )
+
+    assert response.status_code == 200
+    assert response["access-control-allow-origin"] == "http://localhost:3000"
+    assert "access-control-allow-credentials" not in response
+
+
 def test_disallowed_origin_does_not_receive_cors_headers(client):
     response = client.options(
         "/api/v1/products/",

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import { useFavoritesStore } from "./favorites-store";
 
@@ -44,7 +44,11 @@ export const useUserStore = create<UserState>()(
         })
     }),
     {
-      name: "animeattire-user"
+      name: "animeattire-user",
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        refreshToken: state.refreshToken
+      })
     }
   )
 );

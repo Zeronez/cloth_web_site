@@ -10,6 +10,11 @@ export type AuthTokens = {
   refresh: string;
 };
 
+export type RefreshedTokens = {
+  access: string;
+  refresh?: string;
+};
+
 export type UserProfile = {
   id: number;
   username: string;
@@ -744,6 +749,13 @@ export async function loginUser(input: LoginInput) {
   return apiRequest<AuthTokens>(apiPath("/auth/token/"), {
     method: "POST",
     body: input
+  });
+}
+
+export async function refreshTokens(refresh: string) {
+  return apiRequest<RefreshedTokens>(apiPath("/auth/token/refresh/"), {
+    method: "POST",
+    body: { refresh }
   });
 }
 
