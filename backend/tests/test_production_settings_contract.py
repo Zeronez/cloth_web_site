@@ -232,6 +232,9 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] == (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
+    assert settings_module.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] == (
+        "rest_framework.permissions.IsAuthenticated",
+    )
     assert settings_module.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"] == timedelta(minutes=30)
     assert settings_module.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] == timedelta(days=14)
     assert settings_module.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"] is True

@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from config.permissions import IsObjectOwner
 from payments.models import Payment, PaymentMethod
 from payments.serializers import (
     PaymentMethodSerializer,
@@ -26,6 +27,7 @@ from payments.services import (
 
 class PaymentMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = PaymentMethodSerializer
+    permission_classes = (AllowAny,)
     throttle_scope = "catalog"
 
     @extend_schema(auth=[])
@@ -42,7 +44,8 @@ class PaymentViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = PaymentSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsObjectOwner)
+    owner_field = "user"
     throttle_scope = "payment"
 
     def get_queryset(self):

@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from catalog.models import Product
+from config.permissions import IsObjectOwner
 from favorites.models import FavoriteProduct
 from favorites.serializers import FavoriteCreateSerializer, FavoriteProductSerializer
 
@@ -15,8 +16,9 @@ class FavoriteProductViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsObjectOwner)
     serializer_class = FavoriteProductSerializer
+    owner_field = "user"
     throttle_scope = "cart"
 
     def get_queryset(self):

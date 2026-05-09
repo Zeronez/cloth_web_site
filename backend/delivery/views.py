@@ -1,5 +1,6 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import AllowAny
 
 from delivery.models import DeliveryMethod
 from delivery.serializers import DeliveryMethodSerializer
@@ -7,6 +8,7 @@ from delivery.serializers import DeliveryMethodSerializer
 
 class DeliveryMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = DeliveryMethodSerializer
+    permission_classes = (AllowAny,)
     throttle_scope = "catalog"
 
     @extend_schema(auth=[])

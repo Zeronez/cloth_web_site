@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from config.permissions import IsObjectOwner
 from delivery.services import refresh_order_tracking_from_provider
 from orders.models import Order
 from orders.serializers import CheckoutSerializer, OrderSerializer
@@ -13,7 +14,8 @@ class OrderViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = OrderSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsObjectOwner)
+    owner_field = "user"
     throttle_scope = "cart"
 
     def get_queryset(self):

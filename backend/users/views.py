@@ -8,6 +8,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from config.permissions import IsObjectOwner
 from users.models import Address
 from users.serializers import AddressSerializer, RegisterSerializer, UserSerializer
 
@@ -32,7 +33,8 @@ class UserMeView(generics.RetrieveUpdateAPIView):
 
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsObjectOwner)
+    owner_field = "user"
     throttle_scope = "cart"
 
     def get_queryset(self):
@@ -63,8 +65,10 @@ def logout(request):
 
 
 class ScopedTokenObtainPairView(TokenObtainPairView):
+    permission_classes = (AllowAny,)
     throttle_scope = "auth"
 
 
 class ScopedTokenRefreshView(TokenRefreshView):
+    permission_classes = (AllowAny,)
     throttle_scope = "auth"

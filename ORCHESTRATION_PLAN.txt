@@ -68,7 +68,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add throttling/rate limits for auth, cart, checkout, and public catalog.
 [x] Add CORS/CSRF policy for production domains.
 [x] Add secure cookie/JWT storage strategy.
-[ ] Add permission classes and object-level access checks.
+[x] Add permission classes and object-level access checks.
 [x] Add admin audit log for critical changes.
 [ ] Add soft-delete or archive policy for products/orders where legally appropriate.
 [ ] Add database indexes for all real query paths.

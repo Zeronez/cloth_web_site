@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart, CartItem
@@ -121,10 +122,10 @@ def add_variant_to_cart(cart, variant_id, quantity):
 
 @transaction.atomic
 def set_cart_item_quantity(cart, item_id, quantity):
-    item = (
-        CartItem.objects.select_for_update()
-        .select_related("variant")
-        .get(pk=item_id, cart=cart)
+    item = get_object_or_404(
+        CartItem.objects.select_for_update().select_related("variant"),
+        pk=item_id,
+        cart=cart,
     )
     if quantity < 1:
         item.delete()
