@@ -40,32 +40,66 @@ router.register("addresses", AddressViewSet, basename="address")
 router.register("favorites", FavoriteProductViewSet, basename="favorite")
 router.register("contact-requests", ContactRequestViewSet, basename="contact-request")
 
+
+def build_api_urlpatterns(*, schema_url_name):
+    return [
+        path("health/live/", health.live, name="health_live"),
+        path("health/ready/", health.ready, name="health_ready"),
+        path("schema/", SpectacularAPIView.as_view(), name="schema"),
+        path(
+            "docs/",
+            SpectacularSwaggerView.as_view(url_name=schema_url_name),
+            name="swagger",
+        ),
+        path(
+            "redoc/",
+            SpectacularRedocView.as_view(url_name=schema_url_name),
+            name="redoc",
+        ),
+        path("auth/register/", RegisterView.as_view(), name="auth_register"),
+        path("auth/logout/", logout, name="auth_logout"),
+        path(
+            "auth/token/",
+            ScopedTokenObtainPairView.as_view(),
+            name="token_obtain_pair",
+        ),
+        path(
+            "auth/token/refresh/",
+            ScopedTokenRefreshView.as_view(),
+            name="token_refresh",
+        ),
+        path("users/me/", UserMeView.as_view(), name="user_me"),
+        path(
+            "payments/webhooks/<slug:provider_code>/",
+            PaymentWebhookView.as_view(),
+            name="payment_webhook",
+        ),
+        path("", include(router.urls)),
+    ]
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/health/live/", health.live, name="health_live"),
-    path("api/health/ready/", health.ready, name="health_ready"),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
-        "api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger"
-    ),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    path("api/auth/register/", RegisterView.as_view(), name="auth_register"),
-    path("api/auth/logout/", logout, name="auth_logout"),
-    path(
-        "api/auth/token/", ScopedTokenObtainPairView.as_view(), name="token_obtain_pair"
+        "api/v1/",
+        include(
+            (
+                build_api_urlpatterns(schema_url_name="api_v1:schema"),
+                "api_v1",
+            ),
+            namespace="api_v1",
+        ),
     ),
     path(
-        "api/auth/token/refresh/",
-        ScopedTokenRefreshView.as_view(),
-        name="token_refresh",
+        "api/",
+        include(
+            (
+                build_api_urlpatterns(schema_url_name="api_legacy:schema"),
+                "api_legacy",
+            ),
+            namespace="api_legacy",
+        ),
     ),
-    path("api/users/me/", UserMeView.as_view(), name="user_me"),
-    path(
-        "api/payments/webhooks/<slug:provider_code>/",
-        PaymentWebhookView.as_view(),
-        name="payment_webhook",
-    ),
-    path("api/", include(router.urls)),
 ]
 
 if settings.DEBUG:

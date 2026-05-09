@@ -1,4 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? "/api/v1";
+
+function apiPath(path: string) {
+  return `${API_PREFIX}${path}`;
+}
 
 export type AuthTokens = {
   access: string;
@@ -586,46 +591,46 @@ async function apiRequest<T>(
 
 export async function fetchProducts(params: URLSearchParams) {
   const query = params.toString();
-  return apiGet<Paginated<Product>>(`/api/products/${query ? `?${query}` : ""}`);
+  return apiGet<Paginated<Product>>(apiPath(`/products/${query ? `?${query}` : ""}`));
 }
 
 export async function fetchProduct(slug: string) {
-  return apiGet<Product>(`/api/products/${slug}/`);
+  return apiGet<Product>(apiPath(`/products/${slug}/`));
 }
 
 export async function fetchCategories() {
-  return apiGet<Paginated<Category>>("/api/categories/");
+  return apiGet<Paginated<Category>>(apiPath("/categories/"));
 }
 
 export async function fetchFranchises() {
-  return apiGet<Paginated<Franchise>>("/api/franchises/");
+  return apiGet<Paginated<Franchise>>(apiPath("/franchises/"));
 }
 
 export async function fetchOrders(token: string) {
-  return apiRequest<Paginated<Order>>("/api/orders/", { token });
+  return apiRequest<Paginated<Order>>(apiPath("/orders/"), { token });
 }
 
 export async function fetchOrder(token: string, orderId: number) {
-  return apiRequest<Order>(`/api/orders/${orderId}/`, { token });
+  return apiRequest<Order>(apiPath(`/orders/${orderId}/`), { token });
 }
 
 export async function refreshOrderTracking(token: string, orderId: number) {
-  return apiRequest<Order>(`/api/orders/${orderId}/tracking-refresh/`, {
+  return apiRequest<Order>(apiPath(`/orders/${orderId}/tracking-refresh/`), {
     method: "POST",
     token
   });
 }
 
 export async function fetchDeliveryMethods() {
-  return apiRequest<Paginated<DeliveryMethod>>("/api/delivery-methods/");
+  return apiRequest<Paginated<DeliveryMethod>>(apiPath("/delivery-methods/"));
 }
 
 export async function fetchPaymentMethods() {
-  return apiRequest<Paginated<PaymentMethod>>("/api/payment-methods/");
+  return apiRequest<Paginated<PaymentMethod>>(apiPath("/payment-methods/"));
 }
 
 export async function fetchCart(token?: string | null) {
-  return apiRequest<ServerCart>("/api/cart/", { token });
+  return apiRequest<ServerCart>(apiPath("/cart/"), { token });
 }
 
 export async function addCartItem(
@@ -633,7 +638,7 @@ export async function addCartItem(
   variantId: number,
   quantity: number
 ) {
-  return apiRequest<ServerCart>("/api/cart/items/", {
+  return apiRequest<ServerCart>(apiPath("/cart/items/"), {
     method: "POST",
     token,
     body: {
@@ -648,7 +653,7 @@ export async function updateCartItemQuantity(
   itemId: number,
   quantity: number
 ) {
-  return apiRequest<ServerCart>(`/api/cart/items/${itemId}/`, {
+  return apiRequest<ServerCart>(apiPath(`/cart/items/${itemId}/`), {
     method: "PATCH",
     token,
     body: { quantity }
@@ -656,14 +661,14 @@ export async function updateCartItemQuantity(
 }
 
 export async function deleteCartItem(token: string | null, itemId: number) {
-  return apiRequest<ServerCart>(`/api/cart/items/${itemId}/`, {
+  return apiRequest<ServerCart>(apiPath(`/cart/items/${itemId}/`), {
     method: "DELETE",
     token
   });
 }
 
 export async function checkoutOrder(token: string, input: CheckoutInput) {
-  return apiRequest<Order>("/api/orders/checkout/", {
+  return apiRequest<Order>(apiPath("/orders/checkout/"), {
     method: "POST",
     token,
     body: input
@@ -678,7 +683,7 @@ export async function createPaymentSession(
     idempotency_key?: string;
   }
 ) {
-  return apiRequest<PaymentSession>("/api/payments/sessions/", {
+  return apiRequest<PaymentSession>(apiPath("/payments/sessions/"), {
     method: "POST",
     token,
     body: input
@@ -686,7 +691,7 @@ export async function createPaymentSession(
 }
 
 export async function fetchPayment(token: string, paymentId: number) {
-  return apiRequest<Payment>(`/api/payments/${paymentId}/`, { token });
+  return apiRequest<Payment>(apiPath(`/payments/${paymentId}/`), { token });
 }
 
 export async function fetchPaymentReturnStatus(
@@ -706,7 +711,7 @@ export async function fetchPaymentReturnStatus(
   }
   const query = params.toString();
   return apiRequest<PaymentReturnStatus>(
-    `/api/payments/${paymentId}/return-status/${query ? `?${query}` : ""}`,
+    apiPath(`/payments/${paymentId}/return-status/${query ? `?${query}` : ""}`),
     {
       token
     }
@@ -714,11 +719,11 @@ export async function fetchPaymentReturnStatus(
 }
 
 export async function fetchFavorites(token: string) {
-  return apiRequest<FavoriteProductEntry[]>("/api/favorites/", { token });
+  return apiRequest<FavoriteProductEntry[]>(apiPath("/favorites/"), { token });
 }
 
 export async function addFavorite(token: string, productId: number) {
-  return apiRequest<FavoriteProductMutationResult>("/api/favorites/", {
+  return apiRequest<FavoriteProductMutationResult>(apiPath("/favorites/"), {
     method: "POST",
     token,
     body: { product_id: productId }
@@ -727,7 +732,7 @@ export async function addFavorite(token: string, productId: number) {
 
 export async function removeFavorite(token: string, productId: number) {
   return apiRequest<{ product_id: number; deleted: boolean }>(
-    `/api/favorites/products/${productId}/`,
+    apiPath(`/favorites/products/${productId}/`),
     {
       method: "DELETE",
       token
@@ -736,25 +741,25 @@ export async function removeFavorite(token: string, productId: number) {
 }
 
 export async function loginUser(input: LoginInput) {
-  return apiRequest<AuthTokens>("/api/auth/token/", {
+  return apiRequest<AuthTokens>(apiPath("/auth/token/"), {
     method: "POST",
     body: input
   });
 }
 
 export async function registerUser(input: RegisterInput) {
-  return apiRequest<UserProfile>("/api/auth/register/", {
+  return apiRequest<UserProfile>(apiPath("/auth/register/"), {
     method: "POST",
     body: input
   });
 }
 
 export async function fetchMe(token: string) {
-  return apiRequest<UserProfile>("/api/users/me/", { token });
+  return apiRequest<UserProfile>(apiPath("/users/me/"), { token });
 }
 
 export async function updateMe(token: string, input: Partial<UserProfile>) {
-  return apiRequest<UserProfile>("/api/users/me/", {
+  return apiRequest<UserProfile>(apiPath("/users/me/"), {
     method: "PATCH",
     token,
     body: input
@@ -762,11 +767,11 @@ export async function updateMe(token: string, input: Partial<UserProfile>) {
 }
 
 export async function fetchAddresses(token: string) {
-  return apiRequest<Address[]>("/api/addresses/", { token });
+  return apiRequest<Address[]>(apiPath("/addresses/"), { token });
 }
 
 export async function createAddress(token: string, input: AddressInput) {
-  return apiRequest<Address>("/api/addresses/", {
+  return apiRequest<Address>(apiPath("/addresses/"), {
     method: "POST",
     token,
     body: input
@@ -774,7 +779,7 @@ export async function createAddress(token: string, input: AddressInput) {
 }
 
 export async function createContactRequest(input: ContactRequestInput) {
-  return apiRequest<ContactRequestResponse>("/api/contact-requests/", {
+  return apiRequest<ContactRequestResponse>(apiPath("/contact-requests/"), {
     method: "POST",
     body: input
   });
@@ -785,7 +790,7 @@ export async function updateAddress(
   id: number,
   input: Partial<AddressInput>
 ) {
-  return apiRequest<Address>(`/api/addresses/${id}/`, {
+  return apiRequest<Address>(apiPath(`/addresses/${id}/`), {
     method: "PATCH",
     token,
     body: input
@@ -793,14 +798,14 @@ export async function updateAddress(
 }
 
 export async function deleteAddress(token: string, id: number) {
-  return apiRequest<void>(`/api/addresses/${id}/`, {
+  return apiRequest<void>(apiPath(`/addresses/${id}/`), {
     method: "DELETE",
     token
   });
 }
 
 export async function logoutUser(token: string, refresh: string) {
-  return apiRequest<void>("/api/auth/logout/", {
+  return apiRequest<void>(apiPath("/auth/logout/"), {
     method: "POST",
     token,
     body: { refresh }

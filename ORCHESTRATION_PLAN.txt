@@ -64,7 +64,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add health endpoints: liveness, readiness, database check, Redis check.
 [x] Add Celery health/readiness check.
 [x] Add OpenAPI schema generation and published API docs.
-[ ] Add API versioning: /api/v1/.
+[x] Add API versioning: /api/v1/.
 [x] Add throttling/rate limits for auth, cart, checkout, and public catalog.
 [ ] Add CORS/CSRF policy for production domains.
 [ ] Add secure cookie/JWT storage strategy.

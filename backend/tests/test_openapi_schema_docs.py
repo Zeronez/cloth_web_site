@@ -27,6 +27,7 @@ REQUIRED_PATHS = {
     "/api/contact-requests/",
 }
 
+V1_REQUIRED_PATHS = {path.replace("/api/", "/api/v1/") for path in REQUIRED_PATHS}
 
 PROTECTED_PATHS = {
     "/api/users/me/",
@@ -78,6 +79,7 @@ def test_openapi_schema_endpoint_exposes_contract(client):
     assert "components" in schema
     assert "jwtAuth" in schema["components"]["securitySchemes"]
     assert REQUIRED_PATHS.issubset(set(schema["paths"]))
+    assert V1_REQUIRED_PATHS.issubset(set(schema["paths"]))
 
 
 def test_openapi_docs_endpoints_are_public(client):
