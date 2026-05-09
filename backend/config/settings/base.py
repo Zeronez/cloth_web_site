@@ -2,6 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from corsheaders.defaults import default_headers, default_methods
 
 from config.settings.env import env_bool, env_csv, env_int, env_json, env_value
 
@@ -13,6 +14,17 @@ DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "http://localhost:3000")
 CORS_ALLOWED_ORIGINS = env_csv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = False
+CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOW_METHODS = default_methods
+CORS_ALLOW_HEADERS = (
+    *default_headers,
+    "x-request-id",
+    "x-correlation-id",
+    "x-payment-signature",
+)
+CORS_EXPOSE_HEADERS = ("X-Request-ID", "X-Correlation-ID")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -101,6 +113,11 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
 
 LOG_LEVEL = env_value("LOG_LEVEL", "INFO")
 LOGGING = {

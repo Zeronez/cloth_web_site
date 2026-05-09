@@ -66,7 +66,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add OpenAPI schema generation and published API docs.
 [x] Add API versioning: /api/v1/.
 [x] Add throttling/rate limits for auth, cart, checkout, and public catalog.
-[ ] Add CORS/CSRF policy for production domains.
+[x] Add CORS/CSRF policy for production domains.
 [ ] Add secure cookie/JWT storage strategy.
 [ ] Add permission classes and object-level access checks.
 [x] Add admin audit log for critical changes.

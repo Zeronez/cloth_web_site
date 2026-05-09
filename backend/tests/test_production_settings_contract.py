@@ -96,7 +96,17 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
         ("CELERY_BROKER_URL", "redis://localhost:6379/1", "CELERY_BROKER_URL"),
         ("ALLOWED_HOSTS", "https://api.animeattire.ru", "ALLOWED_HOSTS"),
         ("CSRF_TRUSTED_ORIGINS", "http://animeattire.ru", "CSRF_TRUSTED_ORIGINS"),
+        (
+            "CSRF_TRUSTED_ORIGINS",
+            "https://animeattire.ru/account",
+            "CSRF_TRUSTED_ORIGINS",
+        ),
         ("CORS_ALLOWED_ORIGINS", "https://localhost", "CORS_ALLOWED_ORIGINS"),
+        (
+            "CORS_ALLOWED_ORIGINS",
+            "https://animeattire.ru?debug=1",
+            "CORS_ALLOWED_ORIGINS",
+        ),
         (
             "PAYMENT_WEBHOOK_BYPASS_PROVIDERS",
             "manual,placeholder",
@@ -199,6 +209,40 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.ALLOWED_HOSTS == ["api.animeattire.ru"]
     assert settings_module.CSRF_TRUSTED_ORIGINS == ["https://animeattire.ru"]
     assert settings_module.CORS_ALLOWED_ORIGINS == ["https://animeattire.ru"]
+    assert settings_module.CORS_ALLOW_ALL_ORIGINS is False
+    assert settings_module.CORS_ALLOW_CREDENTIALS is False
+    assert settings_module.CORS_URLS_REGEX == r"^/api/.*$"
+    assert "authorization" in settings_module.CORS_ALLOW_HEADERS
+    assert "x-request-id" in settings_module.CORS_ALLOW_HEADERS
+    assert "x-correlation-id" in settings_module.CORS_ALLOW_HEADERS
+    assert "x-payment-signature" in settings_module.CORS_ALLOW_HEADERS
+    assert settings_module.CORS_EXPOSE_HEADERS == ("X-Request-ID", "X-Correlation-ID")
     assert settings_module.PAYMENT_WEBHOOK_BYPASS_PROVIDERS == []
     assert settings_module.PAYMENT_WEBHOOK_SECRETS["yookassa"] == WEBHOOK_SECRET
     assert settings_module.SECURE_SSL_REDIRECT is True
+    assert settings_module.SESSION_COOKIE_SECURE is True
+    assert settings_module.CSRF_COOKIE_SECURE is True
+    assert settings_module.SESSION_COOKIE_HTTPONLY is True
+    assert settings_module.CSRF_COOKIE_HTTPONLY is True
+    assert settings_module.SESSION_COOKIE_SAMESITE == "Lax"
+    assert settings_module.CSRF_COOKIE_SAMESITE == "Lax"
+    assert settings_module.X_FRAME_OPTIONS == "DENY"
+    assert settings_module.SECURE_CROSS_ORIGIN_OPENER_POLICY == "same-origin"
+
+
+def test_production_cors_middleware_order_is_safe(monkeypatch):
+    _set_required_env(monkeypatch)
+    monkeypatch.setenv("SECRET_KEY", STRONG_SECRET_KEY)
+
+    settings_module = _load_production_settings()
+
+    middleware = list(settings_module.MIDDLEWARE)
+    assert middleware.index("django.middleware.security.SecurityMiddleware") < (
+        middleware.index("corsheaders.middleware.CorsMiddleware")
+    )
+    assert middleware.index("corsheaders.middleware.CorsMiddleware") < (
+        middleware.index("django.middleware.common.CommonMiddleware")
+    )
+    assert middleware.index("corsheaders.middleware.CorsMiddleware") < (
+        middleware.index("django.middleware.csrf.CsrfViewMiddleware")
+    )

@@ -15,6 +15,13 @@ Values here are examples only. Do not reuse placeholders in production.
 - `CSRF_TRUSTED_ORIGINS`: comma-separated absolute origins.
 - `CORS_ALLOWED_ORIGINS`: comma-separated absolute origins.
 
+Production CORS is fail-closed: wildcard origins and credentialed cross-origin
+cookies are disabled. The frontend should call `/api/v1/` with JWT bearer
+tokens from origins listed in `CORS_ALLOWED_ORIGINS`.
+Because bearer tokens are used today, cross-origin browser credentials remain
+disabled. A future HttpOnly-cookie refresh-token strategy should be designed as
+a separate auth change with explicit CSRF handling.
+
 ## Postgres compose inputs
 
 - `POSTGRES_DB`
@@ -84,3 +91,4 @@ These define sandbox-like tracking responses for provider-shaped shipping adapte
 - `BACKEND_PORT`
 - `FRONTEND_PORT`
 - `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_API_PREFIX`
