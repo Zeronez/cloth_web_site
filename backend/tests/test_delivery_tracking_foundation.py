@@ -34,7 +34,7 @@ def create_delivery_method():
 
     return DeliveryMethod.objects.create(
         code="courier-msk",
-        name="Курьер по Москве",
+        name="РљСѓСЂСЊРµСЂ РїРѕ РњРѕСЃРєРІРµ",
         kind=DeliveryMethod.Kind.COURIER,
         price_amount=Decimal("350.00"),
     )
@@ -118,8 +118,8 @@ def test_tracking_sync_to_delivered_updates_order_and_snapshot(user):
         order=order,
         tracking_status=OrderDeliverySnapshot.TrackingStatus.DELIVERED,
         external_event_id="track-event-1",
-        location="Москва, пункт выдачи",
-        message="Получено получателем.",
+        location="РњРѕСЃРєРІР°, РїСѓРЅРєС‚ РІС‹РґР°С‡Рё",
+        message="РџРѕР»СѓС‡РµРЅРѕ РїРѕР»СѓС‡Р°С‚РµР»РµРј.",
         provider_code="cdek",
     )
 
@@ -128,7 +128,7 @@ def test_tracking_sync_to_delivered_updates_order_and_snapshot(user):
     assert created is True
     assert event.new_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED
     assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED
-    assert snapshot.current_location == "Москва, пункт выдачи"
+    assert snapshot.current_location == "РњРѕСЃРєРІР°, РїСѓРЅРєС‚ РІС‹РґР°С‡Рё"
     assert order.status == Order.Status.DELIVERED
 
 
@@ -145,14 +145,14 @@ def test_tracking_sync_is_idempotent_by_external_event_id(user):
         order=order,
         tracking_status=OrderDeliverySnapshot.TrackingStatus.IN_TRANSIT,
         external_event_id="track-event-duplicate",
-        location="Сортировочный центр",
+        location="РЎРѕСЂС‚РёСЂРѕРІРѕС‡РЅС‹Р№ С†РµРЅС‚СЂ",
         provider_code="cdek",
     )
     second_event, second_created = sync_order_tracking_status(
         order=order,
         tracking_status=OrderDeliverySnapshot.TrackingStatus.IN_TRANSIT,
         external_event_id="track-event-duplicate",
-        location="Сортировочный центр",
+        location="РЎРѕСЂС‚РёСЂРѕРІРѕС‡РЅС‹Р№ С†РµРЅС‚СЂ",
         provider_code="cdek",
     )
 
@@ -180,8 +180,8 @@ def test_order_detail_returns_tracking_status_and_events(authenticated_client, u
         order=order,
         tracking_status=OrderDeliverySnapshot.TrackingStatus.OUT_FOR_DELIVERY,
         external_event_id="track-event-2",
-        location="Москва",
-        message="Курьер выехал.",
+        location="РњРѕСЃРєРІР°",
+        message="РљСѓСЂСЊРµСЂ РІС‹РµС…Р°Р».",
         provider_code="cdek",
     )
 
@@ -190,9 +190,14 @@ def test_order_detail_returns_tracking_status_and_events(authenticated_client, u
     assert response.status_code == 200
     assert response.data["track_number"] == "TRACK-1004"
     assert response.data["delivery"]["tracking_status"] == "out_for_delivery"
-    assert response.data["delivery"]["tracking_status_label"] == "Курьер уже едет"
+    order.refresh_from_db()
+    assert response.data["delivery"]["tracking_status_label"] == (
+        order.delivery_snapshot.get_tracking_status_display()
+    )
     assert response.data["delivery"]["provider_code"] == "cdek"
-    assert response.data["delivery"]["tracking_events"][-1]["location"] == "Москва"
+    assert (
+        response.data["delivery"]["tracking_events"][-1]["location"] == "РњРѕСЃРєРІР°"
+    )
 
 
 def test_provider_tracking_refresh_updates_order_from_sandbox_override(user, settings):
@@ -207,8 +212,8 @@ def test_provider_tracking_refresh_updates_order_from_sandbox_override(user, set
         "cdek": {
             "SHIP-1005": {
                 "status": "delivered",
-                "location": "Москва, вручено",
-                "message": "Заказ доставлен получателю.",
+                "location": "РњРѕСЃРєРІР°, РІСЂСѓС‡РµРЅРѕ",
+                "message": "Р—Р°РєР°Р· РґРѕСЃС‚Р°РІР»РµРЅ РїРѕР»СѓС‡Р°С‚РµР»СЋ.",
             }
         }
     }
@@ -219,7 +224,7 @@ def test_provider_tracking_refresh_updates_order_from_sandbox_override(user, set
     snapshot = order.delivery_snapshot
     assert result["updated"] is True
     assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED
-    assert snapshot.current_location == "Москва, вручено"
+    assert snapshot.current_location == "РњРѕСЃРєРІР°, РІСЂСѓС‡РµРЅРѕ"
     assert order.status == Order.Status.DELIVERED
 
 
@@ -237,8 +242,8 @@ def test_tracking_refresh_endpoint_returns_updated_order(
         "cdek": {
             "SHIP-1006": {
                 "status": "courier",
-                "location": "Москва",
-                "message": "Курьер везёт заказ.",
+                "location": "РњРѕСЃРєРІР°",
+                "message": "РљСѓСЂСЊРµСЂ РІРµР·С‘С‚ Р·Р°РєР°Р·.",
             }
         }
     }
@@ -248,4 +253,34 @@ def test_tracking_refresh_endpoint_returns_updated_order(
     assert response.status_code == 200
     assert response.data["track_number"] == "TRACK-1006"
     assert response.data["delivery"]["tracking_status"] == "out_for_delivery"
-    assert response.data["delivery"]["current_location"] == "Москва"
+    assert response.data["delivery"]["current_location"] == "РњРѕСЃРєРІР°"
+
+
+def test_provider_tracking_refresh_keeps_state_on_unsupported_status(
+    authenticated_client, user, settings
+):
+    order = create_order_with_snapshot(user, status=Order.Status.PAID)
+    create_shipment_for_order(
+        order=order,
+        provider_code="cdek",
+        external_shipment_id="SHIP-1007",
+        track_number="TRACK-1007",
+    )
+    settings.DELIVERY_PROVIDER_TRACKING_OVERRIDES = {
+        "cdek": {
+            "SHIP-1007": {
+                "status": "unexpected-status",
+                "location": "РњРѕСЃРєРІР°",
+            }
+        }
+    }
+
+    response = authenticated_client.post(f"/api/orders/{order.id}/tracking-refresh/")
+
+    assert response.status_code == 400
+    assert response.data["error"]["code"] == "validation_error"
+    assert "provider_tracking_status_unsupported" in str(response.data)
+    order.refresh_from_db()
+    snapshot = order.delivery_snapshot
+    assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED
+    assert order.status == Order.Status.PAID

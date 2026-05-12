@@ -24,20 +24,26 @@ Status: backend payment and delivery foundation is present. Payment webhooks and
 8. Verify `order.total_amount` equals items subtotal plus delivery fee.
 9. Verify external providers such as YooKassa/CloudPayments are rejected until credentials, webhook verification, and provider client code are configured.
 
-## Failure / refund webhook coverage
+## Failure / recovery coverage
 
-This section is the next QA slice to add once a real provider is wired in. The current code already models `failed` and `refunded` payment statuses, so the missing work is provider-specific webhook coverage and business-rule validation.
+The current code already covers failure/refund webhooks and now also includes
+operator recovery commands for payment and tracking reconciliation.
 
 1. Verify a `failed` webhook updates the payment to `failed`, appends a single event, and does not create duplicate side effects on replay.
 2. Verify a `refunded` webhook follows the allowed transition path for the current payment status and records the transition in the audit trail.
 3. Verify replayed failure/refund webhooks are idempotent and keep the event count stable.
 4. Verify failure/refund webhooks still reject provider mismatches, order mismatches, and invalid status transitions with the same conflict behavior as success webhooks.
-5. Verify the order-level follow-up for refunds matches the product rule once the provider contract is defined.
+5. Verify unsupported provider status fetches do not mutate payment/order state.
+6. Verify unsupported delivery tracking statuses do not mutate snapshot/order state.
+7. Verify `python manage.py reconcilepayments` can apply provider status recovery through the normal webhook pipeline.
+8. Verify `python manage.py reconciletracking` can apply provider tracking recovery through the normal tracking sync pipeline.
 
 ## Automation notes
 
 - Existing foundation tests live in `backend/tests/test_checkout_payment_delivery_foundation.py`.
 - Webhook and signature coverage currently lives in `backend/tests/test_payment_webhooks.py` and `backend/tests/test_payment_webhook_signatures.py`.
+- Return-status reconciliation coverage lives in `backend/tests/test_payment_return_status.py`.
+- Recovery command coverage lives in `backend/tests/test_provider_recovery_commands.py`.
 - Add provider-specific tests in separate files once a real payment/delivery provider is selected.
 - Keep provider sandbox tests additive and guarded by explicit CI environment variables/secrets.
 - Avoid mutating provider state outside sandbox accounts.
@@ -48,3 +54,4 @@ This section is the next QA slice to add once a real provider is wired in. The c
 - Webhook signature policy is covered by backend tests and configured for the chosen provider.
 - Delivery provider sandbox credentials or contract fixtures are available.
 - Frontend checkout exposes delivery/payment selection backed by the new APIs.
+- Provider recovery runbook exists in `docs/provider-failure-recovery.md`.

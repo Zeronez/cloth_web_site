@@ -240,3 +240,26 @@ def test_return_status_provider_fetch_is_idempotent_on_repeat_calls(
         ).count()
         == 1
     )
+
+
+def test_return_status_keeps_state_when_provider_fetch_returns_unsupported_status(
+    authenticated_client, user, settings
+):
+    order, payment = create_redirect_payment(user)
+    settings.PAYMENT_PROVIDER_STATUS_OVERRIDES = {
+        "yookassa": {
+            payment.external_payment_id: "totally-unknown-status",
+        }
+    }
+
+    response = authenticated_client.get(
+        f"/api/payments/{payment.id}/return-status/",
+        {"provider": "yookassa"},
+    )
+
+    assert response.status_code == 400
+    assert response.data["error"]["code"] == "provider_status_unsupported"
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.SESSION_CREATED
+    assert order.status == Order.Status.PENDING

@@ -129,7 +129,7 @@ Phase 2.5: Payments
 [x] Implement payment state machine: created, pending, authorized, captured, failed, cancelled, refunded.
 [x] Implement idempotent webhook processing.
 [x] Add provider-specific webhook normalization foundation.
-[ ] Implement retry-safe order/payment reconciliation command.
+[x] Implement retry-safe order/payment reconciliation command.
 [ ] Implement refund flow, partial refund support if provider allows.
 [ ] Implement payment timeout/cancel task.
 [x] Implement admin payment status view.
@@ -144,6 +144,7 @@ Phase 2.6: Delivery and Fulfillment
 [x] Implement shipment creation after payment.
 [x] Implement tracking number storage and tracking status sync.
 [x] Add provider-shaped delivery tracking adapter foundation.
+[x] Add delivery/payment provider failure drills and recovery playbooks.
 [x] Add initial staff actions for shipment creation and tracking refresh.
 [x] Separate shipment registration from carrier handoff in fulfillment state flow.
 [x] Implement order status state machine: pending, awaiting_payment, paid, picking, packed, shipped, delivered, cancelled, returned.
@@ -365,7 +366,7 @@ Payment Provider Tests
 [x] Duplicate webhook does not duplicate effects.
 [x] Payment failure webhook marks payment failed without stock corruption.
 [x] Refund webhook updates order/payment status.
-[ ] Payment reconciliation command fixes drift between provider and database.
+[x] Payment reconciliation command fixes drift between provider and database.
 
 Delivery Provider Tests
 -----------------------
