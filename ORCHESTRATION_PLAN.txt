@@ -72,7 +72,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add admin audit log for critical changes.
 [x] Add soft-delete or archive policy for products/orders where legally appropriate.
 [x] Add database indexes for all real query paths.
-[ ] Add migration safety policy: no destructive migrations without backfill plan.
+[x] Add migration safety policy: no destructive migrations without backfill plan.
 [x] Add idempotency keys for checkout/payment creation.
 [ ] Add transaction boundaries for every stock/payment/order mutation.
 [ ] Add optimistic/pessimistic locking strategy for inventory updates.

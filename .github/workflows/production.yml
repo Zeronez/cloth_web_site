@@ -139,6 +139,10 @@ jobs:
         working-directory: backend
         run: python manage.py makemigrations --check --dry-run
 
+      - name: Enforce migration safety policy
+        working-directory: backend
+        run: python manage.py checkmigrationsafety
+
       - name: Apply Django migrations
         working-directory: backend
         run: python manage.py migrate --noinput
