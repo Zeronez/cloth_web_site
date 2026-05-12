@@ -9,6 +9,8 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 - Email send operations are idempotent for the same order/type/channel key.
 - Duplicate retries do not create duplicate user-visible confirmation emails after success.
 - Failed sends are retryable without corrupting the audit trail.
+- Retryable provider failures schedule bounded exponential retries before the
+  logical notification moves into a dead-lettered state.
 - Notification payloads preserve recipient, subject, body, source order, timestamps, and error metadata.
 
 ## Manual / API checks
@@ -18,9 +20,16 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 3. Confirm the delivered email uses Russian copy, includes the order id, total amount in RUB, and the customer-facing shipping name.
 4. Retry the same task for the same order and confirm no second email is sent after the log is delivered.
 5. Verify delivery attempts are append-only: a successful provider call creates one delivered attempt; a failed provider call creates a failed attempt.
-6. Verify a transient provider failure marks the logical log as failed, stores the error message, and can be retried without changing the order data.
-7. Verify the checkout response is not returned until stock and order records are committed, while notification sending is scheduled through `transaction.on_commit`.
-8. Verify admin users can inspect notification logs and attempts from Django Admin.
+6. Verify a transient provider failure appends one failed attempt, appends one
+   retry-scheduled attempt, keeps the logical log in `pending`, stores the
+   latest error message, and does not change order data.
+7. Verify retry exhaustion moves the logical notification into
+   `dead_lettered`, stores `dead_lettered_at`, and preserves append-only
+   attempt history for operator review.
+8. Verify the checkout response is not returned until stock and order records
+   are committed, while notification sending is scheduled through
+   `transaction.on_commit`.
+9. Verify admin users can inspect notification logs and attempts from Django Admin.
 
 ## Automation notes
 
@@ -34,5 +43,7 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 - A `notifications` Django app exists and is wired into settings.
 - `NotificationLog` enforces stable idempotency through the order/type/channel uniqueness rule.
 - `NotificationAttempt` stores success/failure attempts separately from the logical log.
+- `NotificationAttempt` also records retry scheduling events as append-only
+  operational breadcrumbs.
 - Order checkout schedules `send_order_confirmation_email` through Celery after commit.
 - Russian order confirmation copy is covered by backend tests.

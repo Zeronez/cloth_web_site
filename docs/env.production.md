@@ -106,3 +106,28 @@ These define sandbox-like tracking responses for provider-shaped shipping adapte
 - `FRONTEND_PORT`
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_API_PREFIX`
+
+## Celery delivery policy
+
+These settings control retry and dead-letter behavior for transactional
+notifications:
+
+- `CELERY_TASK_ACKS_LATE`
+- `CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT`
+- `CELERY_TASK_REJECT_ON_WORKER_LOST`
+- `CELERY_TASK_TRACK_STARTED`
+- `CELERY_WORKER_PREFETCH_MULTIPLIER`
+- `CELERY_NOTIFICATION_MAX_RETRIES`
+- `CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS`
+- `CELERY_NOTIFICATION_RETRY_MAX_SECONDS`
+
+Current production contract:
+
+- task acknowledgements stay late so worker loss does not silently drop work;
+- failures/timeouts are not acknowledged as success;
+- notification tasks retry with bounded exponential backoff;
+- retryable exhaustion moves the logical notification into a dead-lettered
+  state that requires operator review;
+- delivered notifications remain idempotent for the same
+  `order/type/channel` key and do not send duplicate customer emails after a
+  successful delivery.

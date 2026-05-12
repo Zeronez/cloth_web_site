@@ -76,7 +76,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add idempotency keys for checkout/payment creation.
 [x] Add transaction boundaries for every stock/payment/order mutation.
 [x] Add optimistic/pessimistic locking strategy for inventory updates.
-[ ] Add Celery retry policies, dead-letter behavior, and task idempotency.
+[x] Add Celery retry policies, dead-letter behavior, and task idempotency.
 
 Phase 2.2: Authentication and Customer Account
 ----------------------------------------------
@@ -352,7 +352,7 @@ Celery and Async Tests
 [x] Order confirmation task is enqueued after checkout.
 [ ] Cart cleanup task deletes expired guest carts.
 [ ] Payment timeout task cancels unpaid stale orders.
-[ ] Notification retry behavior works after transient failure.
+[x] Notification retry behavior works after transient failure.
 [ ] Failed task logging includes correlation id.
 
 Payment Provider Tests

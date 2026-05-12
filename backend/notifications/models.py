@@ -13,6 +13,7 @@ class NotificationLog(models.Model):
         PENDING = "pending", "Ожидает отправки"
         DELIVERED = "delivered", "Доставлено"
         FAILED = "failed", "Ошибка"
+        DEAD_LETTERED = "dead_lettered", "Требует вмешательства"
 
     order = models.ForeignKey(
         "orders.Order", related_name="notification_logs", on_delete=models.CASCADE
@@ -29,6 +30,7 @@ class NotificationLog(models.Model):
     body = models.TextField()
     error_message = models.TextField(blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
+    dead_lettered_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -56,6 +58,7 @@ class NotificationAttempt(models.Model):
     class Status(models.TextChoices):
         DELIVERED = "delivered", "Доставлено"
         FAILED = "failed", "Ошибка"
+        RETRY_SCHEDULED = "retry_scheduled", "Повтор запланирован"
 
     notification = models.ForeignKey(
         NotificationLog, related_name="attempts", on_delete=models.CASCADE

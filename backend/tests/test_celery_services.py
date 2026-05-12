@@ -34,6 +34,12 @@ def test_celery_worker_round_trip_uses_redis_broker_and_backend(settings, tmp_pa
         worker_hijack_root_logger=False,
     )
 
+    assert settings.CELERY_TASK_ACKS_LATE is True
+    assert settings.CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT is False
+    assert settings.CELERY_TASK_REJECT_ON_WORKER_LOST is True
+    assert settings.CELERY_TASK_TRACK_STARTED is True
+    assert settings.CELERY_WORKER_PREFETCH_MULTIPLIER == 1
+
     _assert_redis_available(settings.CELERY_BROKER_URL)
     _assert_redis_available(settings.CELERY_RESULT_BACKEND)
 

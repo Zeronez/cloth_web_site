@@ -239,6 +239,14 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] == timedelta(days=14)
     assert settings_module.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"] is True
     assert settings_module.SIMPLE_JWT["BLACKLIST_AFTER_ROTATION"] is True
+    assert settings_module.CELERY_TASK_ACKS_LATE is True
+    assert settings_module.CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT is False
+    assert settings_module.CELERY_TASK_REJECT_ON_WORKER_LOST is True
+    assert settings_module.CELERY_TASK_TRACK_STARTED is True
+    assert settings_module.CELERY_WORKER_PREFETCH_MULTIPLIER == 1
+    assert settings_module.CELERY_NOTIFICATION_MAX_RETRIES == 3
+    assert settings_module.CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS == 30
+    assert settings_module.CELERY_NOTIFICATION_RETRY_MAX_SECONDS == 300
 
 
 def test_production_cors_middleware_order_is_safe(monkeypatch):

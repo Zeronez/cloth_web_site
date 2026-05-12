@@ -7,6 +7,8 @@ from config.celery import app
 from notifications.models import NotificationAttempt, NotificationLog
 from orders.models import Order
 
+RETRYABLE_NOTIFICATION_EXCEPTIONS = (ConnectionError, OSError, TimeoutError)
+
 
 def _format_money(amount):
     return f"{amount:.2f} ₽"
@@ -38,8 +40,21 @@ def _get_or_create_order_created_log(order, subject, body):
     )
 
 
-@app.task(name="notifications.send_order_confirmation_email")
-def send_order_confirmation_email(order_id):
+def _notification_retry_countdown(retry_number):
+    countdown = settings.CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS * (
+        2 ** (retry_number - 1)
+    )
+    return min(countdown, settings.CELERY_NOTIFICATION_RETRY_MAX_SECONDS)
+
+
+@app.task(
+    bind=True,
+    name="notifications.send_order_confirmation_email",
+    acks_late=True,
+    reject_on_worker_lost=True,
+    max_retries=settings.CELERY_NOTIFICATION_MAX_RETRIES,
+)
+def send_order_confirmation_email(self, order_id):
     order = Order.objects.select_related("user").get(id=order_id)
     subject, body = build_order_confirmation_message(order)
 
@@ -54,6 +69,7 @@ def send_order_confirmation_email(order_id):
         log.subject = subject
         log.body = body
         log.error_message = ""
+        log.dead_lettered_at = None
         log.save(
             update_fields=[
                 "status",
@@ -61,6 +77,7 @@ def send_order_confirmation_email(order_id):
                 "subject",
                 "body",
                 "error_message",
+                "dead_lettered_at",
                 "updated_at",
             ]
         )
@@ -79,9 +96,39 @@ def send_order_confirmation_email(order_id):
             status=NotificationAttempt.Status.FAILED,
             error_message=str(exc),
         )
+
+        is_retryable = isinstance(exc, RETRYABLE_NOTIFICATION_EXCEPTIONS)
+        retry_number = self.request.retries + 1
+
+        if is_retryable and retry_number <= self.max_retries:
+            countdown = _notification_retry_countdown(retry_number)
+            NotificationAttempt.objects.create(
+                notification=log,
+                status=NotificationAttempt.Status.RETRY_SCHEDULED,
+                error_message=(
+                    f"retry #{retry_number} scheduled in {countdown}s: {exc}"
+                ),
+            )
+            NotificationLog.objects.filter(id=log.id).update(
+                status=NotificationLog.Status.PENDING,
+                error_message=str(exc),
+                updated_at=timezone.now(),
+            )
+            raise self.retry(exc=exc, countdown=countdown)
+
+        terminal_status = (
+            NotificationLog.Status.DEAD_LETTERED
+            if is_retryable and retry_number > self.max_retries
+            else NotificationLog.Status.FAILED
+        )
         NotificationLog.objects.filter(id=log.id).update(
-            status=NotificationLog.Status.FAILED,
+            status=terminal_status,
             error_message=str(exc),
+            dead_lettered_at=(
+                timezone.now()
+                if terminal_status == NotificationLog.Status.DEAD_LETTERED
+                else None
+            ),
             updated_at=timezone.now(),
         )
         raise
@@ -94,6 +141,7 @@ def send_order_confirmation_email(order_id):
     NotificationLog.objects.filter(id=log.id).update(
         status=NotificationLog.Status.DELIVERED,
         delivered_at=timezone.now(),
+        dead_lettered_at=None,
         error_message="",
         updated_at=timezone.now(),
     )
