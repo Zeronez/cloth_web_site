@@ -6,7 +6,12 @@ from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 
 from catalog.models import InventoryAdjustment, ProductVariant
-from catalog.stock import LOW_STOCK_THRESHOLD, adjust_variant_stock
+from catalog.stock import (
+    LOW_STOCK_THRESHOLD,
+    OptimisticLockError,
+    adjust_variant_stock,
+    adjust_variant_stock_optimistic,
+)
 from users.staff_roles import ROLE_INVENTORY_MANAGER
 
 
@@ -42,6 +47,7 @@ def test_adjust_variant_stock_creates_audit_and_updates_quantity(user, product_f
     )
 
     assert updated_variant.stock_quantity == 9
+    assert updated_variant.stock_version == 1
     assert adjustment.previous_quantity == 5
     assert adjustment.new_quantity == 9
     assert adjustment.delta == 4
@@ -69,6 +75,7 @@ def test_adjust_variant_stock_rejects_negative_result_without_audit(
 
     variant.refresh_from_db()
     assert variant.stock_quantity == 2
+    assert variant.stock_version == 0
     assert InventoryAdjustment.objects.count() == 0
 
 
@@ -92,6 +99,62 @@ def test_inventory_adjustment_changes_low_stock_visibility(product_factory):
         ).values_list("sku", flat=True)
     )
     assert "LOW-TEE-S" in low_stock_skus
+
+
+def test_adjust_variant_stock_optimistic_updates_when_version_matches(
+    user, product_factory
+):
+    product = product_factory(
+        name="Optimistic Stock Tee",
+        variants=[{"sku": "OPT-TEE-M", "stock_quantity": 5}],
+    )
+    variant = product.variants.get()
+
+    updated_variant, adjustment = adjust_variant_stock_optimistic(
+        variant_id=variant.id,
+        delta=-2,
+        expected_stock_version=0,
+        reason=InventoryAdjustment.Reason.COUNT,
+        performed_by=user,
+        note="Optimistic stock sync.",
+    )
+
+    assert updated_variant.stock_quantity == 3
+    assert updated_variant.stock_version == 1
+    assert adjustment.previous_quantity == 5
+    assert adjustment.new_quantity == 3
+
+
+def test_adjust_variant_stock_optimistic_rejects_stale_version_without_audit(
+    user, product_factory
+):
+    product = product_factory(
+        name="Stale Version Tee",
+        variants=[{"sku": "STALE-TEE-M", "stock_quantity": 5}],
+    )
+    variant = product.variants.get()
+    adjust_variant_stock(
+        variant_id=variant.id,
+        delta=1,
+        reason=InventoryAdjustment.Reason.RESTOCK,
+        performed_by=user,
+        note="Advance version.",
+    )
+
+    with pytest.raises(OptimisticLockError, match="stale"):
+        adjust_variant_stock_optimistic(
+            variant_id=variant.id,
+            delta=-1,
+            expected_stock_version=0,
+            reason=InventoryAdjustment.Reason.COUNT,
+            performed_by=user,
+            note="Stale optimistic write.",
+        )
+
+    variant.refresh_from_db()
+    assert variant.stock_quantity == 6
+    assert variant.stock_version == 1
+    assert InventoryAdjustment.objects.filter(variant=variant).count() == 1
 
 
 def test_checkout_respects_manual_inventory_adjustment(

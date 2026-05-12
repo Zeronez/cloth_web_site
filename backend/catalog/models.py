@@ -142,6 +142,7 @@ class ProductVariant(TimeStampedModel):
     size = models.CharField(max_length=16, choices=Size.choices)
     color = models.CharField(max_length=80)
     stock_quantity = models.PositiveIntegerField(default=0)
+    stock_version = models.PositiveIntegerField(default=0)
     price_delta = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
 

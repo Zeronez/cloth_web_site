@@ -163,7 +163,8 @@ def checkout_cart(user, shipping_data):
         price = variant.price
         total += price * item.quantity
         variant.stock_quantity -= item.quantity
-        variant.save(update_fields=["stock_quantity", "updated_at"])
+        variant.stock_version += 1
+        variant.save(update_fields=["stock_quantity", "stock_version", "updated_at"])
 
         order_items.append(
             OrderItem(

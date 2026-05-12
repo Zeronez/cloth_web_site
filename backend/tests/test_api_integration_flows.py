@@ -460,6 +460,8 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
     hoodie_variant.refresh_from_db()
     assert tee_variant.stock_quantity == 3
     assert hoodie_variant.stock_quantity == 2
+    assert tee_variant.stock_version == 1
+    assert hoodie_variant.stock_version == 1
 
     cart = Cart.objects.get(user=user)
     assert cart.items.count() == 0
@@ -511,6 +513,7 @@ def test_checkout_idempotency_key_returns_existing_order_without_second_stock_ch
     assert Order.objects.filter(user=user).count() == 1
     variant.refresh_from_db()
     assert variant.stock_quantity == 3
+    assert variant.stock_version == 1
     assert Cart.objects.get(user=user).items.count() == 0
 
 
