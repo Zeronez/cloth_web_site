@@ -208,6 +208,17 @@ def _validate_celery_notification_settings():
         )
 
 
+def _validate_background_cleanup_settings():
+    _validate_positive_int(
+        "PAYMENT_SESSION_TIMEOUT_MINUTES", PAYMENT_SESSION_TIMEOUT_MINUTES
+    )
+    _validate_positive_int(
+        "PAYMENT_EXPIRATION_BATCH_SIZE", PAYMENT_EXPIRATION_BATCH_SIZE
+    )
+    _validate_positive_int("CART_GUEST_TTL_HOURS", CART_GUEST_TTL_HOURS)
+    _validate_positive_int("CART_CLEANUP_BATCH_SIZE", CART_CLEANUP_BATCH_SIZE)
+
+
 DEBUG = False
 SECRET_KEY = env_required("SECRET_KEY")
 DATABASE_URL = env_required("DATABASE_URL")
@@ -228,6 +239,10 @@ CELERY_NOTIFICATION_RETRY_MAX_SECONDS = env_int(
 CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS = env_int(
     "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS", 600
 )
+PAYMENT_SESSION_TIMEOUT_MINUTES = env_int("PAYMENT_SESSION_TIMEOUT_MINUTES", 20)
+PAYMENT_EXPIRATION_BATCH_SIZE = env_int("PAYMENT_EXPIRATION_BATCH_SIZE", 100)
+CART_GUEST_TTL_HOURS = env_int("CART_GUEST_TTL_HOURS", 72)
+CART_CLEANUP_BATCH_SIZE = env_int("CART_CLEANUP_BATCH_SIZE", 200)
 ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = env_csv("CORS_ALLOWED_ORIGINS")
@@ -289,6 +304,7 @@ _validate_s3_settings()
 _validate_payment_webhook_settings()
 _validate_no_sandbox_overrides()
 _validate_celery_notification_settings()
+_validate_background_cleanup_settings()
 
 DATABASES = {
     "default": dj_database_url.config(

@@ -150,6 +150,10 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
             "10",
             "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS",
         ),
+        ("PAYMENT_SESSION_TIMEOUT_MINUTES", "0", "PAYMENT_SESSION_TIMEOUT_MINUTES"),
+        ("PAYMENT_EXPIRATION_BATCH_SIZE", "0", "PAYMENT_EXPIRATION_BATCH_SIZE"),
+        ("CART_GUEST_TTL_HOURS", "0", "CART_GUEST_TTL_HOURS"),
+        ("CART_CLEANUP_BATCH_SIZE", "0", "CART_CLEANUP_BATCH_SIZE"),
     ),
 )
 def test_production_settings_rejects_unsafe_required_config(
@@ -276,6 +280,10 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS == 30
     assert settings_module.CELERY_NOTIFICATION_RETRY_MAX_SECONDS == 300
     assert settings_module.CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS == 600
+    assert settings_module.PAYMENT_SESSION_TIMEOUT_MINUTES == 20
+    assert settings_module.PAYMENT_EXPIRATION_BATCH_SIZE == 100
+    assert settings_module.CART_GUEST_TTL_HOURS == 72
+    assert settings_module.CART_CLEANUP_BATCH_SIZE == 200
 
 
 def test_production_cors_middleware_order_is_safe(monkeypatch):

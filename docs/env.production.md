@@ -123,6 +123,10 @@ notifications:
 - `CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS`
 - `CELERY_NOTIFICATION_RETRY_MAX_SECONDS`
 - `CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS`
+- `PAYMENT_SESSION_TIMEOUT_MINUTES`
+- `PAYMENT_EXPIRATION_BATCH_SIZE`
+- `CART_GUEST_TTL_HOURS`
+- `CART_CLEANUP_BATCH_SIZE`
 
 Current production contract:
 
@@ -141,3 +145,7 @@ Current production contract:
 - delivered notifications remain idempotent for the same
   `order/type/channel` key and do not send duplicate customer emails after a
   successful delivery.
+- payment sessions expire on a bounded timer so stale unpaid orders can be
+  cancelled and their stock returned by background processing;
+- guest carts expire after a bounded inactivity window so abandoned anonymous
+  carts do not accumulate forever in the production database.

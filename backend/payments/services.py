@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -68,8 +69,8 @@ def _sync_order_after_payment_status(payment, new_status):
             try:
                 ensure_shipment_for_paid_order(order=order)
             except ValidationError:
-                # Оплата уже подтверждена провайдером, поэтому не откатываем payment flow
-                # из-за проблем подготовки доставки. Staff сможет дооформить shipment позже.
+                # Payment is already confirmed by the provider. Shipment bootstrap
+                # problems should not roll back the payment flow.
                 pass
         return
 
@@ -87,12 +88,24 @@ def _sync_order_after_payment_status(payment, new_status):
                 Order.Status.RETURNED if not should_restock else Order.Status.CANCELLED
             ),
             restock_on_cancel=should_restock,
-            restock_note=f"Р’РѕР·РІСЂР°С‚ СЃС‚РѕРєР° РїРѕСЃР»Рµ refund РїР»Р°С‚РµР¶Р° РїРѕ Р·Р°РєР°Р·Сѓ #{order.id}.",
+            restock_note=f"Restock after refund for order #{order.id}.",
         )
         if should_restock:
             restore_order_stock(
                 order=order,
-                note=f"Возврат стока после refund платежа по заказу #{order.id}.",
+                note=f"Return stock after refund for order #{order.id}.",
+            )
+        return
+
+    if new_status in {Payment.Status.CANCELLED, Payment.Status.EXPIRED}:
+        if order.status == Order.Status.PENDING:
+            transition_order_status(
+                order=order,
+                new_status=Order.Status.CANCELLED,
+                restock_on_cancel=True,
+                restock_note=(
+                    f"Released stock after payment moved to {new_status} for order #{order.id}."
+                ),
             )
 
 
@@ -183,7 +196,8 @@ def create_payment_session(*, user, order_id, payment_method_code, idempotency_k
         amount=order.total_amount,
         currency=method.currency,
         idempotency_key=idempotency_key,
-        session_expires_at=timezone.now() + timedelta(minutes=20),
+        session_expires_at=timezone.now()
+        + timedelta(minutes=settings.PAYMENT_SESSION_TIMEOUT_MINUTES),
     )
     PaymentEvent.objects.create(
         payment=payment,

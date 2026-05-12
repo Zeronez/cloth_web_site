@@ -1,8 +1,11 @@
+from datetime import timedelta
 from dataclasses import dataclass
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart, CartItem
@@ -90,6 +93,36 @@ def get_or_create_cart(request):
         request.session.create()
     cart, _ = Cart.objects.get_or_create(session_key=request.session.session_key)
     return cart
+
+
+@transaction.atomic
+def cleanup_expired_guest_carts(*, now=None, batch_size=None):
+    now = now or timezone.now()
+    batch_size = batch_size or settings.CART_CLEANUP_BATCH_SIZE
+    expiry_cutoff = now - timedelta(hours=settings.CART_GUEST_TTL_HOURS)
+    stale_cart_ids = list(
+        Cart.objects.select_for_update(skip_locked=True)
+        .filter(user__isnull=True, updated_at__lte=expiry_cutoff)
+        .exclude(session_key="")
+        .order_by("updated_at", "id")
+        .values_list("id", flat=True)[:batch_size]
+    )
+    if not stale_cart_ids:
+        return {
+            "deleted_carts": 0,
+            "deleted_items": 0,
+            "cutoff": expiry_cutoff,
+            "cart_ids": [],
+        }
+
+    deleted_items = CartItem.objects.filter(cart_id__in=stale_cart_ids).count()
+    Cart.objects.filter(id__in=stale_cart_ids).delete()
+    return {
+        "deleted_carts": len(stale_cart_ids),
+        "deleted_items": deleted_items,
+        "cutoff": expiry_cutoff,
+        "cart_ids": stale_cart_ids,
+    }
 
 
 @transaction.atomic

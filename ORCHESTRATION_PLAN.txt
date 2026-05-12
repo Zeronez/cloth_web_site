@@ -131,7 +131,7 @@ Phase 2.5: Payments
 [x] Add provider-specific webhook normalization foundation.
 [x] Implement retry-safe order/payment reconciliation command.
 [ ] Implement refund flow, partial refund support if provider allows.
-[ ] Implement payment timeout/cancel task.
+[x] Implement payment timeout/cancel task.
 [x] Implement admin payment status view.
 [x] Add payment event audit table.
 
@@ -351,8 +351,8 @@ Celery and Async Tests
 ----------------------
 [x] Celery worker starts in CI and consumes test queue.
 [x] Order confirmation task is enqueued after checkout.
-[ ] Cart cleanup task deletes expired guest carts.
-[ ] Payment timeout task cancels unpaid stale orders.
+[x] Cart cleanup task deletes expired guest carts.
+[x] Payment timeout task cancels unpaid stale orders.
 [x] Notification retry behavior works after transient failure.
 [ ] Failed task logging includes correlation id.
 
