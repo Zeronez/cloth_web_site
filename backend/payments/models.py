@@ -27,7 +27,11 @@ class PaymentMethod(models.Model):
             models.Index(
                 fields=["is_active", "sort_order"],
                 name="payments_me_active_1d802d_idx",
-            )
+            ),
+            models.Index(
+                fields=["provider_code", "session_mode"],
+                name="payments_me_prov_mode_idx",
+            ),
         ]
 
     def __str__(self):
@@ -117,6 +121,30 @@ class Payment(models.Model):
             models.Index(fields=["user", "status"], name="payments_pa_user_6b742b_idx"),
             models.Index(
                 fields=["idempotency_key"], name="payments_pa_idempo_7b4d67_idx"
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="payments_pa_user_created_idx",
+            ),
+            models.Index(
+                fields=["order", "provider_code", "external_payment_id"],
+                name="payments_pa_ordprovext_idx",
+            ),
+            models.Index(
+                fields=["provider_code", "status"],
+                name="payments_pa_prov_stat_idx",
+            ),
+            models.Index(
+                fields=["method_code"],
+                name="payments_pa_method_idx",
+            ),
+            models.Index(
+                fields=["status", "created_at"],
+                name="payments_pa_status_created_idx",
+            ),
+            models.Index(
+                fields=["session_expires_at"],
+                name="payments_pa_expire_idx",
             ),
         ]
         constraints = [

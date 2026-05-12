@@ -19,6 +19,12 @@ class FavoriteProduct(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["user", "created_at"],
+                name="favorites_user_created_idx",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "product"],

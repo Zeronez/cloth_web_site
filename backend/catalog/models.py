@@ -79,6 +79,10 @@ class Product(TimeStampedModel):
                 fields=["archived_at"],
                 name="catalog_pro_arch_at_idx",
             ),
+            models.Index(
+                fields=["is_active", "archived_at", "is_featured", "created_at"],
+                name="catalog_pro_live_list_idx",
+            ),
         ]
 
     def save(self, *args, **kwargs):

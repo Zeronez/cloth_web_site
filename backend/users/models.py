@@ -26,6 +26,12 @@ class Address(models.Model):
 
     class Meta:
         ordering = ["-is_default", "-created_at"]
+        indexes = [
+            models.Index(
+                fields=["user", "is_default", "created_at"],
+                name="users_addr_user_def_idx",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.recipient_name}, {self.city}"

@@ -97,6 +97,22 @@ class Order(models.Model):
             ),
             models.Index(fields=["created_at"], name="orders_orde_created_0fc1c0_idx"),
             models.Index(fields=["idempotency_key"], name="orders_idempo_key_idx"),
+            models.Index(fields=["priority"], name="orders_priority_idx"),
+            models.Index(
+                fields=["stock_restored_at"], name="orders_stock_restored_idx"
+            ),
+            models.Index(
+                fields=["status", "created_at"],
+                name="orders_status_created_idx",
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="orders_user_created_idx",
+            ),
+            models.Index(
+                fields=["shipping_country", "shipping_city"],
+                name="orders_ship_country_city_idx",
+            ),
         ]
         constraints = [
             models.UniqueConstraint(

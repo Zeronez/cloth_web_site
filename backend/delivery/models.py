@@ -87,6 +87,14 @@ class OrderDeliverySnapshot(models.Model):
                 fields=["tracking_status"],
                 name="delivery_or_tracki_2a5973_idx",
             ),
+            models.Index(
+                fields=["method_kind"],
+                name="delivery_or_kind_idx",
+            ),
+            models.Index(
+                fields=["provider_code", "tracking_status"],
+                name="delivery_or_prov_stat_idx",
+            ),
         ]
 
     def __str__(self):

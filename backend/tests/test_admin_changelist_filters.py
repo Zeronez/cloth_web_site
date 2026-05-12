@@ -5,13 +5,15 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from catalog.admin import ProductAdmin, ProductVariantAdmin
-from catalog.models import AnimeFranchise, Category, ProductVariant
+from catalog.models import AnimeFranchise, Category, Product, ProductVariant
 from delivery.models import DeliveryMethod, OrderDeliverySnapshot
 from delivery.services import create_order_delivery_snapshot
 from orders.admin import OrderAdmin, OrderItemAdmin, OrderSkuListFilter
 from orders.models import Order, OrderItem
-from payments.admin import PaymentAdmin
+from payments.admin import PaymentAdmin, PaymentMethodAdmin
 from payments.models import Payment, PaymentMethod
+from favorites.models import FavoriteProduct
+from users.models import Address
 from users.admin import AnimeAttireUserAdmin
 
 
@@ -197,6 +199,48 @@ def test_order_changelist_filters_by_delivery_method_and_tracking_status(
     assert changelist_result_ids(response) == [matching.id]
 
 
+def test_order_changelist_filters_by_provider_country_priority_and_restock_state(
+    admin_client, user, product_factory
+):
+    matching = create_order(
+        user,
+        product_factory,
+        sku="ADMIN-OPS-A",
+        provider_code="cdek",
+        city="Kazan",
+    )
+    matching.priority = Order.Priority.URGENT
+    matching.stock_restored_at = "2026-05-12T10:00:00Z"
+    matching.shipping_country = "RU"
+    matching.save(
+        update_fields=[
+            "priority",
+            "stock_restored_at",
+            "shipping_country",
+            "updated_at",
+        ]
+    )
+    create_order(
+        user,
+        product_factory,
+        sku="ADMIN-OPS-B",
+        provider_code="boxberry",
+        city="Almaty",
+    )
+
+    response = admin_client.get(
+        reverse("admin:orders_order_changelist"),
+        {
+            "delivery_snapshot__provider_code__exact": "cdek",
+            "shipping_country__exact": "RU",
+            "priority__exact": Order.Priority.URGENT,
+            "stock_restored_at__isnull": "False",
+        },
+    )
+
+    assert changelist_result_ids(response) == [matching.id]
+
+
 def test_product_changelist_filters_by_category_and_franchise(
     admin_client, product_factory
 ):
@@ -232,6 +276,33 @@ def test_product_changelist_filters_by_category_and_franchise(
     )
 
     assert changelist_result_ids(response) == [matching.id]
+
+
+def test_product_changelist_filters_by_archived_and_active_flags(
+    admin_client, product_factory
+):
+    archived = product_factory(
+        name="Archived Admin Drop",
+        variants=[{"sku": "ADMIN-ARCHIVE-1"}],
+    )
+    archived.archive()
+    active = product_factory(
+        name="Live Admin Drop",
+        variants=[{"sku": "ADMIN-ARCHIVE-2"}],
+    )
+
+    archived_response = admin_client.get(
+        reverse("admin:catalog_product_changelist"),
+        {"archived_at__isnull": "False"},
+    )
+    active_response = admin_client.get(
+        reverse("admin:catalog_product_changelist"),
+        {"is_active__exact": "1"},
+    )
+
+    assert changelist_result_ids(archived_response) == [archived.id]
+    assert active.id in changelist_result_ids(active_response)
+    assert archived.id not in changelist_result_ids(active_response)
 
 
 def test_product_search_by_variant_sku_returns_product_once(
@@ -319,7 +390,83 @@ def test_payment_changelist_filters_by_status_and_method(
     assert PaymentAdmin.date_hierarchy == "created_at"
 
 
+def test_payment_method_changelist_filters_by_provider_and_session_mode(
+    admin_client,
+):
+    matching = PaymentMethod.objects.create(
+        code="provider-filter-card",
+        name="Provider Filter Card",
+        provider_code="yookassa",
+        session_mode=PaymentMethod.SessionMode.REDIRECT,
+        currency="RUB",
+    )
+    PaymentMethod.objects.create(
+        code="provider-filter-sbp",
+        name="Provider Filter SBP",
+        provider_code="placeholder",
+        session_mode=PaymentMethod.SessionMode.PLACEHOLDER,
+        currency="RUB",
+    )
+
+    response = admin_client.get(
+        reverse("admin:payments_paymentmethod_changelist"),
+        {
+            "provider_code__exact": "yookassa",
+            "session_mode__exact": PaymentMethod.SessionMode.REDIRECT,
+        },
+    )
+
+    assert changelist_result_ids(response) == [matching.id]
+    assert PaymentMethodAdmin.date_hierarchy == "created_at"
+
+
 def test_user_admin_declares_customer_lifecycle_filters():
     assert "date_joined" in AnimeAttireUserAdmin.list_filter
     assert "last_login" in AnimeAttireUserAdmin.list_filter
     assert AnimeAttireUserAdmin.date_hierarchy == "date_joined"
+
+
+def test_real_admin_query_paths_are_backed_by_index_contracts():
+    product_index_fields = {tuple(index.fields) for index in Product._meta.indexes}
+    variant_index_fields = {
+        tuple(index.fields) for index in ProductVariant._meta.indexes
+    }
+    order_index_fields = {tuple(index.fields) for index in Order._meta.indexes}
+    payment_method_index_fields = {
+        tuple(index.fields) for index in PaymentMethod._meta.indexes
+    }
+    payment_index_fields = {tuple(index.fields) for index in Payment._meta.indexes}
+    snapshot_index_fields = {
+        tuple(index.fields) for index in OrderDeliverySnapshot._meta.indexes
+    }
+    favorite_index_fields = {
+        tuple(index.fields) for index in FavoriteProduct._meta.indexes
+    }
+    address_index_fields = {tuple(index.fields) for index in Address._meta.indexes}
+
+    assert ("archived_at",) in product_index_fields
+    assert ("is_active", "is_featured") in product_index_fields
+    assert (
+        "is_active",
+        "archived_at",
+        "is_featured",
+        "created_at",
+    ) in product_index_fields
+    assert ("sku",) in variant_index_fields
+    assert ("is_active", "stock_quantity") in variant_index_fields
+    assert ("priority",) in order_index_fields
+    assert ("stock_restored_at",) in order_index_fields
+    assert ("status", "created_at") in order_index_fields
+    assert ("user", "created_at") in order_index_fields
+    assert ("shipping_country", "shipping_city") in order_index_fields
+    assert ("provider_code", "session_mode") in payment_method_index_fields
+    assert ("user", "created_at") in payment_index_fields
+    assert ("order", "provider_code", "external_payment_id") in payment_index_fields
+    assert ("provider_code", "status") in payment_index_fields
+    assert ("method_code",) in payment_index_fields
+    assert ("status", "created_at") in payment_index_fields
+    assert ("session_expires_at",) in payment_index_fields
+    assert ("method_kind",) in snapshot_index_fields
+    assert ("provider_code", "tracking_status") in snapshot_index_fields
+    assert ("user", "created_at") in favorite_index_fields
+    assert ("user", "is_default", "created_at") in address_index_fields
