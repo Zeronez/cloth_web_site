@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from cart.models import Cart, CartItem
-from catalog.models import AnimeFranchise, Category, ProductVariant
+from catalog.models import AnimeFranchise, Category, Product, ProductVariant
 from favorites.models import FavoriteProduct
 from orders.models import Order, OrderItem
 from users.models import Address
@@ -236,6 +236,57 @@ def test_catalog_filters_and_product_detail_return_active_merchandise(
     assert inactive_response.status_code == 404
 
 
+def test_archived_product_is_hidden_from_storefront_but_preserved_in_order_history(
+    authenticated_client, api_client, user, product_factory
+):
+    product = product_factory(
+        name="Archive Policy Hoodie",
+        base_price="79.90",
+        variants=[
+            {
+                "sku": "ARCHIVE-HOODIE-BLK-L",
+                "size": ProductVariant.Size.L,
+                "color": "Black",
+                "stock_quantity": 4,
+            }
+        ],
+    )
+    variant = product.variants.get()
+    order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("79.90"),
+        **shipping_payload(),
+    )
+    OrderItem.objects.create(
+        order=order,
+        variant=variant,
+        product_name=product.name,
+        sku=variant.sku,
+        size=variant.size,
+        color=variant.color,
+        quantity=1,
+        price_at_purchase=Decimal("79.90"),
+    )
+
+    product.archive()
+    product.refresh_from_db()
+    variant.refresh_from_db()
+
+    assert product.archived_at is not None
+    assert product.is_active is False
+    assert product.is_featured is False
+    assert variant.is_active is False
+    assert not Product.objects.filter(pk=product.pk, archived_at__isnull=True).exists()
+
+    detail_response = api_client.get(f"/api/products/{product.slug}/")
+    order_response = authenticated_client.get(f"/api/orders/{order.id}/")
+
+    assert detail_response.status_code == 404
+    assert order_response.status_code == 200
+    assert order_response.data["items"][0]["product_name"] == "Archive Policy Hoodie"
+    assert order_response.data["items"][0]["sku"] == "ARCHIVE-HOODIE-BLK-L"
+
+
 def test_cart_add_update_and_remove_item(authenticated_client, user, product_factory):
     product = product_factory(
         name="Gojo Oversized Tee",
@@ -290,6 +341,47 @@ def test_cart_add_update_and_remove_item(authenticated_client, user, product_fac
     assert remove_response.data["total_amount"] == "0.00"
     assert remove_response.data["subtotal_amount"] == "0.00"
     assert not CartItem.objects.filter(pk=item_id).exists()
+
+
+def test_cart_rejects_quantity_update_for_archived_variant(
+    authenticated_client, user, product_factory
+):
+    product = product_factory(
+        name="Archived Cart Tee",
+        base_price="31.00",
+        variants=[
+            {
+                "sku": "ARCHIVE-CART-BLK-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 5,
+            }
+        ],
+    )
+    variant = product.variants.get()
+
+    add_response = authenticated_client.post(
+        "/api/cart/items/",
+        {"variant_id": variant.id, "quantity": 1},
+        format="json",
+    )
+    assert add_response.status_code == 201
+
+    product.archive()
+    item_id = cart_item_id(add_response, variant)
+
+    update_response = authenticated_client.patch(
+        f"/api/cart/items/{item_id}/",
+        {"quantity": 2},
+        format="json",
+    )
+
+    assert update_response.status_code == 400
+    assert update_response.data["error"]["code"] == "validation_error"
+    assert update_response.data["error"]["details"]["variant"] == [
+        {"message": "This variant is not available.", "code": "invalid"}
+    ]
+    assert CartItem.objects.get(cart__user=user, variant=variant).quantity == 1
 
 
 def test_checkout_creates_order_decrements_stock_and_clears_cart(
@@ -562,6 +654,25 @@ def test_favorites_add_list_delete_and_idempotency(
 
     assert second_delete_response.status_code == 200
     assert second_delete_response.data == {"product_id": product.id, "deleted": False}
+
+
+def test_archived_product_disappears_from_favorites_listing(
+    authenticated_client, user, product_factory
+):
+    product = product_factory(name="Favorite Archive Tee", base_price="49.00")
+    FavoriteProduct.objects.create(user=user, product=product)
+
+    initial_response = authenticated_client.get("/api/favorites/")
+
+    assert initial_response.status_code == 200
+    assert [item["product"]["slug"] for item in initial_response.data] == [product.slug]
+
+    product.archive()
+
+    archived_response = authenticated_client.get("/api/favorites/")
+
+    assert archived_response.status_code == 200
+    assert archived_response.data == []
 
 
 def test_checkout_rejects_overstock_without_creating_order_or_clearing_cart(

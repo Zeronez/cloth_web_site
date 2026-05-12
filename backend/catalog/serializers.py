@@ -84,7 +84,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(ProductListSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
-    variants = ProductVariantSerializer(many=True, read_only=True)
+    variants = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + (
@@ -92,3 +92,11 @@ class ProductDetailSerializer(ProductListSerializer):
             "images",
             "variants",
         )
+
+    def get_variants(self, obj):
+        variants = [variant for variant in obj.variants.all() if variant.is_active]
+        return ProductVariantSerializer(
+            variants,
+            many=True,
+            context=self.context,
+        ).data

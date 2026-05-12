@@ -70,7 +70,7 @@ Phase 2.1: Backend Production Hardening
 [x] Add secure cookie/JWT storage strategy.
 [x] Add permission classes and object-level access checks.
 [x] Add admin audit log for critical changes.
-[ ] Add soft-delete or archive policy for products/orders where legally appropriate.
+[x] Add soft-delete or archive policy for products/orders where legally appropriate.
 [ ] Add database indexes for all real query paths.
 [ ] Add migration safety policy: no destructive migrations without backfill plan.
 [x] Add idempotency keys for checkout/payment creation.

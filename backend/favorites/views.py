@@ -25,7 +25,11 @@ class FavoriteProductViewSet(
         if getattr(self, "swagger_fake_view", False):
             return FavoriteProduct.objects.none()
         return (
-            FavoriteProduct.objects.filter(user=self.request.user)
+            FavoriteProduct.objects.filter(
+                user=self.request.user,
+                product__is_active=True,
+                product__archived_at__isnull=True,
+            )
             .select_related("product", "product__category", "product__franchise")
             .prefetch_related("product__images", "product__variants")
         )

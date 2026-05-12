@@ -146,6 +146,22 @@ def test_payment_admin_is_read_only_for_accountant(request_factory, staff_user_f
     assert payment_admin.has_delete_permission(request) is False
 
 
+def test_superuser_cannot_delete_products_or_orders_via_admin(request_factory):
+    superuser = get_user_model().objects.create_superuser(
+        username="delete-blocked-admin",
+        email="delete-blocked-admin@example.com",
+        password="AdminPass!2026",
+    )
+    request = request_factory.get("/admin/")
+    request.user = superuser
+
+    product_admin: ProductAdmin = admin.site._registry[Product]
+    order_admin: OrderAdmin = admin.site._registry[Order]
+
+    assert product_admin.has_delete_permission(request) is False
+    assert order_admin.has_delete_permission(request) is False
+
+
 def test_support_agent_admin_access_is_scoped(
     client, staff_user_factory, user, product_factory
 ):

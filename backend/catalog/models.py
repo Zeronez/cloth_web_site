@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 
 
@@ -64,6 +65,7 @@ class Product(TimeStampedModel):
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-is_featured", "-created_at"]
@@ -72,6 +74,10 @@ class Product(TimeStampedModel):
             models.Index(
                 fields=["is_active", "is_featured"],
                 name="catalog_pro_is_acti_c4e01c_idx",
+            ),
+            models.Index(
+                fields=["archived_at"],
+                name="catalog_pro_arch_at_idx",
             ),
         ]
 
@@ -82,7 +88,34 @@ class Product(TimeStampedModel):
 
     @property
     def total_stock(self):
-        return sum(variant.stock_quantity for variant in self.variants.all())
+        return sum(
+            variant.stock_quantity
+            for variant in self.variants.all()
+            if variant.is_active
+        )
+
+    @property
+    def is_archived(self):
+        return self.archived_at is not None
+
+    def archive(self, *, save=True):
+        if self.archived_at is None:
+            self.archived_at = timezone.now()
+        self.is_active = False
+        self.is_featured = False
+        if save:
+            self.save(
+                update_fields=["archived_at", "is_active", "is_featured", "updated_at"]
+            )
+        self.variants.filter(is_active=True).update(
+            is_active=False, updated_at=timezone.now()
+        )
+
+    def restore(self, *, save=True):
+        self.archived_at = None
+        self.is_active = True
+        if save:
+            self.save(update_fields=["archived_at", "is_active", "updated_at"])
 
     def __str__(self):
         return self.name

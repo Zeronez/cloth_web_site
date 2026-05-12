@@ -35,7 +35,7 @@ class AnimeFranchiseViewSet(viewsets.ReadOnlyModelViewSet):
 @extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
-        Product.objects.filter(is_active=True)
+        Product.objects.filter(is_active=True, archived_at__isnull=True)
         .select_related("category", "franchise")
         .prefetch_related("images", "variants")
     )

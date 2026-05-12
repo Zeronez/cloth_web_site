@@ -129,10 +129,12 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         "base_price",
         "is_active",
         "is_featured",
+        "archived_at",
     )
     list_filter = (
         "is_active",
         "is_featured",
+        "archived_at",
         "category",
         "franchise",
         "created_at",
@@ -144,6 +146,8 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     search_fields = ("name", "description", "variants__sku")
     inlines = [ProductVariantInline, ProductImageInline]
     actions = (
+        "archive_selected_products",
+        "restore_selected_products",
         "activate_selected_products",
         "deactivate_selected_products",
         "feature_selected_products",
@@ -164,7 +168,7 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         return self.has_module_permission(request)
 
     def has_delete_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return False
 
     def _bulk_set_boolean(self, request, queryset, *, field_name, value, action_name):
         selected_count = queryset.count()
@@ -226,10 +230,82 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         )
 
     @admin.action(description="Опубликовать выбранные товары")
+    def _bulk_archive_products(self, request, queryset, *, archived, action_name):
+        selected_count = queryset.count()
+        updated = 0
+        for product in queryset:
+            old_archived_at = (
+                product.archived_at.isoformat() if product.archived_at else None
+            )
+            old_is_active = product.is_active
+            old_is_featured = product.is_featured
+
+            if archived:
+                if product.is_archived:
+                    continue
+                product.archive()
+            else:
+                if not product.is_archived:
+                    continue
+                product.restore()
+
+            updated += 1
+            log_admin_event(
+                actor=request.user,
+                action=AuditLog.Action.ADMIN_ACTION,
+                obj=product,
+                request=request,
+                changes={
+                    "archived_at": {
+                        "old": old_archived_at,
+                        "new": (
+                            product.archived_at.isoformat()
+                            if product.archived_at
+                            else None
+                        ),
+                    },
+                    "is_active": {"old": old_is_active, "new": product.is_active},
+                    "is_featured": {
+                        "old": old_is_featured,
+                        "new": product.is_featured,
+                    },
+                },
+                metadata={
+                    "admin_action": action_name,
+                    "selected_count": selected_count,
+                    "changed_count": updated,
+                    "product_id": product.id,
+                    "slug": product.slug,
+                },
+            )
+        self.message_user(
+            request,
+            f"Archived products updated: {updated}.",
+            messages.SUCCESS,
+        )
+
+    @admin.action(description="Archive selected products")
+    def archive_selected_products(self, request, queryset):
+        self._bulk_archive_products(
+            request,
+            queryset,
+            archived=True,
+            action_name="archive_selected_products",
+        )
+
+    @admin.action(description="Restore selected products from archive")
+    def restore_selected_products(self, request, queryset):
+        self._bulk_archive_products(
+            request,
+            queryset,
+            archived=False,
+            action_name="restore_selected_products",
+        )
+
     def activate_selected_products(self, request, queryset):
         self._bulk_set_boolean(
             request,
-            queryset,
+            queryset.filter(archived_at__isnull=True),
             field_name="is_active",
             value=True,
             action_name="activate_selected_products",

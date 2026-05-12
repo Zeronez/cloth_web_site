@@ -79,7 +79,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     retry: false
   });
   const isInitialLoading = productQuery.isLoading && !productQuery.data;
-  const isUsingFallback = productQuery.isError && !productQuery.data;
+  const isMissingProduct =
+    productQuery.error instanceof ApiError && productQuery.error.status === 404;
+  const isUsingFallback =
+    productQuery.isError && !productQuery.data && !isMissingProduct;
   const product = productQuery.data ?? fallbackProduct(slug);
   const availableVariants = useMemo(
     () =>
@@ -116,6 +119,28 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   if (isInitialLoading) {
     return <ProductDetailSkeleton />;
+  }
+
+  if (isMissingProduct) {
+    return (
+      <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-3xl border border-white/10 bg-white/[0.04] p-8">
+          <InlineNotice
+            title="Товар недоступен"
+            text="Эта позиция снята с публикации или ее больше нет в каталоге."
+            tone="warning"
+          />
+          <div className="mt-6">
+            <Link
+              href="/catalog"
+              className="text-sm font-bold text-slate-300 transition hover:text-white"
+            >
+              Назад в каталог
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (

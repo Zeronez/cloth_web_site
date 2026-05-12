@@ -123,13 +123,17 @@ def add_variant_to_cart(cart, variant_id, quantity):
 @transaction.atomic
 def set_cart_item_quantity(cart, item_id, quantity):
     item = get_object_or_404(
-        CartItem.objects.select_for_update().select_related("variant"),
+        CartItem.objects.select_for_update().select_related(
+            "variant", "variant__product"
+        ),
         pk=item_id,
         cart=cart,
     )
     if quantity < 1:
         item.delete()
         return None
+    if not item.variant.is_active or not item.variant.product.is_active:
+        raise ValidationError({"variant": "This variant is not available."})
     variant = ProductVariant.objects.select_for_update().get(pk=item.variant_id)
     if quantity > variant.stock_quantity:
         raise ValidationError(

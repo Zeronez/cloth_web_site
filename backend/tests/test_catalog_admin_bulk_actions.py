@@ -150,6 +150,38 @@ def test_product_admin_bulk_status_action_updates_selected_products_with_audit(
     assert {log.changes["is_active"]["new"] for log in logs} == {False}
 
 
+def test_product_admin_archive_action_archives_products_and_deactivates_variants(
+    admin_client, product_factory
+):
+    product = product_factory(
+        name="Archive Capsule Jacket",
+        variants=[
+            {"sku": "ARCHIVE-CAPSULE-BLK-M", "color": "Black"},
+            {"sku": "ARCHIVE-CAPSULE-WHT-L", "color": "White"},
+        ],
+    )
+
+    response = post_action(
+        admin_client,
+        "admin:catalog_product_changelist",
+        "archive_selected_products",
+        [product.id],
+    )
+
+    assert response.status_code == 200
+    product.refresh_from_db()
+    assert product.archived_at is not None
+    assert product.is_active is False
+    assert product.is_featured is False
+    assert not ProductVariant.objects.filter(product=product, is_active=True).exists()
+    log = AuditLog.objects.get(
+        model="product", metadata__admin_action="archive_selected_products"
+    )
+    assert log.changes["archived_at"]["old"] is None
+    assert log.changes["archived_at"]["new"]
+    assert log.changes["is_active"]["new"] is False
+
+
 def test_variant_admin_bulk_stock_action_creates_adjustments_and_audit(
     admin_client, admin_user, product_factory
 ):
