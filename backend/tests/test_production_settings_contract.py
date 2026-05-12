@@ -134,6 +134,22 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
             '{"SHIP-1":{"status":"delivered"}}',
             "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON",
         ),
+        ("CELERY_NOTIFICATION_MAX_RETRIES", "-1", "CELERY_NOTIFICATION_MAX_RETRIES"),
+        (
+            "CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS",
+            "0",
+            "CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS",
+        ),
+        (
+            "CELERY_NOTIFICATION_RETRY_MAX_SECONDS",
+            "10",
+            "CELERY_NOTIFICATION_RETRY_MAX_SECONDS",
+        ),
+        (
+            "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS",
+            "10",
+            "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS",
+        ),
     ),
 )
 def test_production_settings_rejects_unsafe_required_config(
@@ -141,6 +157,10 @@ def test_production_settings_rejects_unsafe_required_config(
 ):
     _set_required_env(monkeypatch)
     monkeypatch.setenv("SECRET_KEY", STRONG_SECRET_KEY)
+    if env_name == "CELERY_NOTIFICATION_RETRY_MAX_SECONDS":
+        monkeypatch.setenv("CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS", "30")
+    if env_name == "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS":
+        monkeypatch.setenv("CELERY_TASK_TIME_LIMIT", "300")
     monkeypatch.setenv(env_name, env_value)
 
     with pytest.raises(RuntimeError, match=error_match):
@@ -243,10 +263,19 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT is False
     assert settings_module.CELERY_TASK_REJECT_ON_WORKER_LOST is True
     assert settings_module.CELERY_TASK_TRACK_STARTED is True
+    assert settings_module.CELERY_TASK_DEFAULT_QUEUE == "default"
+    assert settings_module.CELERY_NOTIFICATION_QUEUE == "notifications"
+    assert (
+        settings_module.CELERY_TASK_ROUTES[
+            "notifications.send_order_confirmation_email"
+        ]["queue"]
+        == "notifications"
+    )
     assert settings_module.CELERY_WORKER_PREFETCH_MULTIPLIER == 1
     assert settings_module.CELERY_NOTIFICATION_MAX_RETRIES == 3
     assert settings_module.CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS == 30
     assert settings_module.CELERY_NOTIFICATION_RETRY_MAX_SECONDS == 300
+    assert settings_module.CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS == 600
 
 
 def test_production_cors_middleware_order_is_safe(monkeypatch):

@@ -11,6 +11,8 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 - Failed sends are retryable without corrupting the audit trail.
 - Retryable provider failures schedule bounded exponential retries before the
   logical notification moves into a dead-lettered state.
+- Concurrent workers should not send the same confirmation email while one task
+  still holds the notification processing lease.
 - Notification payloads preserve recipient, subject, body, source order, timestamps, and error metadata.
 
 ## Manual / API checks
@@ -26,10 +28,12 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 7. Verify retry exhaustion moves the logical notification into
    `dead_lettered`, stores `dead_lettered_at`, and preserves append-only
    attempt history for operator review.
-8. Verify the checkout response is not returned until stock and order records
+8. Verify duplicate worker delivery attempts during an active notification lease
+   back off instead of sending a second customer-facing email immediately.
+9. Verify the checkout response is not returned until stock and order records
    are committed, while notification sending is scheduled through
    `transaction.on_commit`.
-9. Verify admin users can inspect notification logs and attempts from Django Admin.
+10. Verify admin users can inspect notification logs and attempts from Django Admin.
 
 ## Automation notes
 
@@ -45,5 +49,8 @@ Status: backend `notifications` app is present. Order confirmation email is prod
 - `NotificationAttempt` stores success/failure attempts separately from the logical log.
 - `NotificationAttempt` also records retry scheduling events as append-only
   operational breadcrumbs.
+- `NotificationLog` exposes both `dead_lettered_at` and
+  `processing_started_at` so operators can distinguish exhausted deliveries
+  from in-flight leases.
 - Order checkout schedules `send_order_confirmation_email` through Celery after commit.
 - Russian order confirmation copy is covered by backend tests.

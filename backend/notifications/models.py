@@ -31,6 +31,7 @@ class NotificationLog(models.Model):
     error_message = models.TextField(blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
     dead_lettered_at = models.DateTimeField(null=True, blank=True)
+    processing_started_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -42,6 +43,14 @@ class NotificationLog(models.Model):
                 name="notifications_order_type_idx",
             ),
             models.Index(fields=["status"], name="notifications_status_idx"),
+            models.Index(
+                fields=["dead_lettered_at"],
+                name="notif_log_dead_letter_idx",
+            ),
+            models.Index(
+                fields=["processing_started_at"],
+                name="notif_log_processing_idx",
+            ),
         ]
         constraints = [
             models.UniqueConstraint(

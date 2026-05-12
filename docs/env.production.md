@@ -116,18 +116,28 @@ notifications:
 - `CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT`
 - `CELERY_TASK_REJECT_ON_WORKER_LOST`
 - `CELERY_TASK_TRACK_STARTED`
+- `CELERY_TASK_DEFAULT_QUEUE`
+- `CELERY_NOTIFICATION_QUEUE`
 - `CELERY_WORKER_PREFETCH_MULTIPLIER`
 - `CELERY_NOTIFICATION_MAX_RETRIES`
 - `CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS`
 - `CELERY_NOTIFICATION_RETRY_MAX_SECONDS`
+- `CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS`
 
 Current production contract:
 
 - task acknowledgements stay late so worker loss does not silently drop work;
 - failures/timeouts are not acknowledged as success;
+- order-confirmation delivery is routed through the dedicated
+  `CELERY_NOTIFICATION_QUEUE`;
 - notification tasks retry with bounded exponential backoff;
+- a notification row holds a short processing lease so duplicate workers back
+  off instead of sending the same email concurrently;
 - retryable exhaustion moves the logical notification into a dead-lettered
   state that requires operator review;
+- Redis is still the broker here, so dead-letter handling is implemented as an
+  application-level `NotificationLog.dead_lettered_at` marker plus append-only
+  `NotificationAttempt` history, not a broker-native DLX/DLQ;
 - delivered notifications remain idempotent for the same
   `order/type/channel` key and do not send duplicate customer emails after a
   successful delivery.

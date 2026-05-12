@@ -111,6 +111,11 @@ def _validate_https_url(name, value):
     _validate_public_hostname(name, parsed.hostname)
 
 
+def _validate_positive_int(name, value, *, minimum=1):
+    if value < minimum:
+        raise RuntimeError(f"{name} must be >= {minimum} in production")
+
+
 def _validate_smtp_settings():
     if EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
         return
@@ -169,12 +174,60 @@ def _validate_no_sandbox_overrides():
         )
 
 
+def _validate_celery_notification_settings():
+    _require_non_empty("CELERY_NOTIFICATION_QUEUE", CELERY_NOTIFICATION_QUEUE)
+    _validate_positive_int("CELERY_TASK_TIME_LIMIT", CELERY_TASK_TIME_LIMIT)
+    _validate_positive_int(
+        "CELERY_WORKER_PREFETCH_MULTIPLIER", CELERY_WORKER_PREFETCH_MULTIPLIER
+    )
+    _validate_positive_int(
+        "CELERY_NOTIFICATION_MAX_RETRIES", CELERY_NOTIFICATION_MAX_RETRIES, minimum=0
+    )
+    _validate_positive_int(
+        "CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS",
+        CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS,
+    )
+    _validate_positive_int(
+        "CELERY_NOTIFICATION_RETRY_MAX_SECONDS",
+        CELERY_NOTIFICATION_RETRY_MAX_SECONDS,
+    )
+    _validate_positive_int(
+        "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS",
+        CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS,
+    )
+    if (
+        CELERY_NOTIFICATION_RETRY_MAX_SECONDS
+        < CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS
+    ):
+        raise RuntimeError(
+            "CELERY_NOTIFICATION_RETRY_MAX_SECONDS must be >= CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS in production"
+        )
+    if CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS < CELERY_TASK_TIME_LIMIT:
+        raise RuntimeError(
+            "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS must be >= CELERY_TASK_TIME_LIMIT in production"
+        )
+
+
 DEBUG = False
 SECRET_KEY = env_required("SECRET_KEY")
 DATABASE_URL = env_required("DATABASE_URL")
 REDIS_URL = env_required("REDIS_URL")
 CELERY_BROKER_URL = env_required("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = env_required("CELERY_RESULT_BACKEND")
+CELERY_TASK_DEFAULT_QUEUE = env_value("CELERY_TASK_DEFAULT_QUEUE", "default")
+CELERY_NOTIFICATION_QUEUE = env_value("CELERY_NOTIFICATION_QUEUE", "notifications")
+CELERY_TASK_TIME_LIMIT = env_int("CELERY_TASK_TIME_LIMIT", 300)
+CELERY_WORKER_PREFETCH_MULTIPLIER = env_int("CELERY_WORKER_PREFETCH_MULTIPLIER", 1)
+CELERY_NOTIFICATION_MAX_RETRIES = env_int("CELERY_NOTIFICATION_MAX_RETRIES", 3)
+CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS = env_int(
+    "CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS", 30
+)
+CELERY_NOTIFICATION_RETRY_MAX_SECONDS = env_int(
+    "CELERY_NOTIFICATION_RETRY_MAX_SECONDS", 300
+)
+CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS = env_int(
+    "CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS", 600
+)
 ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = env_csv("CORS_ALLOWED_ORIGINS")
@@ -235,6 +288,7 @@ _validate_smtp_settings()
 _validate_s3_settings()
 _validate_payment_webhook_settings()
 _validate_no_sandbox_overrides()
+_validate_celery_notification_settings()
 
 DATABASES = {
     "default": dj_database_url.config(

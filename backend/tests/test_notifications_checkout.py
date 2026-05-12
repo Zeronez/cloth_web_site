@@ -5,7 +5,7 @@ from celery.exceptions import Retry
 from django.core import mail
 
 from notifications.models import NotificationAttempt, NotificationLog
-from notifications.tasks import send_order_confirmation_email
+from notifications.tasks import _notification_message_id, send_order_confirmation_email
 from orders.models import Order
 
 
@@ -66,8 +66,13 @@ def test_checkout_sends_order_confirmation_in_eager_mode(
     assert log.status == NotificationLog.Status.DELIVERED
     assert log.recipient == user.email
     assert log.delivered_at is not None
+    assert log.processing_started_at is None
     assert log.attempts.filter(status=NotificationAttempt.Status.DELIVERED).count() == 1
     assert len(mail.outbox) == 1
+    assert mail.outbox[0].extra_headers["Message-ID"] == _notification_message_id(log)
+    assert mail.outbox[0].extra_headers[
+        "X-Notification-Idempotency-Key"
+    ] == _notification_message_id(log).strip("<>")
 
 
 def test_order_confirmation_task_is_idempotent(user):
@@ -83,6 +88,7 @@ def test_order_confirmation_task_is_idempotent(user):
 
     assert first_result["status"] == "delivered"
     assert second_result["status"] == "skipped"
+    assert second_result["message_id"] == first_result["message_id"]
     assert (
         NotificationLog.objects.filter(
             order=order,
@@ -92,6 +98,7 @@ def test_order_confirmation_task_is_idempotent(user):
         == 1
     )
     log = NotificationLog.objects.get(order=order)
+    assert log.processing_started_at is None
     assert log.attempts.filter(status=NotificationAttempt.Status.DELIVERED).count() == 1
     assert len(mail.outbox) == 1
 
@@ -112,28 +119,84 @@ def test_order_confirmation_email_body_includes_order_id_and_total(user):
     assert "430.00" in message.body
 
 
-def test_order_confirmation_failed_send_is_logged(user, monkeypatch):
+def test_order_confirmation_failed_send_is_logged(user, monkeypatch, settings):
     clear_outbox()
     order = Order.objects.create(
         user=user,
         total_amount=Decimal("270.00"),
         **shipping_payload(),
     )
+    settings.CELERY_NOTIFICATION_MAX_RETRIES = 0
+
+    class FailingEmail:
+        def send(self, fail_silently=False):
+            raise RuntimeError("SMTP provider is unavailable")
 
     def raise_provider_error(*args, **kwargs):
-        raise RuntimeError("SMTP provider is unavailable")
+        return FailingEmail()
 
-    monkeypatch.setattr("notifications.tasks.send_mail", raise_provider_error)
+    monkeypatch.setattr(
+        "notifications.tasks._build_order_confirmation_email",
+        raise_provider_error,
+    )
 
     with pytest.raises(RuntimeError, match="SMTP provider is unavailable"):
         send_order_confirmation_email.delay(order.id).get()
 
     log = NotificationLog.objects.get(order=order)
     assert log.status == NotificationLog.Status.FAILED
+    assert log.dead_lettered_at is None
+    assert log.processing_started_at is None
     assert "SMTP provider is unavailable" in log.error_message
     attempt = log.attempts.get()
     assert attempt.status == NotificationAttempt.Status.FAILED
+    assert attempt.provider_message_id == _notification_message_id(log)
     assert "SMTP provider is unavailable" in attempt.error_message
+
+
+def test_order_confirmation_retryable_failure_can_recover(user, monkeypatch):
+    clear_outbox()
+    order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("295.00"),
+        **shipping_payload(),
+    )
+
+    class FailingEmail:
+        def send(self, fail_silently=False):
+            raise OSError("SMTP temporarily unavailable")
+
+    monkeypatch.setattr(
+        "notifications.tasks._build_order_confirmation_email",
+        lambda log: FailingEmail(),
+    )
+
+    def fake_retry(*args, **kwargs):
+        raise Retry()
+
+    monkeypatch.setattr(send_order_confirmation_email, "retry", fake_retry)
+
+    send_order_confirmation_email.push_request(retries=0, id="notif-recovery-1")
+    try:
+        with pytest.raises(Retry):
+            send_order_confirmation_email.run(order.id)
+    finally:
+        send_order_confirmation_email.pop_request()
+
+    monkeypatch.undo()
+    result = send_order_confirmation_email.delay(order.id).get()
+
+    log = NotificationLog.objects.get(order=order)
+    assert result["status"] == "delivered"
+    assert log.status == NotificationLog.Status.DELIVERED
+    assert log.dead_lettered_at is None
+    assert log.processing_started_at is None
+    assert list(log.attempts.values_list("status", flat=True)) == [
+        NotificationAttempt.Status.FAILED,
+        NotificationAttempt.Status.RETRY_SCHEDULED,
+        NotificationAttempt.Status.DELIVERED,
+    ]
+    assert len(mail.outbox) == 1
 
 
 def test_order_confirmation_retryable_failure_schedules_retry(user, monkeypatch):
@@ -145,14 +208,18 @@ def test_order_confirmation_retryable_failure_schedules_retry(user, monkeypatch)
     )
     countdowns = []
 
-    def raise_provider_error(*args, **kwargs):
-        raise OSError("SMTP temporarily unavailable")
-
     def fake_retry(*args, **kwargs):
         countdowns.append(kwargs["countdown"])
         raise Retry()
 
-    monkeypatch.setattr("notifications.tasks.send_mail", raise_provider_error)
+    class FailingEmail:
+        def send(self, fail_silently=False):
+            raise OSError("SMTP temporarily unavailable")
+
+    monkeypatch.setattr(
+        "notifications.tasks._build_order_confirmation_email",
+        lambda log: FailingEmail(),
+    )
     monkeypatch.setattr(send_order_confirmation_email, "retry", fake_retry)
 
     send_order_confirmation_email.push_request(retries=0, id="notif-retry-1")
@@ -165,6 +232,7 @@ def test_order_confirmation_retryable_failure_schedules_retry(user, monkeypatch)
     log = NotificationLog.objects.get(order=order)
     assert log.status == NotificationLog.Status.PENDING
     assert log.dead_lettered_at is None
+    assert log.processing_started_at is None
     assert "SMTP temporarily unavailable" in log.error_message
     assert countdowns == [30]
     assert list(log.attempts.values_list("status", flat=True)) == [
@@ -181,13 +249,17 @@ def test_order_confirmation_retryable_failure_moves_to_dead_letter(user, monkeyp
         **shipping_payload(),
     )
 
-    def raise_provider_error(*args, **kwargs):
-        raise OSError("SMTP gateway still unavailable")
+    class FailingEmail:
+        def send(self, fail_silently=False):
+            raise OSError("SMTP gateway still unavailable")
 
-    monkeypatch.setattr("notifications.tasks.send_mail", raise_provider_error)
+    monkeypatch.setattr(
+        "notifications.tasks._build_order_confirmation_email",
+        lambda log: FailingEmail(),
+    )
 
     send_order_confirmation_email.push_request(
-        retries=send_order_confirmation_email.max_retries,
+        retries=3,
         id="notif-dead-letter-1",
     )
     try:
@@ -199,7 +271,8 @@ def test_order_confirmation_retryable_failure_moves_to_dead_letter(user, monkeyp
     log = NotificationLog.objects.get(order=order)
     assert log.status == NotificationLog.Status.DEAD_LETTERED
     assert log.dead_lettered_at is not None
-    assert "SMTP gateway still unavailable" in log.error_message
+    assert log.processing_started_at is None
+    assert "dead-lettered after 1 delivery attempts" in log.error_message
     assert list(log.attempts.values_list("status", flat=True)) == [
         NotificationAttempt.Status.FAILED,
     ]

@@ -21,11 +21,24 @@ class NotificationLogAdmin(admin.ModelAdmin):
         "status",
         "recipient",
         "delivered_at",
+        "dead_lettered_at",
         "created_at",
     )
-    list_filter = ("notification_type", "channel", "status", "created_at")
+    list_filter = (
+        "notification_type",
+        "channel",
+        "status",
+        "dead_lettered_at",
+        "created_at",
+    )
     search_fields = ("order__id", "recipient", "subject")
-    readonly_fields = ("created_at", "updated_at", "delivered_at")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "delivered_at",
+        "dead_lettered_at",
+        "processing_started_at",
+    )
     inlines = [NotificationAttemptInline]
 
 
