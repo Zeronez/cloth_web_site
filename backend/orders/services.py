@@ -49,6 +49,33 @@ def restore_order_stock(
 
 
 @transaction.atomic
+def transition_order_status(
+    *,
+    order,
+    new_status,
+    performed_by=None,
+    restock_on_cancel=False,
+    restock_note="",
+):
+    locked_order = (
+        Order.objects.select_for_update()
+        .prefetch_related("items__variant")
+        .get(pk=order.pk)
+    )
+    old_status = locked_order.status
+    changed = locked_order.transition_to(new_status)
+    was_restocked = False
+    if changed and new_status == Order.Status.CANCELLED and restock_on_cancel:
+        was_restocked = restore_order_stock(
+            order=locked_order,
+            reason=InventoryAdjustment.Reason.RETURN,
+            note=restock_note,
+            performed_by=performed_by,
+        )
+    return locked_order, changed, old_status, was_restocked
+
+
+@transaction.atomic
 def confirm_order_return_received(*, order, performed_by=None, note=""):
     locked_order = Order.objects.select_for_update().get(pk=order.pk)
     if locked_order.status != Order.Status.RETURNED:

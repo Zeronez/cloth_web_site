@@ -368,3 +368,45 @@ def test_payment_session_returns_yookassa_sandbox_contract(
 
     payment = Payment.objects.get(order=order)
     assert payment.external_payment_id.startswith("yookassa-sandbox-")
+
+
+def test_payment_session_rolls_back_when_provider_session_creation_crashes(user):
+    order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("125.00"),
+        **shipping_payload(),
+    )
+    method = PaymentMethod.objects.create(
+        code="local-card-crash",
+        name="Local card crash",
+        provider_code="placeholder",
+        session_mode=PaymentMethod.SessionMode.PLACEHOLDER,
+    )
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+
+        def fail_create_session(*args, **kwargs):
+            raise RuntimeError("provider session crash")
+
+        monkeypatch.setattr(
+            "payments.services.get_payment_provider",
+            lambda provider_code: type(
+                "BrokenProvider",
+                (),
+                {
+                    "supports": staticmethod(lambda session_mode: True),
+                    "create_session": staticmethod(fail_create_session),
+                },
+            )(),
+        )
+
+        with pytest.raises(RuntimeError, match="provider session crash"):
+            create_payment_session(
+                user=user,
+                order_id=order.id,
+                payment_method_code=method.code,
+                idempotency_key="broken-session",
+            )
+
+    assert Payment.objects.filter(order=order).count() == 0
+    assert PaymentEvent.objects.count() == 0

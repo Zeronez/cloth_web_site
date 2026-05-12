@@ -65,6 +65,8 @@ def create_order_delivery_snapshot(order, method, shipping_data):
 
 
 def _sync_order_with_tracking_status(order, tracking_status):
+    from orders.services import transition_order_status
+
     if tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED:
         return
 
@@ -78,7 +80,10 @@ def _sync_order_with_tracking_status(order, tracking_status):
             Order.Status.PICKING,
             Order.Status.PACKED,
         }:
-            order.transition_to(Order.Status.SHIPPED)
+            order, _changed, _old_status, _was_restocked = transition_order_status(
+                order=order,
+                new_status=Order.Status.SHIPPED,
+            )
         return
 
     if tracking_status == OrderDeliverySnapshot.TrackingStatus.DELIVERED:
@@ -87,18 +92,27 @@ def _sync_order_with_tracking_status(order, tracking_status):
             Order.Status.PICKING,
             Order.Status.PACKED,
         }:
-            order.transition_to(Order.Status.SHIPPED)
+            order, _changed, _old_status, _was_restocked = transition_order_status(
+                order=order,
+                new_status=Order.Status.SHIPPED,
+            )
         if order.status != Order.Status.DELIVERED and order.can_transition_to(
             Order.Status.DELIVERED
         ):
-            order.transition_to(Order.Status.DELIVERED)
+            order, _changed, _old_status, _was_restocked = transition_order_status(
+                order=order,
+                new_status=Order.Status.DELIVERED,
+            )
         return
 
     if tracking_status == OrderDeliverySnapshot.TrackingStatus.RETURNED:
         if order.status != Order.Status.RETURNED and order.can_transition_to(
             Order.Status.RETURNED
         ):
-            order.transition_to(Order.Status.RETURNED)
+            order, _changed, _old_status, _was_restocked = transition_order_status(
+                order=order,
+                new_status=Order.Status.RETURNED,
+            )
 
 
 @transaction.atomic

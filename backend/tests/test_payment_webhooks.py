@@ -508,3 +508,39 @@ def test_refund_after_shipment_can_be_restocked_after_manual_return_confirmation
         ).count()
         == 1
     )
+
+
+def test_payment_success_webhook_rolls_back_when_post_payment_side_effect_crashes(
+    api_client, user, monkeypatch
+):
+    order, payment = create_payment_fixture(user)
+
+    def fail_shipment(*args, **kwargs):
+        raise RuntimeError("shipment sync crash")
+
+    monkeypatch.setattr(
+        "payments.services.ensure_shipment_for_paid_order", fail_shipment
+    )
+
+    with pytest.raises(RuntimeError, match="shipment sync crash"):
+        api_client.post(
+            "/api/payments/webhooks/placeholder/",
+            {
+                "event_id": "provider-event-rollback-1",
+                "status": "succeeded",
+                "order_id": order.id,
+                "payment_id": payment.id,
+                "external_payment_id": "ext-rollback-1",
+            },
+            format="json",
+        )
+
+    payment.refresh_from_db()
+    order.refresh_from_db()
+    assert payment.status == Payment.Status.SESSION_CREATED
+    assert payment.external_payment_id == ""
+    assert order.status == Order.Status.PENDING
+    assert not PaymentEvent.objects.filter(
+        payment=payment,
+        external_event_id="provider-event-rollback-1",
+    ).exists()

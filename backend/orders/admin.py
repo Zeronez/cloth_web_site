@@ -17,7 +17,11 @@ from delivery.services import (
 )
 from delivery.models import OrderDeliverySnapshot
 from orders.models import Order, OrderItem
-from orders.services import confirm_order_return_received, restore_order_stock
+from orders.services import (
+    confirm_order_return_received,
+    restore_order_stock,
+    transition_order_status,
+)
 from payments.models import Payment
 from users.staff_roles import (
     ROLE_ORDER_MANAGER,
@@ -845,9 +849,16 @@ class OrderAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         skipped = 0
         restocked = 0
         for order in queryset:
-            old_status = order.status
             try:
-                changed = order.transition_to(new_status)
+                locked_order, changed, old_status, was_restocked = (
+                    transition_order_status(
+                        order=order,
+                        new_status=new_status,
+                        performed_by=request.user,
+                        restock_on_cancel=new_status == Order.Status.CANCELLED,
+                        restock_note=f"Р’РѕР·РІСЂР°С‚ СЃС‚РѕРєР° РїРѕСЃР»Рµ СЂСѓС‡РЅРѕР№ РѕС‚РјРµРЅС‹ Р·Р°РєР°Р·Р° #{order.id} РёР· admin.",
+                    )
+                )
             except ValueError:
                 skipped += 1
                 continue

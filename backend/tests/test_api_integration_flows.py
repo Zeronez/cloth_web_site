@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from rest_framework.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from cart.models import Cart, CartItem
@@ -718,6 +719,57 @@ def test_checkout_rejects_overstock_without_creating_order_or_clearing_cart(
     variant.refresh_from_db()
     assert variant.stock_quantity == 1
 
+    cart = Cart.objects.get(user=user)
+    assert cart.items.count() == 1
+    assert cart.items.get().quantity == 2
+
+
+def test_checkout_rolls_back_order_and_stock_when_delivery_snapshot_creation_fails(
+    authenticated_client, user, product_factory, monkeypatch
+):
+    product = product_factory(
+        name="Rollback Snapshot Tee",
+        base_price="32.00",
+        variants=[
+            {
+                "sku": "ROLLBACK-TEE-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 4,
+            }
+        ],
+    )
+    variant = product.variants.get()
+
+    add_response = authenticated_client.post(
+        "/api/cart/items/",
+        {"variant_id": variant.id, "quantity": 2},
+        format="json",
+    )
+    assert add_response.status_code == 201
+
+    def fail_snapshot(*args, **kwargs):
+        raise ValidationError(
+            {
+                "delivery": {
+                    "code": "snapshot_failed",
+                    "message": "Synthetic snapshot failure.",
+                }
+            }
+        )
+
+    monkeypatch.setattr("orders.services.create_order_delivery_snapshot", fail_snapshot)
+
+    checkout_response = authenticated_client.post(
+        "/api/orders/checkout/",
+        shipping_payload(),
+        format="json",
+    )
+
+    assert checkout_response.status_code == 400
+    assert not Order.objects.filter(user=user).exists()
+    variant.refresh_from_db()
+    assert variant.stock_quantity == 4
     cart = Cart.objects.get(user=user)
     assert cart.items.count() == 1
     assert cart.items.get().quantity == 2
