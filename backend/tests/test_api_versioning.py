@@ -18,7 +18,9 @@ def test_v1_catalog_matches_legacy_catalog(api_client, product_factory):
     assert v1_response.data["results"][0]["slug"] == product.slug
 
 
-def test_v1_product_detail_keeps_zero_stock_active_sizes_visible(api_client, product_factory):
+def test_v1_product_detail_keeps_zero_stock_active_sizes_visible(
+    api_client, product_factory
+):
     product = product_factory(
         name="Versioned Stock Matrix Hoodie",
         variants=[
