@@ -358,7 +358,7 @@ Celery and Async Tests
 
 Payment Provider Tests
 ----------------------
-[ ] Payment creation integration with provider sandbox or contract fake matching real webhook schema.
+[x] Payment creation integration with provider sandbox or contract fake matching real webhook schema.
 [x] Webhook signature validation with valid signature.
 [x] Webhook signature rejection with invalid signature.
 [x] Payment success webhook marks order paid idempotently.
@@ -370,8 +370,8 @@ Payment Provider Tests
 
 Delivery Provider Tests
 -----------------------
-[ ] Delivery methods API returns available methods for a real address fixture.
-[ ] Delivery cost calculation uses provider sandbox/contract fixture.
+[x] Delivery methods API returns available methods for a real address fixture.
+[x] Delivery cost calculation uses provider sandbox/contract fixture.
 [ ] Pickup point search returns provider-format points.
 [x] Shipment creation after payment stores tracking number.
 [x] Tracking sync updates status.

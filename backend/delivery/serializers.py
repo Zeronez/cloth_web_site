@@ -5,6 +5,10 @@ from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDelivery
 
 class DeliveryMethodSerializer(serializers.ModelSerializer):
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    price_amount = serializers.SerializerMethodField()
+
+    def get_price_amount(self, obj):
+        return getattr(obj, "quoted_price_amount", obj.price_amount)
 
     class Meta:
         model = DeliveryMethod

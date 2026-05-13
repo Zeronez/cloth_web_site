@@ -112,7 +112,12 @@ def checkout_cart(user, shipping_data):
             return existing_order, False
 
     delivery_method_code = shipping_data.pop("delivery_method_code", "")
-    delivery_method = resolve_delivery_method(delivery_method_code)
+    delivery_method = resolve_delivery_method(
+        delivery_method_code,
+        country=shipping_data.get("shipping_country", ""),
+        city=shipping_data.get("shipping_city", ""),
+        postal_code=shipping_data.get("shipping_postal_code", ""),
+    )
     cart, _ = Cart.objects.select_for_update().get_or_create(user=user)
     if idempotency_key:
         existing_order = (
@@ -181,7 +186,12 @@ def checkout_cart(user, shipping_data):
 
     OrderItem.objects.bulk_create(order_items)
     create_order_delivery_snapshot(order, delivery_method, shipping_data)
-    order.total_amount = total + delivery_price_for(delivery_method)
+    order.total_amount = total + delivery_price_for(
+        delivery_method,
+        country=shipping_data.get("shipping_country", ""),
+        city=shipping_data.get("shipping_city", ""),
+        postal_code=shipping_data.get("shipping_postal_code", ""),
+    )
     order.save(update_fields=["total_amount", "updated_at"])
     CartItem.objects.filter(cart=cart).delete()
     transaction.on_commit(lambda: send_order_confirmation_email.delay(order.id))

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -12,43 +13,116 @@ from delivery.providers import (
 from orders.models import Order
 
 
-def get_available_delivery_methods():
-    return DeliveryMethod.objects.filter(is_active=True).order_by("sort_order", "name")
+def _delivery_fixture_key(*, country="", city="", postal_code=""):
+    return "|".join(
+        [
+            str(country or "").strip().upper(),
+            str(city or "").strip().lower(),
+            str(postal_code or "").strip(),
+        ]
+    )
 
 
-def resolve_delivery_method(code=None):
-    methods = get_available_delivery_methods()
+def _delivery_fixture_quote(*, country="", city="", postal_code=""):
+    key = _delivery_fixture_key(
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    overrides = getattr(settings, "DELIVERY_METHOD_AVAILABILITY_OVERRIDES", {})
+    fixture = overrides.get(key, {})
+    if not isinstance(fixture, dict):
+        return {}
+    return fixture
+
+
+def _quoted_delivery_price(method, *, country="", city="", postal_code=""):
+    if method is None:
+        return Decimal("0.00")
+    fixture = _delivery_fixture_quote(
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    price_overrides = fixture.get("price_overrides", {})
+    if not isinstance(price_overrides, dict):
+        price_overrides = {}
+    raw_price = price_overrides.get(method.code)
+    if raw_price in {None, ""}:
+        return method.price_amount
+    return Decimal(str(raw_price))
+
+
+def get_available_delivery_methods(*, country="", city="", postal_code=""):
+    methods = list(
+        DeliveryMethod.objects.filter(is_active=True).order_by("sort_order", "name")
+    )
+    fixture = _delivery_fixture_quote(
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    available_codes = fixture.get("available_methods")
+    if isinstance(available_codes, list):
+        allowed = set(str(code) for code in available_codes)
+        methods = [method for method in methods if method.code in allowed]
+
+    for method in methods:
+        method.quoted_price_amount = _quoted_delivery_price(
+            method,
+            country=country,
+            city=city,
+            postal_code=postal_code,
+        )
+    return methods
+
+
+def resolve_delivery_method(code=None, *, country="", city="", postal_code=""):
+    methods = get_available_delivery_methods(
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
     if code:
         try:
-            return methods.get(code=code)
-        except DeliveryMethod.DoesNotExist as exc:
+            return next(method for method in methods if method.code == code)
+        except StopIteration as exc:
             raise ValidationError(
                 {
                     "delivery_method_code": {
                         "code": "delivery_method_unavailable",
-                        "message": "Способ доставки недоступен.",
+                        "message": "Delivery method is not available.",
                     }
                 }
             ) from exc
-    return methods.first()
+    return methods[0] if methods else None
 
 
-def delivery_price_for(method):
-    if method is None:
-        return Decimal("0.00")
-    return method.price_amount
+def delivery_price_for(method, *, country="", city="", postal_code=""):
+    return _quoted_delivery_price(
+        method,
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
 
 
 def create_order_delivery_snapshot(order, method, shipping_data):
     if method is None:
         return None
+    quoted_price_amount = delivery_price_for(
+        method,
+        country=shipping_data.get("shipping_country", ""),
+        city=shipping_data.get("shipping_city", ""),
+        postal_code=shipping_data.get("shipping_postal_code", ""),
+    )
     return OrderDeliverySnapshot.objects.create(
         order=order,
         delivery_method=method,
         method_code=method.code,
         method_name=method.name,
         method_kind=method.kind,
-        price_amount=method.price_amount,
+        price_amount=quoted_price_amount,
         currency=method.currency,
         estimated_days_min=method.estimated_days_min,
         estimated_days_max=method.estimated_days_max,
