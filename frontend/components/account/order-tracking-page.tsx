@@ -22,12 +22,12 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РєСЂС‹С‚СЊ РѕС‚СЃР»РµР¶РёРІР°РЅРёРµ Р·Р°РєР°Р·Р°. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.";
+  return "Не удалось открыть отслеживание заказа. Попробуйте еще раз.";
 }
 
 function formatDateTime(value?: string | null) {
   if (!value) {
-    return "РћР¶РёРґР°РµРј РѕР±РЅРѕРІР»РµРЅРёРµ";
+    return "Ждем обновление";
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
@@ -41,15 +41,18 @@ function formatDateTime(value?: string | null) {
 function getTrackingTone(order: Order) {
   const trackingStatus = order.delivery?.tracking_status ?? "";
 
-  if (["delivered"].includes(trackingStatus)) {
+  if (trackingStatus === "delivered") {
     return "border-emerald-400/40 bg-emerald-500/10 text-emerald-100";
   }
+
   if (["failed", "returned"].includes(trackingStatus)) {
     return "border-red-400/30 bg-red-500/10 text-red-100";
   }
-  if (["out_for_delivery"].includes(trackingStatus)) {
+
+  if (trackingStatus === "out_for_delivery") {
     return "border-neon-amber/40 bg-neon-amber/10 text-neon-amber";
   }
+
   return "border-neon-teal/40 bg-neon-teal/10 text-neon-teal";
 }
 
@@ -57,8 +60,8 @@ function TrackingSummary({ order }: { order: Order }) {
   if (!order.delivery) {
     return (
       <div className="border border-dashed border-white/15 bg-ink-900/50 px-5 py-8 text-sm leading-6 text-slate-400">
-        Р”Р»СЏ СЌС‚РѕРіРѕ Р·Р°РєР°Р·Р° РµС‰С‘ РЅРµ СЃРѕР·РґР°РЅ delivery snapshot. РљР°Рє С‚РѕР»СЊРєРѕ Р·Р°РєР°Р· РїРµСЂРµРґР°РґСѓС‚ РІ
-        РґРѕСЃС‚Р°РІРєСѓ, Р·РґРµСЃСЊ РїРѕСЏРІСЏС‚СЃСЏ С‚СЂРµРє Рё РёСЃС‚РѕСЂРёСЏ РґРІРёР¶РµРЅРёСЏ.
+        Для этого заказа еще нет delivery snapshot. Как только заказ перейдет в
+        доставку, здесь появятся трек и история движения.
       </div>
     );
   }
@@ -66,19 +69,19 @@ function TrackingSummary({ order }: { order: Order }) {
   return (
     <div className="grid gap-3 border border-white/10 bg-ink-950/50 p-4 text-sm sm:grid-cols-2">
       <div>
-        <p className="text-slate-400">РўСЂРµРє-РЅРѕРјРµСЂ</p>
+        <p className="text-slate-400">Трек-номер</p>
         <p className="mt-1 font-bold text-white">
-          {order.track_number || "РќР°Р·РЅР°С‡Р°РµС‚СЃСЏ РїРµСЂРµРІРѕР·С‡РёРєРѕРј"}
+          {order.track_number || "Назначается перевозчиком"}
         </p>
       </div>
       <div>
-        <p className="text-slate-400">РџРµСЂРµРІРѕР·С‡РёРє</p>
+        <p className="text-slate-400">Перевозчик</p>
         <p className="mt-1 font-bold uppercase text-white">
           {order.delivery.provider_code || "manual"}
         </p>
       </div>
       <div>
-        <p className="text-slate-400">РўРµРєСѓС‰РёР№ СЃС‚Р°С‚СѓСЃ</p>
+        <p className="text-slate-400">Текущий статус</p>
         <p className="mt-1">
           <span
             className={`inline-flex border px-3 py-1 text-xs font-black uppercase ${getTrackingTone(
@@ -90,19 +93,20 @@ function TrackingSummary({ order }: { order: Order }) {
         </p>
       </div>
       <div>
-        <p className="text-slate-400">РџРѕСЃР»РµРґРЅСЏСЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ</p>
+        <p className="text-slate-400">Последняя синхронизация</p>
         <p className="mt-1 font-bold text-white">
           {formatDateTime(order.delivery.last_tracking_sync_at)}
         </p>
       </div>
       <div>
-        <p className="text-slate-400">РўРµРєСѓС‰РµРµ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ</p>
+        <p className="text-slate-400">Текущее местоположение</p>
         <p className="mt-1 font-bold text-white">
-          {order.delivery.current_location || "Р–РґС‘Рј РѕР±РЅРѕРІР»РµРЅРёРµ РѕС‚ СЃР»СѓР¶Р±С‹ РґРѕСЃС‚Р°РІРєРё"}
+          {order.delivery.current_location ||
+            "Ждем обновление от службы доставки"}
         </p>
       </div>
       <div>
-        <p className="text-slate-400">РђРґСЂРµСЃ РґРѕСЃС‚Р°РІРєРё</p>
+        <p className="text-slate-400">Адрес доставки</p>
         <p className="mt-1 font-bold text-white">
           {order.shipping_city}, {order.shipping_line1}
         </p>
@@ -130,6 +134,7 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
 
     setIsRefreshing(true);
     setRefreshError(null);
+
     try {
       await refreshOrderTracking(accessToken, orderId);
       await orderQuery.refetch();
@@ -144,16 +149,18 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
         <section className="mx-auto max-w-5xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-          <p className="text-xs font-black uppercase text-neon-amber">РћС‚СЃР»РµР¶РёРІР°РЅРёРµ Р·Р°РєР°Р·Р°</p>
+          <p className="text-xs font-black uppercase text-neon-amber">
+            Отслеживание заказа
+          </p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ Р·Р°РєР°Р·.
+            Не удалось определить заказ.
           </h1>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/account"
               className="inline-flex h-12 items-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950"
             >
-              РћС‚РєСЂС‹С‚СЊ РєР°Р±РёРЅРµС‚
+              Открыть кабинет
             </Link>
           </div>
         </section>
@@ -165,22 +172,24 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
         <section className="mx-auto max-w-5xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-          <p className="text-xs font-black uppercase text-neon-amber">РћС‚СЃР»РµР¶РёРІР°РЅРёРµ Р·Р°РєР°Р·Р°</p>
+          <p className="text-xs font-black uppercase text-neon-amber">
+            Отслеживание заказа
+          </p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ РёСЃС‚РѕСЂРёСЋ РґРѕСЃС‚Р°РІРєРё.
+            Войдите, чтобы открыть историю доставки.
           </h1>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/login"
               className="inline-flex h-12 items-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950"
             >
-              Р’РѕР№С‚Рё
+              Войти
             </Link>
             <Link
               href="/account"
               className="inline-flex h-12 items-center border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:border-neon-teal/60 hover:bg-white/10"
             >
-              РћС‚РєСЂС‹С‚СЊ РєР°Р±РёРЅРµС‚
+              Открыть кабинет
             </Link>
           </div>
         </section>
@@ -196,19 +205,28 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
         <section className="mx-auto max-w-5xl border border-red-400/30 bg-red-500/10 p-6 sm:p-8">
-          <p className="text-xs font-black uppercase text-red-100">РћС‚СЃР»РµР¶РёРІР°РЅРёРµ Р·Р°РєР°Р·Р°</p>
+          <p className="text-xs font-black uppercase text-red-100">
+            Отслеживание заказа
+          </p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РєСЂС‹С‚СЊ СЃС‚Р°С‚СѓСЃ РґРѕСЃС‚Р°РІРєРё.
+            Не удалось открыть статус доставки.
           </h1>
           <p className="mt-4 text-base leading-7 text-red-50">
             {getErrorMessage(orderQuery.error)}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/account"
+            <button
+              type="button"
+              onClick={() => void orderQuery.refetch()}
               className="inline-flex h-12 items-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950"
             >
-              РћС‚РєСЂС‹С‚СЊ РєР°Р±РёРЅРµС‚
+              Повторить загрузку
+            </button>
+            <Link
+              href="/account"
+              className="inline-flex h-12 items-center border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:border-neon-teal/60 hover:bg-white/10"
+            >
+              Открыть кабинет
             </Link>
           </div>
         </section>
@@ -225,11 +243,15 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
         <div className="border border-white/10 bg-white/[0.04] p-6 sm:p-8">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
-              <p className="text-xs font-black uppercase text-neon-teal">РћС‚СЃР»РµР¶РёРІР°РЅРёРµ Р·Р°РєР°Р·Р°</p>
-              <h1 className="mt-3 text-3xl font-black sm:text-4xl">Р—Р°РєР°Р· #{order.id}</h1>
+              <p className="text-xs font-black uppercase text-neon-teal">
+                Отслеживание заказа
+              </p>
+              <h1 className="mt-3 text-3xl font-black sm:text-4xl">
+                Заказ #{order.id}
+              </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                Р—РґРµСЃСЊ СЃРѕР±СЂР°РЅР° Р°РєС‚СѓР°Р»СЊРЅР°СЏ РёСЃС‚РѕСЂРёСЏ РґРІРёР¶РµРЅРёСЏ Р·Р°РєР°Р·Р°, С‚РµРєСѓС‰РёР№ СЃС‚Р°С‚СѓСЃ РґРѕСЃС‚Р°РІРєРё Рё
-                РїРѕСЃР»РµРґРЅРёРµ СЃРѕР±С‹С‚РёСЏ РѕС‚ РїРµСЂРµРІРѕР·С‡РёРєР°.
+                Здесь собрана актуальная история движения заказа, текущий статус
+                доставки и последние события от перевозчика.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -239,13 +261,13 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
                 disabled={isRefreshing}
                 className="inline-flex h-12 items-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
               >
-                {isRefreshing ? "РћР±РЅРѕРІР»СЏРµРј..." : "РћР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ"}
+                {isRefreshing ? "Обновляем..." : "Обновить статус"}
               </button>
               <Link
                 href="/account"
                 className="inline-flex h-12 items-center border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:border-neon-teal/60 hover:bg-white/10"
               >
-                РљР°Р±РёРЅРµС‚
+                Кабинет
               </Link>
             </div>
           </div>
@@ -262,11 +284,17 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
         <section className="border border-white/10 bg-white/[0.04] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase text-neon-amber">Timeline</p>
-              <h2 className="mt-3 text-2xl font-black">РСЃС‚РѕСЂРёСЏ РґРІРёР¶РµРЅРёСЏ</h2>
+              <p className="text-xs font-black uppercase text-neon-amber">
+                Timeline
+              </p>
+              <h2 className="mt-3 text-2xl font-black">
+                История движения
+              </h2>
             </div>
             {order.track_number ? (
-              <p className="text-sm font-semibold text-slate-300">РўСЂРµРє {order.track_number}</p>
+              <p className="text-sm font-semibold text-slate-300">
+                Трек {order.track_number}
+              </p>
             ) : null}
           </div>
 
@@ -283,7 +311,8 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
                         {event.new_status_label}
                       </p>
                       <p className="mt-1 text-sm leading-6 text-slate-300">
-                        {event.message || "РџРµСЂРµРІРѕР·С‡РёРє РѕР±РЅРѕРІРёР» СЃРѕСЃС‚РѕСЏРЅРёРµ РґРѕСЃС‚Р°РІРєРё."}
+                        {event.message ||
+                          "Перевозчик обновил состояние доставки."}
                       </p>
                       {event.location ? (
                         <p className="mt-2 text-xs uppercase text-slate-500">
@@ -299,8 +328,8 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
               ))
             ) : (
               <div className="border border-dashed border-white/15 bg-ink-900/50 px-5 py-10 text-center text-sm leading-6 text-slate-400">
-                РЎРѕР±С‹С‚РёР№ РѕС‚ СЃР»СѓР¶Р±С‹ РґРѕСЃС‚Р°РІРєРё РїРѕРєР° РЅРµС‚. РљР°Рє С‚РѕР»СЊРєРѕ РїРµСЂРµРІРѕР·С‡РёРє РІРµСЂРЅС‘С‚ РїРµСЂРІС‹Р№ СЃС‚Р°С‚СѓСЃ,
-                РѕРЅ РїРѕСЏРІРёС‚СЃСЏ Р·РґРµСЃСЊ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.
+                Событий от службы доставки пока нет. Как только перевозчик вернет
+                первый статус, он появится здесь автоматически.
               </div>
             )}
           </div>
@@ -311,13 +340,13 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
             href="/account"
             className="inline-flex h-12 items-center bg-neon-crimson px-5 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950"
           >
-            РќР°Р·Р°Рґ РІ РєР°Р±РёРЅРµС‚
+            Назад в кабинет
           </Link>
           <Link
             href="/catalog"
             className="inline-flex h-12 items-center border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:border-neon-teal/60 hover:bg-white/10"
           >
-            Р’ РєР°С‚Р°Р»РѕРі
+            В каталог
           </Link>
         </div>
       </section>

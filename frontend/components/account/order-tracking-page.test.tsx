@@ -50,7 +50,7 @@ function makeOrder() {
   return {
     id: 77,
     status: "shipped",
-    status_label: "РџРµСЂРµРґР°РЅ РІ РґРѕСЃС‚Р°РІРєСѓ",
+    status_label: "Передан в доставку",
     total_amount: "18900.00",
     track_number: "TRACK-77",
     items_count: 2,
@@ -65,18 +65,18 @@ function makeOrder() {
     },
     delivery: {
       method_code: "courier-msk",
-      method_name: "РљСѓСЂСЊРµСЂ РїРѕ РњРѕСЃРєРІРµ",
+      method_name: "Курьер по Москве",
       method_kind: "courier",
-      method_kind_label: "РљСѓСЂСЊРµСЂ",
+      method_kind_label: "Курьер",
       price_amount: "350.00",
       currency: "RUB",
       estimated_days_min: 1,
       estimated_days_max: 2,
       provider_code: "cdek",
       tracking_status: "out_for_delivery",
-      tracking_status_label: "РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚",
+      tracking_status_label: "Курьер уже едет",
       external_shipment_id: "SHIP-77",
-      current_location: "РњРѕСЃРєРІР°",
+      current_location: "Москва",
       last_tracking_sync_at: "2026-05-05T10:30:00Z",
       recipient_name: "QA Shopper",
       recipient_phone: "+15551234567",
@@ -91,9 +91,9 @@ function makeOrder() {
           event_type: "tracking_sync",
           previous_status: "in_transit",
           new_status: "out_for_delivery",
-          new_status_label: "РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚",
-          message: "РљСѓСЂСЊРµСЂ РІС‹РµС…Р°Р».",
-          location: "РњРѕСЃРєРІР°",
+          new_status_label: "Курьер уже едет",
+          message: "Курьер выехал.",
+          location: "Москва",
           payload: {},
           external_event_id: "evt-1",
           happened_at: "2026-05-05T10:30:00Z",
@@ -129,7 +129,7 @@ describe("OrderTrackingPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ РёСЃС‚РѕСЂРёСЋ РґРѕСЃС‚Р°РІРєРё/i
+        name: "Войдите, чтобы открыть историю доставки."
       })
     ).toBeInTheDocument();
   });
@@ -146,13 +146,13 @@ describe("OrderTrackingPage", () => {
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
     expect(
-      screen.getByLabelText("Р—Р°РіСЂСѓР·РєР° РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ Р·Р°РєР°Р·Р°")
+      document.querySelector('main[aria-label]')
     ).toBeInTheDocument();
 
     pending.resolve(makeOrder() as any);
 
     expect(
-      await screen.findByRole("heading", { name: /Р—Р°РєР°Р· #77/i })
+      await screen.findByRole("heading", { name: /Заказ #77/i })
     ).toBeInTheDocument();
   });
 
@@ -167,12 +167,36 @@ describe("OrderTrackingPage", () => {
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
     expect(
-      await screen.findByRole("heading", { name: /Р—Р°РєР°Р· #77/i })
+      await screen.findByRole("heading", { name: /Заказ #77/i })
     ).toBeInTheDocument();
     expect(fetchOrder).toHaveBeenCalledWith("access-token", 77);
     expect(screen.getByText("TRACK-77")).toBeInTheDocument();
-    expect(screen.getAllByText("РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚").length).toBeGreaterThan(0);
-    expect(screen.getByText("РљСѓСЂСЊРµСЂ РІС‹РµС…Р°Р».")).toBeInTheDocument();
+    expect(screen.getAllByText("Курьер уже едет").length).toBeGreaterThan(0);
+    expect(screen.getByText("Курьер выехал.")).toBeInTheDocument();
+  });
+
+  it("can retry after the initial order load fails", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    jest
+      .mocked(fetchOrder)
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockResolvedValueOnce(makeOrder() as any);
+
+    renderWithQueryClient(<OrderTrackingPage orderId={77} />);
+
+    const retryButton = await screen.findByRole("button", {
+      name: "Повторить загрузку"
+    });
+    fireEvent.click(retryButton);
+
+    expect(
+      await screen.findByRole("heading", { name: /Заказ #77/i })
+    ).toBeInTheDocument();
+    expect(fetchOrder).toHaveBeenCalledTimes(2);
   });
 
   it("can refresh tracking status from the API", async () => {
@@ -187,7 +211,7 @@ describe("OrderTrackingPage", () => {
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
     const button = await screen.findByRole("button", {
-      name: /РћР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ/i
+      name: "Обновить статус"
     });
     fireEvent.click(button);
 

@@ -198,7 +198,7 @@ Phase 3.2: Frontend Production UX
 [x] Add reusable product image placeholders until real media is connected.
 [x] Implement skeleton loaders for catalog and product pages.
 [x] Implement skeleton loaders for cart/order pages.
-[ ] Implement error boundaries and retry states.
+[x] Implement error boundaries and retry states.
 [x] Implement API fallback warnings for catalog and product pages.
 [x] Implement no-results catalog state.
 [ ] Implement product gallery with images/video hover behavior.
