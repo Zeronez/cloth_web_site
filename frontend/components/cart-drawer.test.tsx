@@ -2,7 +2,14 @@ import type { ReactNode } from "react";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+import { ApiError } from "../lib/api";
+import {
+  fetchServerCartItems,
+  removeServerCartVariant,
+  updateServerCartVariantQuantity
+} from "../lib/cart-sync";
 import { useCartStore } from "../stores/cart-store";
+import { useUserStore } from "../stores/user-store";
 import { CartDrawer } from "./cart-drawer";
 
 jest.mock("next/link", () => {
@@ -43,6 +50,13 @@ jest.mock("./product-image-placeholder", () => ({
   ProductImagePlaceholder: () => <div data-testid="product-image-placeholder" />
 }));
 
+jest.mock("../lib/cart-sync", () => ({
+  ...jest.requireActual("../lib/cart-sync"),
+  fetchServerCartItems: jest.fn(),
+  removeServerCartVariant: jest.fn(),
+  updateServerCartVariantQuantity: jest.fn()
+}));
+
 const subtotalText = (value: number) =>
   new Intl.NumberFormat("ru-RU", {
     currency: "RUB",
@@ -64,17 +78,25 @@ const expectLinePrice = (value: number) => {
         return false;
       }
 
-      return normalizeWhitespace(element.textContent ?? "") ===
-        normalizeWhitespace(subtotalText(value));
+      return (
+        normalizeWhitespace(element.textContent ?? "") ===
+        normalizeWhitespace(subtotalText(value))
+      );
     })
-  );
+  ).toBeInTheDocument();
 };
 
 describe("CartDrawer", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     useCartStore.setState({
       items: [],
       isOpen: false
+    });
+    useUserStore.setState({
+      accessToken: null,
+      refreshToken: null,
+      profile: null
     });
   });
 
@@ -215,5 +237,134 @@ describe("CartDrawer", () => {
     expect(
       screen.getByRole("heading", { name: "Корзина пока пуста" })
     ).toBeInTheDocument();
+  });
+
+  it("loads the server cart for an authenticated user when the drawer opens empty", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com"
+      }
+    });
+    useCartStore.setState({
+      items: [],
+      isOpen: true
+    });
+    jest.mocked(fetchServerCartItems).mockResolvedValue([
+      {
+        id: "101",
+        serverItemId: 501,
+        name: "Sync Tee",
+        price: 100,
+        size: "M",
+        quantity: 2
+      }
+    ]);
+
+    render(<CartDrawer />);
+
+    await waitFor(() => {
+      expect(fetchServerCartItems).toHaveBeenCalledWith("access-token");
+    });
+    expect(await screen.findByText("Sync Tee")).toBeInTheDocument();
+    expect(screen.getByText("Размер M")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  it("clears the auth session on a 401 from server-backed cart mutations", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com"
+      }
+    });
+    useCartStore.setState({
+      isOpen: true,
+      items: [
+        {
+          id: "101",
+          serverItemId: 501,
+          name: "Sync Tee",
+          price: 100,
+          size: "M",
+          quantity: 1
+        }
+      ]
+    });
+    jest
+      .mocked(removeServerCartVariant)
+      .mockRejectedValue(new ApiError("Unauthorized", 401, {}));
+
+    render(<CartDrawer />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Удалить"
+      })
+    );
+
+    await waitFor(() => {
+      expect(useUserStore.getState().accessToken).toBeNull();
+      expect(useUserStore.getState().profile).toBeNull();
+    });
+  });
+
+  it("updates server-backed item quantity for authenticated users", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com"
+      }
+    });
+    useCartStore.setState({
+      isOpen: true,
+      items: [
+        {
+          id: "101",
+          serverItemId: 501,
+          name: "Sync Tee",
+          price: 100,
+          size: "M",
+          quantity: 1
+        }
+      ]
+    });
+    jest.mocked(updateServerCartVariantQuantity).mockResolvedValue([
+      {
+        id: "101",
+        serverItemId: 501,
+        name: "Sync Tee",
+        price: 100,
+        size: "M",
+        quantity: 2
+      }
+    ]);
+
+    render(<CartDrawer />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Увеличить количество Sync Tee"
+      })
+    );
+
+    await waitFor(() => {
+      expect(updateServerCartVariantQuantity).toHaveBeenCalledWith(
+        "access-token",
+        501,
+        2
+      );
+    });
+    expect(await screen.findByText("2")).toBeInTheDocument();
+    expectCartTotal(200);
   });
 });

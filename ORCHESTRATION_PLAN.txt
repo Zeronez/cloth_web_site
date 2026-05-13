@@ -204,7 +204,7 @@ Phase 3.2: Frontend Production UX
 [x] Implement no-results catalog state.
 [x] Implement product gallery with images/video hover behavior.
 [x] Implement size selector with stock awareness.
-[ ] Implement cart drawer synced with backend for authenticated users.
+[x] Implement cart drawer synced with backend for authenticated users.
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
 [x] Implement checkout page: contacts, saved-address selection, local-to-server cart sync, and order creation.

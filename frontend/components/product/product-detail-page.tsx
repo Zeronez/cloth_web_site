@@ -10,7 +10,7 @@ import {
   fetchProduct,
   type ProductVariant
 } from "../../lib/api";
-import { useCartStore } from "../../stores/cart-store";
+import { useCartSync } from "../../lib/use-cart-sync";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
 import { FavoriteToggleButton } from "../catalog/favorite-toggle-button";
@@ -41,7 +41,7 @@ function availabilityText(variant: ProductVariant | null | undefined) {
 }
 
 export function ProductDetailPage({ slug }: { slug: string }) {
-  const addItem = useCartStore((state) => state.addItem);
+  const { addItem } = useCartSync();
   const accessToken = useUserStore((state) => state.accessToken);
   const clearSession = useUserStore((state) => state.clearSession);
   const setFavorites = useFavoritesStore((state) => state.setFavorites);

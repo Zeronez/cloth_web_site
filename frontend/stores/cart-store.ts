@@ -7,16 +7,18 @@ export type CartItem = {
   price: number;
   size: string;
   image?: string;
+  serverItemId?: number;
   quantity: number;
 };
 
-type AddCartItemInput = Omit<CartItem, "quantity"> & {
+export type AddCartItemInput = Omit<CartItem, "quantity"> & {
   quantity?: number;
 };
 
 export type CartState = {
   items: CartItem[];
   isOpen: boolean;
+  setItems: (items: CartItem[]) => void;
   addItem: (item: AddCartItemInput) => void;
   removeItem: (id: string, size: string) => void;
   setItemQuantity: (id: string, size: string, quantity: number) => void;
@@ -33,6 +35,7 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       items: [],
       isOpen: false,
+      setItems: (items) => set({ items }),
       addItem: (item) =>
         set((state) => {
           const quantity = item.quantity ?? 1;

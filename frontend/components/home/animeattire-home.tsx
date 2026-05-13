@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
-import { useCartStore } from "../../stores/cart-store";
+import { useCartSync } from "../../lib/use-cart-sync";
 
 const featureDrops = [
   {
@@ -32,7 +32,7 @@ const motionUp = {
 };
 
 export function AnimeAttireHome() {
-  const addItem = useCartStore((state) => state.addItem);
+  const { addItem } = useCartSync();
 
   return (
     <main className="bg-ink-950 text-white">

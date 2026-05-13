@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 
+import { useCartSync } from "../lib/use-cart-sync";
 import { selectCartSubtotal, useCartStore } from "../stores/cart-store";
 import { ProductImagePlaceholder } from "./product-image-placeholder";
 
@@ -15,25 +18,35 @@ export function CartDrawer() {
   const items = useCartStore((state) => state.items);
   const isOpen = useCartStore((state) => state.isOpen);
   const closeCart = useCartStore((state) => state.closeCart);
-  const clearCart = useCartStore((state) => state.clearCart);
-  const removeItem = useCartStore((state) => state.removeItem);
-  const setItemQuantity = useCartStore((state) => state.setItemQuantity);
   const subtotal = useCartStore(selectCartSubtotal);
+  const {
+    accessToken,
+    clearCart,
+    isSyncing,
+    refreshCart,
+    removeItem,
+    setItemQuantity,
+    syncError
+  } = useCartSync();
 
-  const handleDecreaseQuantity = (
-    id: string,
-    size: string,
-    quantity: number
+  useEffect(() => {
+    if (!isOpen || !accessToken || items.length > 0) {
+      return;
+    }
+
+    void refreshCart();
+  }, [accessToken, isOpen, items.length, refreshCart]);
+
+  const handleDecreaseQuantity = async (
+    item: (typeof items)[number]
   ) => {
-    setItemQuantity(id, size, quantity - 1);
+    await setItemQuantity(item, item.quantity - 1);
   };
 
-  const handleIncreaseQuantity = (
-    id: string,
-    size: string,
-    quantity: number
+  const handleIncreaseQuantity = async (
+    item: (typeof items)[number]
   ) => {
-    setItemQuantity(id, size, quantity + 1);
+    await setItemQuantity(item, item.quantity + 1);
   };
 
   return (
@@ -75,6 +88,22 @@ export function CartDrawer() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-6">
+              {syncError ? (
+                <div className="mb-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                  <p className="font-semibold">Не удалось обновить корзину.</p>
+                  <p className="mt-1 text-red-100/90">{syncError}</p>
+                  {accessToken ? (
+                    <button
+                      type="button"
+                      onClick={() => void refreshCart()}
+                      className="mt-3 text-sm font-semibold text-white transition hover:text-neon-teal"
+                    >
+                      Повторить
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
               {items.length === 0 ? (
                 <div className="grid h-full place-items-center text-center">
                   <div>
@@ -107,8 +136,9 @@ export function CartDrawer() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeItem(item.id, item.size)}
-                            className="text-sm text-slate-400 transition hover:text-neon-crimson"
+                            onClick={() => void removeItem(item)}
+                            disabled={isSyncing}
+                            className="text-sm text-slate-400 transition hover:text-neon-crimson disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Удалить
                           </button>
@@ -121,14 +151,9 @@ export function CartDrawer() {
                           >
                             <button
                               type="button"
-                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal"
-                              onClick={() =>
-                                handleDecreaseQuantity(
-                                  item.id,
-                                  item.size,
-                                  item.quantity
-                                )
-                              }
+                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal disabled:cursor-not-allowed disabled:opacity-60"
+                              onClick={() => void handleDecreaseQuantity(item)}
+                              disabled={isSyncing}
                               aria-label={
                                 item.quantity === 1
                                   ? `Удалить ${item.name} из корзины`
@@ -146,14 +171,9 @@ export function CartDrawer() {
                             </span>
                             <button
                               type="button"
-                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal"
-                              onClick={() =>
-                                handleIncreaseQuantity(
-                                  item.id,
-                                  item.size,
-                                  item.quantity
-                                )
-                              }
+                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal disabled:cursor-not-allowed disabled:opacity-60"
+                              onClick={() => void handleIncreaseQuantity(item)}
+                              disabled={isSyncing}
                               aria-label={`Увеличить количество ${item.name}`}
                             >
                               +
@@ -198,8 +218,9 @@ export function CartDrawer() {
               {items.length > 0 ? (
                 <button
                   type="button"
-                  onClick={clearCart}
-                  className="mt-3 h-10 w-full text-sm font-semibold text-slate-400 transition hover:text-white"
+                  onClick={() => void clearCart()}
+                  disabled={isSyncing}
+                  className="mt-3 h-10 w-full text-sm font-semibold text-slate-400 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Очистить корзину
                 </button>
