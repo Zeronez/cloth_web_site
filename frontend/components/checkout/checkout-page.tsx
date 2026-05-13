@@ -769,7 +769,14 @@ export function CheckoutPage() {
                   </label>
                   {addressesQuery.error ? (
                     <div className="mt-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
-                      {getErrorMessage(addressesQuery.error)}
+                      <p>{getErrorMessage(addressesQuery.error)}</p>
+                      <button
+                        type="button"
+                        onClick={() => void addressesQuery.refetch()}
+                        className="mt-3 inline-flex h-10 items-center bg-white px-4 text-xs font-black uppercase text-ink-950 transition hover:bg-red-50"
+                      >
+                        Повторить загрузку адресов
+                      </button>
                     </div>
                   ) : null}
                 </div>

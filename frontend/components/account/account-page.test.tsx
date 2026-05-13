@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 
 import { fetchAddresses, fetchFavorites, fetchMe, fetchOrders } from "../../lib/api";
@@ -329,5 +329,49 @@ describe("AccountPage", () => {
     expect(
       screen.getByText("Здесь будут вещи, которые вы отложили на потом.")
     ).toBeInTheDocument();
+  });
+  it("can retry loading orders after an account query failure", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 7,
+      username: "shopper",
+      email: "shopper@example.com",
+      first_name: "QA",
+      last_name: "Shopper",
+      phone: "+15551234567"
+    });
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest
+      .mocked(fetchOrders)
+      .mockRejectedValueOnce(new Error("orders offline"))
+      .mockResolvedValueOnce({
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      });
+    jest.mocked(fetchFavorites).mockResolvedValue([]);
+
+    renderWithQueryClient(<AccountPage />);
+
+    const retryButton = await screen.findByRole("button", {
+      name: "Повторить загрузку заказов"
+    });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(fetchOrders).toHaveBeenCalledTimes(2);
+    });
   });
 });

@@ -659,6 +659,15 @@ export function AccountPage() {
             {profileQuery.error ? (
               <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                 {getErrorMessage(profileQuery.error)}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => void profileQuery.refetch()}
+                    className="inline-flex h-10 items-center bg-white px-4 text-xs font-black uppercase text-ink-950 transition hover:bg-red-50"
+                  >
+                    Повторить загрузку профиля
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -727,6 +736,15 @@ export function AccountPage() {
             {addressesQuery.error ? (
               <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                 {getErrorMessage(addressesQuery.error)}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => void addressesQuery.refetch()}
+                    className="inline-flex h-10 items-center bg-white px-4 text-xs font-black uppercase text-ink-950 transition hover:bg-red-50"
+                  >
+                    Повторить загрузку адресов
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -851,6 +869,15 @@ export function AccountPage() {
             {ordersQuery.error ? (
               <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                 {getErrorMessage(ordersQuery.error)}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => void ordersQuery.refetch()}
+                    className="inline-flex h-10 items-center bg-white px-4 text-xs font-black uppercase text-ink-950 transition hover:bg-red-50"
+                  >
+                    Повторить загрузку заказов
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -886,6 +913,15 @@ export function AccountPage() {
             {favoritesQuery.error ? (
               <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                 {getErrorMessage(favoritesQuery.error)}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => void favoritesQuery.refetch()}
+                    className="inline-flex h-10 items-center bg-white px-4 text-xs font-black uppercase text-ink-950 transition hover:bg-red-50"
+                  >
+                    Повторить загрузку избранного
+                  </button>
+                </div>
               </div>
             ) : null}
             {favoritesError ? (
