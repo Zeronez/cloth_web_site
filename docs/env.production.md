@@ -99,6 +99,7 @@ These define sandbox or hosted checkout confirmation URLs for redirect-based pro
 These define sandbox-like tracking responses for provider-shaped shipping adapters.
 
 - `DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON`
+- `DELIVERY_PICKUP_POINT_OVERRIDES_JSON`
 
 ## Local compose helpers
 

@@ -172,6 +172,10 @@ def _validate_no_sandbox_overrides():
         raise RuntimeError(
             "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON must be empty in production"
         )
+    if DELIVERY_PICKUP_POINT_OVERRIDES:
+        raise RuntimeError(
+            "DELIVERY_PICKUP_POINT_OVERRIDES_JSON must be empty in production"
+        )
 
 
 def _validate_celery_notification_settings():
@@ -290,6 +294,7 @@ PAYMENT_PROVIDER_STATUS_OVERRIDES = env_json(
 DELIVERY_PROVIDER_TRACKING_OVERRIDES = env_json(
     "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON", {}
 )
+DELIVERY_PICKUP_POINT_OVERRIDES = env_json("DELIVERY_PICKUP_POINT_OVERRIDES_JSON", {})
 
 _validate_secret_key(SECRET_KEY)
 _validate_database_url(DATABASE_URL)

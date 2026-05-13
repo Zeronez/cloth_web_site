@@ -134,6 +134,11 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
             '{"SHIP-1":{"status":"delivered"}}',
             "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON",
         ),
+        (
+            "DELIVERY_PICKUP_POINT_OVERRIDES_JSON",
+            '{"RU|moscow|101000":{"pickup-cdek":[{"code":"PVZ-1"}]}}',
+            "DELIVERY_PICKUP_POINT_OVERRIDES_JSON",
+        ),
         ("CELERY_NOTIFICATION_MAX_RETRIES", "-1", "CELERY_NOTIFICATION_MAX_RETRIES"),
         (
             "CELERY_NOTIFICATION_RETRY_BACKOFF_SECONDS",

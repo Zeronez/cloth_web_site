@@ -168,3 +168,106 @@ def test_checkout_rejects_delivery_method_unavailable_for_address(
         response.data["error"]["details"]["delivery_method_code"][0]["code"]
         == "delivery_method_unavailable"
     )
+
+
+def test_pickup_point_search_returns_provider_format_points(api_client, settings):
+    DeliveryMethod.objects.create(
+        code="pickup-cdek",
+        name="Pickup CDEK",
+        kind=DeliveryMethod.Kind.PICKUP,
+        price_amount=Decimal("0.00"),
+        sort_order=20,
+    )
+    settings.DELIVERY_METHOD_AVAILABILITY_OVERRIDES = {
+        "RU|moscow|101000": {"available_methods": ["pickup-cdek"]}
+    }
+    settings.DELIVERY_PICKUP_POINT_OVERRIDES = {
+        "RU|moscow|101000": {
+            "pickup-cdek": [
+                {
+                    "provider": "cdek",
+                    "code": "CDEK-101",
+                    "name": "CDEK Тверская",
+                    "city": "Moscow",
+                    "address": "Tverskaya 10",
+                    "postal_code": "101000",
+                    "latitude": "55.765200",
+                    "longitude": "37.605100",
+                    "work_time": "10:00-22:00",
+                    "phone": "+74951234567",
+                    "payment_cash": True,
+                    "payment_card": True,
+                    "fitting_room": True,
+                },
+                {
+                    "provider": "cdek",
+                    "code": "CDEK-102",
+                    "name": "CDEK Арбат",
+                    "city": "Moscow",
+                    "address": "Arbat 21",
+                    "postal_code": "101000",
+                    "latitude": "55.752200",
+                    "longitude": "37.592400",
+                    "work_time": "09:00-21:00",
+                    "phone": "+74957654321",
+                    "payment_cash": True,
+                    "payment_card": False,
+                    "fitting_room": False,
+                },
+            ]
+        }
+    }
+
+    response = api_client.get(
+        "/api/delivery-methods/pickup-points/",
+        {
+            "method_code": "pickup-cdek",
+            "country": "RU",
+            "city": "Moscow",
+            "postal_code": "101000",
+            "query": "Твер",
+        },
+    )
+
+    assert response.status_code == 200
+    assert len(response.data["results"]) == 1
+    point = response.data["results"][0]
+    assert point["provider"] == "cdek"
+    assert point["code"] == "CDEK-101"
+    assert point["name"] == "CDEK Тверская"
+    assert point["address"] == "Tverskaya 10"
+    assert str(point["latitude"]) == "55.765200"
+    assert str(point["longitude"]) == "37.605100"
+    assert point["payment_cash"] is True
+    assert point["payment_card"] is True
+    assert point["fitting_room"] is True
+
+
+def test_pickup_point_search_rejects_non_pickup_method(api_client, settings):
+    DeliveryMethod.objects.create(
+        code="courier-msk",
+        name="Courier Moscow",
+        kind=DeliveryMethod.Kind.COURIER,
+        price_amount=Decimal("350.00"),
+        sort_order=10,
+    )
+    settings.DELIVERY_METHOD_AVAILABILITY_OVERRIDES = {
+        "RU|moscow|101000": {"available_methods": ["courier-msk"]}
+    }
+
+    response = api_client.get(
+        "/api/delivery-methods/pickup-points/",
+        {
+            "method_code": "courier-msk",
+            "country": "RU",
+            "city": "Moscow",
+            "postal_code": "101000",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.data["error"]["code"] == "validation_error"
+    assert (
+        response.data["error"]["details"]["delivery_method_code"][0]["code"]
+        == "pickup_method_required"
+    )

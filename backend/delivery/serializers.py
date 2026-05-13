@@ -27,6 +27,22 @@ class DeliveryMethodSerializer(serializers.ModelSerializer):
         )
 
 
+class PickupPointSerializer(serializers.Serializer):
+    provider = serializers.CharField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+    city = serializers.CharField()
+    address = serializers.CharField()
+    postal_code = serializers.CharField(allow_blank=True, required=False)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+    work_time = serializers.CharField(allow_blank=True, required=False)
+    phone = serializers.CharField(allow_blank=True, required=False)
+    payment_cash = serializers.BooleanField(required=False, default=False)
+    payment_card = serializers.BooleanField(required=False, default=False)
+    fitting_room = serializers.BooleanField(required=False, default=False)
+
+
 class DeliveryTrackingEventSerializer(serializers.ModelSerializer):
     new_status_label = serializers.CharField(
         source="get_new_status_display", read_only=True

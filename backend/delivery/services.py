@@ -36,6 +36,22 @@ def _delivery_fixture_quote(*, country="", city="", postal_code=""):
     return fixture
 
 
+def _pickup_point_fixture(*, method_code, country="", city="", postal_code=""):
+    key = _delivery_fixture_key(
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    overrides = getattr(settings, "DELIVERY_PICKUP_POINT_OVERRIDES", {})
+    fixture = overrides.get(key, {})
+    if not isinstance(fixture, dict):
+        return []
+    points = fixture.get(str(method_code), [])
+    if not isinstance(points, list):
+        return []
+    return points
+
+
 def _quoted_delivery_price(method, *, country="", city="", postal_code=""):
     if method is None:
         return Decimal("0.00")
@@ -105,6 +121,48 @@ def delivery_price_for(method, *, country="", city="", postal_code=""):
         city=city,
         postal_code=postal_code,
     )
+
+
+def search_pickup_points(
+    *,
+    method_code,
+    country="",
+    city="",
+    postal_code="",
+    query="",
+):
+    method = resolve_delivery_method(
+        method_code,
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    if method is None or method.kind != DeliveryMethod.Kind.PICKUP:
+        raise ValidationError(
+            {
+                "delivery_method_code": {
+                    "code": "pickup_method_required",
+                    "message": "Pickup points are available only for pickup delivery methods.",
+                }
+            }
+        )
+
+    points = _pickup_point_fixture(
+        method_code=method.code,
+        country=country,
+        city=city,
+        postal_code=postal_code,
+    )
+    normalized_query = str(query or "").strip().lower()
+    if normalized_query:
+        points = [
+            point
+            for point in points
+            if normalized_query in str(point.get("name", "")).lower()
+            or normalized_query in str(point.get("address", "")).lower()
+            or normalized_query in str(point.get("code", "")).lower()
+        ]
+    return points
 
 
 def create_order_delivery_snapshot(order, method, shipping_data):

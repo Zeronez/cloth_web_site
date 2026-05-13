@@ -140,7 +140,7 @@ Phase 2.6: Delivery and Fulfillment
 [ ] Select delivery providers for launch.
 [x] Implement delivery method catalog: courier, pickup point, postal.
 [x] Implement delivery price calculation.
-[ ] Implement pickup point search/map API if provider supports it.
+[x] Implement pickup point search/map API if provider supports it.
 [x] Implement shipment creation after payment.
 [x] Implement tracking number storage and tracking status sync.
 [x] Add provider-shaped delivery tracking adapter foundation.
@@ -372,7 +372,7 @@ Delivery Provider Tests
 -----------------------
 [x] Delivery methods API returns available methods for a real address fixture.
 [x] Delivery cost calculation uses provider sandbox/contract fixture.
-[ ] Pickup point search returns provider-format points.
+[x] Pickup point search returns provider-format points.
 [x] Shipment creation after payment stores tracking number.
 [x] Tracking sync updates status.
 [ ] Delivery provider failure shows recoverable checkout error.
