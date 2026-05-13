@@ -22,6 +22,24 @@ const money = new Intl.NumberFormat("ru-RU", {
   style: "currency"
 });
 
+const LOW_STOCK_THRESHOLD = 3;
+
+function availabilityText(variant: ProductVariant | null | undefined) {
+  if (!variant) {
+    return "Нет активных размеров";
+  }
+
+  if (variant.stock_quantity <= 0) {
+    return "Нет в наличии";
+  }
+
+  if (variant.stock_quantity <= LOW_STOCK_THRESHOLD) {
+    return `Заканчивается: ${variant.stock_quantity} шт., цвет: ${variant.color}`;
+  }
+
+  return `В наличии: ${variant.stock_quantity}, цвет: ${variant.color}`;
+}
+
 export function ProductDetailPage({ slug }: { slug: string }) {
   const addItem = useCartStore((state) => state.addItem);
   const accessToken = useUserStore((state) => state.accessToken);
@@ -44,17 +62,23 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const hasLoadError = productQuery.isError && !productQuery.data && !isMissingProduct;
   const product = productQuery.data ?? null;
 
-  const availableVariants = useMemo(
-    () =>
-      (product?.variants ?? []).filter(
-        (variant) => variant.is_active && variant.stock_quantity > 0
-      ),
+  const selectableVariants = useMemo(
+    () => (product?.variants ?? []).filter((variant) => variant.is_active),
     [product?.variants]
+  );
+  const availableVariants = useMemo(
+    () => selectableVariants.filter((variant) => variant.stock_quantity > 0),
+    [selectableVariants]
   );
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const selectedVariant =
-    availableVariants.find((variant) => variant.id === selectedVariantId) ??
-    availableVariants[0];
+    selectableVariants.find((variant) => variant.id === selectedVariantId) ??
+    availableVariants[0] ??
+    selectableVariants[0] ??
+    null;
+  const selectedVariantInStock = Boolean(
+    selectedVariant && selectedVariant.stock_quantity > 0
+  );
 
   useEffect(() => {
     if (favoritesQuery.data) {
@@ -155,10 +179,12 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 <p className="text-3xl font-black">
                   {money.format(Number(selectedVariant?.price ?? product.base_price))}
                 </p>
-                <p className="mt-2 text-sm text-slate-400">
-                  {selectedVariant
-                    ? `В наличии: ${selectedVariant.stock_quantity}, цвет: ${selectedVariant.color}`
-                    : "Нет в наличии"}
+                <p
+                  className={`mt-2 text-sm ${
+                    selectedVariantInStock ? "text-slate-400" : "text-red-200"
+                  }`}
+                >
+                  {availabilityText(selectedVariant)}
                 </p>
               </div>
               <FavoriteToggleButton product={product} compact />
@@ -168,31 +194,58 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           <div className="mt-8">
             <h2 className="text-sm font-bold text-slate-300">Выберите размер</h2>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {availableVariants.map((variant) => (
-                <button
-                  key={variant.id}
-                  type="button"
-                  onClick={() => setSelectedVariantId(variant.id)}
-                  className={`h-12 border text-sm font-black transition ${
-                    selectedVariant?.id === variant.id
-                      ? "border-neon-crimson bg-neon-crimson text-white"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
-                  }`}
-                >
-                  {variant.size}
-                </button>
-              ))}
+              {selectableVariants.map((variant) => {
+                const isOutOfStock = variant.stock_quantity <= 0;
+                const isLowStock =
+                  variant.stock_quantity > 0 &&
+                  variant.stock_quantity <= LOW_STOCK_THRESHOLD;
+
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    onClick={() => setSelectedVariantId(variant.id)}
+                    aria-pressed={selectedVariant?.id === variant.id}
+                    aria-label={
+                      isOutOfStock
+                        ? `Размер ${variant.size}, нет в наличии`
+                        : isLowStock
+                          ? `Размер ${variant.size}, заканчивается`
+                          : `Размер ${variant.size}, в наличии`
+                    }
+                    className={`h-12 border text-sm font-black transition ${
+                      selectedVariant?.id === variant.id
+                        ? "border-neon-crimson bg-neon-crimson text-white"
+                        : isOutOfStock
+                          ? "border-white/10 bg-white/[0.03] text-slate-500"
+                          : isLowStock
+                            ? "border-neon-amber/50 bg-neon-amber/10 text-orange-100 hover:border-neon-amber"
+                            : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
+                    }`}
+                  >
+                    {variant.size}
+                    {isOutOfStock ? " ×" : isLowStock ? " !" : ""}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-400">
+              <span>Весь размерный ряд отображается прямо с остатками.</span>
+              <span>! Заканчивается</span>
+              <span>× Нет в наличии</span>
             </div>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-[1fr_auto]">
             <button
               type="button"
-              disabled={!selectedVariant}
-              onClick={() => selectedVariant && addSelected(selectedVariant)}
+              disabled={!selectedVariant || !selectedVariantInStock}
+              onClick={() => selectedVariantInStock && selectedVariant && addSelected(selectedVariant)}
               className="h-14 w-full bg-neon-crimson px-6 text-sm font-black uppercase text-white shadow-neon-crimson transition hover:bg-white hover:text-ink-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
             >
-              Добавить выбранный размер
+              {selectedVariantInStock
+                ? "Добавить выбранный размер"
+                : "Выбранный размер недоступен"}
             </button>
             <div className="sm:justify-self-end">
               <FavoriteToggleButton product={product} />

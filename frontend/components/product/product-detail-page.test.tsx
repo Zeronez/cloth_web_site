@@ -139,4 +139,62 @@ describe("ProductDetailPage", () => {
     expect(backThumb).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Neon Ronin back")).toBeInTheDocument();
   });
+
+  it("shows sold-out sizes in the selector and disables purchase for them", async () => {
+    jest.mocked(fetchProduct).mockResolvedValue({
+      id: 2,
+      name: "Eva Utility Hoodie",
+      slug: "eva-utility-hoodie",
+      category: { id: 12, name: "Худи", slug: "hoodies" },
+      franchise: { id: 13, name: "Evangelion", slug: "evangelion" },
+      base_price: "9990.00",
+      is_featured: false,
+      description: "Utility hoodie with limited stock.",
+      main_image: null,
+      images: [],
+      total_stock: 2,
+      variants: [
+        {
+          id: 301,
+          sku: "EVA-HOODIE-M",
+          size: "M",
+          color: "Black",
+          stock_quantity: 2,
+          price_delta: "0.00",
+          price: "9990.00",
+          is_active: true
+        },
+        {
+          id: 302,
+          sku: "EVA-HOODIE-L",
+          size: "L",
+          color: "Black",
+          stock_quantity: 0,
+          price_delta: "0.00",
+          price: "9990.00",
+          is_active: true
+        }
+      ]
+    } as any);
+
+    renderWithQueryClient(<ProductDetailPage slug="eva-utility-hoodie" />);
+
+    const mediumSize = await screen.findByRole("button", {
+      name: /размер m, заканчивается/i
+    });
+    const soldOutSize = screen.getByRole("button", {
+      name: /размер l, нет в наличии/i
+    });
+
+    expect(mediumSize).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/заканчивается: 2 шт\., цвет: black/i)).toBeInTheDocument();
+
+    fireEvent.click(soldOutSize);
+
+    expect(soldOutSize).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByText(/нет в наличии/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: /выбранный размер недоступен/i })
+    ).toBeDisabled();
+  });
 });

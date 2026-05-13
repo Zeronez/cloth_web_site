@@ -203,7 +203,7 @@ Phase 3.2: Frontend Production UX
 [x] Implement API fallback warnings for catalog and product pages.
 [x] Implement no-results catalog state.
 [x] Implement product gallery with images/video hover behavior.
-[ ] Implement size selector with stock awareness.
+[x] Implement size selector with stock awareness.
 [ ] Implement cart drawer synced with backend for authenticated users.
 [ ] Implement guest cart persistence and merge after login.
 [ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.

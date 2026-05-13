@@ -18,6 +18,43 @@ def test_v1_catalog_matches_legacy_catalog(api_client, product_factory):
     assert v1_response.data["results"][0]["slug"] == product.slug
 
 
+def test_v1_product_detail_keeps_zero_stock_active_sizes_visible(api_client, product_factory):
+    product = product_factory(
+        name="Versioned Stock Matrix Hoodie",
+        variants=[
+            {
+                "sku": "MATRIX-HOODIE-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 3,
+                "is_active": True,
+            },
+            {
+                "sku": "MATRIX-HOODIE-L",
+                "size": ProductVariant.Size.L,
+                "color": "Black",
+                "stock_quantity": 0,
+                "is_active": True,
+            },
+            {
+                "sku": "MATRIX-HOODIE-XL",
+                "size": ProductVariant.Size.XL,
+                "color": "Black",
+                "stock_quantity": 5,
+                "is_active": False,
+            },
+        ],
+    )
+
+    response = api_client.get(f"/api/v1/products/{product.slug}/")
+
+    assert response.status_code == 200
+    variant_skus = [variant["sku"] for variant in response.data["variants"]]
+    assert "MATRIX-HOODIE-M" in variant_skus
+    assert "MATRIX-HOODIE-L" in variant_skus
+    assert "MATRIX-HOODIE-XL" not in variant_skus
+
+
 def test_v1_auth_and_user_profile_flow(api_client):
     register_response = api_client.post(
         "/api/v1/auth/register/",
