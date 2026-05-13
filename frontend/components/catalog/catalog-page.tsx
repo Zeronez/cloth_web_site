@@ -9,50 +9,13 @@ import {
   fetchFavorites,
   fetchCategories,
   fetchFranchises,
-  fetchProducts,
-  type Product
+  fetchProducts
 } from "../../lib/api";
 import { CatalogGridSkeleton, InlineNotice } from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
 import { FavoriteToggleButton } from "./favorite-toggle-button";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
-
-const fallbackProducts: Product[] = [
-  {
-    id: 1,
-    name: "Куртка Neon Ronin",
-    slug: "neon-ronin-shell",
-    category: { id: 1, name: "Куртки", slug: "jackets", description: "" },
-    franchise: { id: 1, name: "Оригинал", slug: "original", description: "" },
-    base_price: "14800.00",
-    is_featured: true,
-    main_image: null,
-    total_stock: 24
-  },
-  {
-    id: 2,
-    name: "Худи Arcade Alley",
-    slug: "arcade-alley-hoodie",
-    category: { id: 2, name: "Худи", slug: "hoodies", description: "" },
-    franchise: { id: 2, name: "Сёнен Core", slug: "shonen-core", description: "" },
-    base_price: "9600.00",
-    is_featured: false,
-    main_image: null,
-    total_stock: 42
-  },
-  {
-    id: 3,
-    name: "Карго Signal",
-    slug: "signal-cargo-pant",
-    category: { id: 3, name: "Брюки", slug: "pants", description: "" },
-    franchise: { id: 3, name: "Кибер Сага", slug: "cyber-saga", description: "" },
-    base_price: "11800.00",
-    is_featured: false,
-    main_image: null,
-    total_stock: 17
-  }
-];
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const placeholderVariants = ["jacket", "hoodie", "pants"] as const;
@@ -111,11 +74,11 @@ export function CatalogPage() {
     }
   }, [clearSession, favoritesQuery.error]);
 
-  const products = productsQuery.data?.results ?? fallbackProducts;
+  const products = productsQuery.data?.results ?? [];
   const categories = categoriesQuery.data?.results ?? [];
   const franchises = franchisesQuery.data?.results ?? [];
   const isInitialLoading = productsQuery.isLoading && !productsQuery.data;
-  const isUsingFallback = productsQuery.isError && !productsQuery.data;
+  const isProductsError = productsQuery.isError && !productsQuery.data;
   const hasNoResults = Boolean(productsQuery.data && products.length === 0);
 
   return (
@@ -215,17 +178,15 @@ export function CatalogPage() {
                 </h2>
               </div>
               <p className="hidden text-sm text-slate-400 md:block">
-                {productsQuery.isFetching
-                  ? "Обновляем дропы"
-                  : `${products.length} позиций`}
+                {productsQuery.isFetching ? "Обновляем дропы" : `${products.length} позиций`}
               </p>
             </div>
 
-            {isUsingFallback ? (
+            {isProductsError ? (
               <div className="mb-4">
                 <InlineNotice
-                  title="API временно недоступен"
-                  text="Показываем демонстрационную витрину, чтобы интерфейс оставался проверяемым до запуска backend-сервиса."
+                  title="Каталог временно недоступен"
+                  text="Не удалось загрузить товары из API. Попробуйте обновить страницу чуть позже."
                   tone="warning"
                 />
               </div>
@@ -243,7 +204,7 @@ export function CatalogPage() {
               </div>
             ) : null}
 
-            {!isInitialLoading && !hasNoResults ? (
+            {!isInitialLoading && !hasNoResults && !isProductsError ? (
               <div className="grid auto-rows-[260px] gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product, index) => (
                   <Link

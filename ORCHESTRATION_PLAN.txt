@@ -194,7 +194,7 @@ Phase 3.1: Russian-First CIS Frontend
 Phase 3.2: Frontend Production UX
 ---------------------------------
 [x] Implement real API client with auth token handling and typed responses.
-[ ] Remove demo fallbacks from production paths or gate them behind dev mode.
+[x] Remove demo fallbacks from production paths or gate them behind dev mode.
 [x] Add reusable product image placeholders until real media is connected.
 [x] Implement skeleton loaders for catalog and product pages.
 [x] Implement skeleton loaders for cart/order pages.

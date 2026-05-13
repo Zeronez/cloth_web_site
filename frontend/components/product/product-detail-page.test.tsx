@@ -65,4 +65,20 @@ describe("ProductDetailPage", () => {
       "/catalog"
     );
   });
+
+  it("shows an API error state instead of demo product content", async () => {
+    jest.mocked(fetchProduct).mockRejectedValue(new Error("backend offline"));
+
+    renderWithQueryClient(<ProductDetailPage slug="neon-ronin-shell" />);
+
+    expect(
+      await screen.findByText(/карточка товара временно недоступна/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /добавить выбранный размер/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /neon ronin shell/i })
+    ).not.toBeInTheDocument();
+  });
 });

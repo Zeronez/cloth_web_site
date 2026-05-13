@@ -8,7 +8,6 @@ import {
   ApiError,
   fetchFavorites,
   fetchProduct,
-  type Product,
   type ProductVariant
 } from "../../lib/api";
 import { useCartStore } from "../../stores/cart-store";
@@ -17,46 +16,6 @@ import { useUserStore } from "../../stores/user-store";
 import { FavoriteToggleButton } from "../catalog/favorite-toggle-button";
 import { InlineNotice, ProductDetailSkeleton } from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
-
-const fallbackProduct = (slug: string): Product => ({
-  id: 999,
-  name: slug
-    .split("-")
-    .map((word) => word.slice(0, 1).toUpperCase() + word.slice(1))
-    .join(" "),
-  slug,
-  category: { id: 1, name: "Дроп", slug: "drop", description: "" },
-  franchise: { id: 1, name: "AnimeAttire", slug: "animeattire", description: "" },
-  base_price: "12800.00",
-  is_featured: true,
-  main_image: null,
-  total_stock: 12,
-  description:
-    "Лимитированная вещь AnimeAttire со структурным стритвир-кроем, акцентной отделкой и силуэтом для движения по ночному городу.",
-  variants: [
-    {
-      id: 1,
-      sku: `${slug}-m-black`,
-      size: "M",
-      color: "Black",
-      stock_quantity: 4,
-      price_delta: "0.00",
-      price: "12800.00",
-      is_active: true
-    },
-    {
-      id: 2,
-      sku: `${slug}-l-black`,
-      size: "L",
-      color: "Black",
-      stock_quantity: 8,
-      price_delta: "0.00",
-      price: "12800.00",
-      is_active: true
-    }
-  ],
-  images: []
-});
 
 const money = new Intl.NumberFormat("ru-RU", {
   currency: "RUB",
@@ -78,18 +37,19 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     queryFn: () => fetchFavorites(accessToken ?? ""),
     retry: false
   });
+
   const isInitialLoading = productQuery.isLoading && !productQuery.data;
   const isMissingProduct =
     productQuery.error instanceof ApiError && productQuery.error.status === 404;
-  const isUsingFallback =
-    productQuery.isError && !productQuery.data && !isMissingProduct;
-  const product = productQuery.data ?? fallbackProduct(slug);
+  const hasLoadError = productQuery.isError && !productQuery.data && !isMissingProduct;
+  const product = productQuery.data ?? null;
+
   const availableVariants = useMemo(
     () =>
-      (product.variants ?? []).filter(
+      (product?.variants ?? []).filter(
         (variant) => variant.is_active && variant.stock_quantity > 0
       ),
-    [product.variants]
+    [product?.variants]
   );
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const selectedVariant =
@@ -109,6 +69,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   }, [clearSession, favoritesQuery.error]);
 
   const addSelected = (variant: ProductVariant) => {
+    if (!product) {
+      return;
+    }
+
     addItem({
       id: String(variant.id),
       name: product.name,
@@ -143,6 +107,28 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     );
   }
 
+  if (hasLoadError || !product) {
+    return (
+      <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-3xl border border-red-400/30 bg-red-500/10 p-8">
+          <InlineNotice
+            title="Карточка товара временно недоступна"
+            text="Не удалось загрузить данные товара из API. Попробуйте открыть страницу позже."
+            tone="warning"
+          />
+          <div className="mt-6">
+            <Link
+              href="/catalog"
+              className="text-sm font-bold text-slate-300 transition hover:text-white"
+            >
+              Назад в каталог
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
       <section className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.82fr]">
@@ -160,16 +146,6 @@ export function ProductDetailPage({ slug }: { slug: string }) {
         </div>
 
         <div>
-          {isUsingFallback ? (
-            <div className="mb-6">
-              <InlineNotice
-                title="Карточка открыта в демо-режиме"
-                text="Backend API не ответил, поэтому показываем временные данные и плейсхолдер изображения."
-                tone="warning"
-              />
-            </div>
-          ) : null}
-
           <Link
             href="/catalog"
             className="text-sm font-bold text-slate-300 transition hover:text-white"
