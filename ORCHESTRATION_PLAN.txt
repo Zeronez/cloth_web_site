@@ -199,7 +199,7 @@ Phase 3.2: Frontend Production UX
 [x] Implement skeleton loaders for catalog and product pages.
 [x] Implement skeleton loaders for cart/order pages.
 [x] Implement error boundaries and retry states.
-[~] Add retry actions for account query failures; finish checkout query retries.
+[x] Add retry actions for account query failures; finish checkout query retries.
 [x] Implement API fallback warnings for catalog and product pages.
 [x] Implement no-results catalog state.
 [ ] Implement product gallery with images/video hover behavior.

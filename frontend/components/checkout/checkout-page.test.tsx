@@ -295,6 +295,62 @@ describe("CheckoutPage", () => {
     expect(screen.getByRole("link", { name: /каталог/i })).toBeInTheDocument();
   });
 
+  it("retries delivery methods from the inline error action", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    useCartStore.setState({
+      isOpen: false,
+      items: [
+        {
+          id: "101",
+          name: "Sync Tee",
+          price: 100,
+          size: "M",
+          quantity: 1
+        }
+      ]
+    });
+
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest
+      .mocked(fetchDeliveryMethods)
+      .mockRejectedValueOnce(new Error("delivery offline"))
+      .mockResolvedValueOnce(makeDeliveryMethods());
+
+    const { container } = renderWithQueryClient(<CheckoutPage />);
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Повторить загрузку доставки"
+      })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Повторить загрузку доставки"
+      })
+    );
+
+    await waitFor(() => {
+      expect(fetchDeliveryMethods).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(
+        container.querySelector('input[name="delivery-method"][value="courier-msk"]')
+      ).toBeInTheDocument();
+    });
+  });
+
   it("syncs the local cart before creating the checkout order", async () => {
     useUserStore.setState({
       accessToken: "access-token",

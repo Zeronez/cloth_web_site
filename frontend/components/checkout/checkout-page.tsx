@@ -881,9 +881,16 @@ export function CheckoutPage() {
                   </div>
                 ) : null}
                 {deliveryMethodsQuery.isError ? (
-                  <div className="mt-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                  <div className="mt-3 space-y-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                     Не удалось загрузить способы доставки. Обновите страницу и
                     попробуйте еще раз.
+                    <button
+                      type="button"
+                      onClick={() => void deliveryMethodsQuery.refetch()}
+                      className="inline-flex items-center justify-center rounded-md border border-red-300/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-red-50 transition hover:border-red-200 hover:bg-red-400/10"
+                    >
+                      Повторить загрузку доставки
+                    </button>
                   </div>
                 ) : null}
                 {!deliveryMethodsQuery.isLoading &&
@@ -917,9 +924,16 @@ export function CheckoutPage() {
                   </div>
                 ) : null}
                 {paymentMethodsQuery.isError ? (
-                  <div className="mt-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                  <div className="mt-3 space-y-3 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
                     Не удалось загрузить способы оплаты. Обновите страницу и
                     попробуйте еще раз.
+                    <button
+                      type="button"
+                      onClick={() => void paymentMethodsQuery.refetch()}
+                      className="inline-flex items-center justify-center rounded-md border border-red-300/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-red-50 transition hover:border-red-200 hover:bg-red-400/10"
+                    >
+                      Повторить загрузку оплаты
+                    </button>
                   </div>
                 ) : null}
                 {!paymentMethodsQuery.isLoading &&
