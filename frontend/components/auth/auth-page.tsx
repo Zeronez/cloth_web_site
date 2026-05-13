@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import {
-  ApiError,
-  fetchMe,
-  loginUser,
-  registerUser
-} from "../../lib/api";
+
+import { ApiError, fetchMe, loginUser, registerUser } from "../../lib/api";
+import { mergeGuestCartIntoServer } from "../../lib/cart-sync";
+import { useCartStore } from "../../stores/cart-store";
 import { useUserStore } from "../../stores/user-store";
 
 type Mode = "login" | "register";
@@ -108,9 +106,7 @@ function AuthSidePanel({ mode }: { mode: Mode }) {
         ].map(([value, label]) => (
           <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xl font-black text-white">{value}</p>
-            <p className="mt-1 text-xs uppercase text-slate-400">
-              {label}
-            </p>
+            <p className="mt-1 text-xs uppercase text-slate-400">{label}</p>
           </div>
         ))}
       </div>
@@ -121,6 +117,7 @@ function AuthSidePanel({ mode }: { mode: Mode }) {
 export function AuthPage({ mode }: { mode: Mode }) {
   const router = useRouter();
   const setSession = useUserStore((state) => state.setSession);
+  const setCartItems = useCartStore((state) => state.setItems);
   const [form, setForm] = useState<FormState>(initialFormState);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -166,6 +163,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  async function syncGuestCartAfterAuth(accessToken: string) {
+    const guestItems = useCartStore.getState().items;
+    const { items } = await mergeGuestCartIntoServer(accessToken, guestItems);
+    setCartItems(items);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -191,6 +194,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           refreshToken: tokens.refresh,
           profile
         });
+        await syncGuestCartAfterAuth(tokens.access);
         router.replace("/account");
         router.refresh();
         return;
@@ -216,6 +220,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         refreshToken: tokens.refresh,
         profile
       });
+      await syncGuestCartAfterAuth(tokens.access);
       setSuccess("Аккаунт создан, вход выполнен автоматически.");
       router.replace("/account");
       router.refresh();
@@ -262,9 +267,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                     type={field.type}
                     autoComplete={field.autoComplete}
                     value={form[field.name]}
-                    onChange={(event) =>
-                      updateField(field.name, event.target.value)
-                    }
+                    onChange={(event) => updateField(field.name, event.target.value)}
                     className={`h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30 ${
                       field.name === "password" || field.name === "confirmPassword"
                         ? "sm:col-span-2"
@@ -290,8 +293,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
             {mode === "register" ? (
               <p className="text-sm leading-6 text-slate-400">
-                Пароль должен быть достаточно сложным и не совпадать с предыдущими
-                данными из других сервисов.
+                Пароль должен быть достаточно сложным и не совпадать с данными из
+                других сервисов.
               </p>
             ) : (
               <p className="text-sm leading-6 text-slate-400">

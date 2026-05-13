@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-import { useCartStore, type AddCartItemInput, type CartItem } from "../stores/cart-store";
+import { type AddCartItemInput, type CartItem, useCartStore } from "../stores/cart-store";
 import { useUserStore } from "../stores/user-store";
 import { ApiError } from "./api";
 import {

@@ -34,6 +34,24 @@ export function getVariantId(value: string) {
   return Number.isInteger(variantId) && variantId > 0 ? variantId : null;
 }
 
+function getMergeableGuestQuantities(items: CartItem[]) {
+  const quantities = new Map<number, number>();
+  const skippedItems: CartItem[] = [];
+
+  for (const item of items) {
+    const variantId = getVariantId(item.id);
+
+    if (variantId === null) {
+      skippedItems.push(item);
+      continue;
+    }
+
+    quantities.set(variantId, (quantities.get(variantId) ?? 0) + item.quantity);
+  }
+
+  return { quantities, skippedItems };
+}
+
 export async function fetchServerCartItems(token: string) {
   const cart = await fetchCart(token);
   return toLocalCartItems(cart);
@@ -74,4 +92,32 @@ export async function clearServerCart(token: string, items: CartItem[]) {
   }
 
   return currentItems;
+}
+
+export async function mergeGuestCartIntoServer(token: string, items: CartItem[]) {
+  const { quantities, skippedItems } = getMergeableGuestQuantities(items);
+  const serverCart = await fetchCart(token);
+  const serverItemsByVariant = new Map(
+    serverCart.items.map((item) => [item.variant.id, item])
+  );
+
+  for (const [variantId, guestQuantity] of quantities) {
+    const serverItem = serverItemsByVariant.get(variantId);
+
+    if (!serverItem) {
+      await addCartItem(token, variantId, guestQuantity);
+      continue;
+    }
+
+    await updateCartItemQuantity(
+      token,
+      serverItem.id,
+      serverItem.quantity + guestQuantity
+    );
+  }
+
+  return {
+    items: await fetchServerCartItems(token),
+    skippedItems
+  };
 }

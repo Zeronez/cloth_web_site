@@ -1,6 +1,8 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
 
 import { fetchMe, loginUser, registerUser } from "../../lib/api";
+import { mergeGuestCartIntoServer } from "../../lib/cart-sync";
+import { useCartStore } from "../../stores/cart-store";
 import { useUserStore } from "../../stores/user-store";
 import { AuthPage } from "./auth-page";
 
@@ -30,6 +32,10 @@ jest.mock("../../lib/api", () => ({
   registerUser: jest.fn()
 }));
 
+jest.mock("../../lib/cart-sync", () => ({
+  mergeGuestCartIntoServer: jest.fn()
+}));
+
 describe("AuthPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,9 +44,13 @@ describe("AuthPage", () => {
       refreshToken: null,
       profile: null
     });
+    useCartStore.setState({
+      items: [],
+      isOpen: false
+    });
   });
 
-  it("logs in, stores the session, and navigates to the account page", async () => {
+  it("logs in, merges the guest cart, stores the session, and navigates to account", async () => {
     jest.mocked(loginUser).mockResolvedValue({
       access: "access-token",
       refresh: "refresh-token"
@@ -52,6 +62,46 @@ describe("AuthPage", () => {
       first_name: "QA",
       last_name: "Shopper",
       phone: "+15551234567"
+    });
+    useCartStore.setState({
+      isOpen: false,
+      items: [
+        {
+          id: "101",
+          name: "Sync Tee",
+          price: 100,
+          size: "M",
+          quantity: 2
+        },
+        {
+          id: "bad-id",
+          name: "Demo Drop",
+          price: 1,
+          size: "L",
+          quantity: 1
+        }
+      ]
+    });
+    jest.mocked(mergeGuestCartIntoServer).mockResolvedValue({
+      items: [
+        {
+          id: "101",
+          serverItemId: 501,
+          name: "Sync Tee",
+          price: 100,
+          size: "M",
+          quantity: 3
+        }
+      ],
+      skippedItems: [
+        {
+          id: "bad-id",
+          name: "Demo Drop",
+          price: 1,
+          size: "L",
+          quantity: 1
+        }
+      ]
     });
 
     const { container } = render(<AuthPage mode="login" />);
@@ -70,12 +120,30 @@ describe("AuthPage", () => {
         password: "GhibliMerch!2026"
       });
     });
+
     expect(fetchMe).toHaveBeenCalledWith("access-token");
+    expect(mergeGuestCartIntoServer).toHaveBeenCalledWith("access-token", [
+      expect.objectContaining({
+        id: "101",
+        quantity: 2
+      }),
+      expect.objectContaining({
+        id: "bad-id",
+        quantity: 1
+      })
+    ]);
     expect(useUserStore.getState()).toMatchObject({
       accessToken: "access-token",
       refreshToken: "refresh-token",
       profile: expect.objectContaining({ username: "shopper" })
     });
+    expect(useCartStore.getState().items).toEqual([
+      expect.objectContaining({
+        id: "101",
+        serverItemId: 501,
+        quantity: 3
+      })
+    ]);
     expect(replace).toHaveBeenCalledWith("/account");
     expect(refresh).toHaveBeenCalled();
   });
@@ -100,6 +168,7 @@ describe("AuthPage", () => {
     await waitFor(() => {
       expect(registerUser).not.toHaveBeenCalled();
       expect(loginUser).not.toHaveBeenCalled();
+      expect(mergeGuestCartIntoServer).not.toHaveBeenCalled();
     });
   });
 });
