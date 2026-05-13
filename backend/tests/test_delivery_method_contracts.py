@@ -170,6 +170,83 @@ def test_checkout_rejects_delivery_method_unavailable_for_address(
     )
 
 
+def test_delivery_methods_api_returns_recoverable_provider_error(api_client, settings):
+    DeliveryMethod.objects.create(
+        code="courier-msk",
+        name="Courier Moscow",
+        kind=DeliveryMethod.Kind.COURIER,
+        price_amount=Decimal("350.00"),
+        sort_order=10,
+    )
+    settings.DELIVERY_METHOD_AVAILABILITY_OVERRIDES = {
+        "RU|moscow|101000": {
+            "error": {
+                "code": "delivery_quote_temporarily_unavailable",
+                "message": "Не удалось получить актуальные тарифы доставки. Повторите попытку через пару минут.",
+            }
+        }
+    }
+
+    response = api_client.get(
+        "/api/delivery-methods/",
+        {"country": "RU", "city": "Moscow", "postal_code": "101000"},
+    )
+
+    assert response.status_code == 503
+    assert response.data["error"]["code"] == "delivery_quote_temporarily_unavailable"
+    assert (
+        response.data["error"]["message"]
+        == "Не удалось получить актуальные тарифы доставки. Повторите попытку через пару минут."
+    )
+
+
+def test_checkout_returns_recoverable_delivery_error_without_creating_order(
+    authenticated_client, product_factory, user, settings
+):
+    product = product_factory(
+        name="Delivery Outage Tee",
+        base_price="40.00",
+        variants=[{"sku": "DELIVERY-OUTAGE-TEE", "stock_quantity": 2}],
+    )
+    variant = product.variants.get()
+    DeliveryMethod.objects.create(
+        code="courier-msk",
+        name="Courier Moscow",
+        kind=DeliveryMethod.Kind.COURIER,
+        price_amount=Decimal("350.00"),
+        sort_order=10,
+    )
+    settings.DELIVERY_METHOD_AVAILABILITY_OVERRIDES = {
+        "RU|moscow|101000": {
+            "error": {
+                "code": "delivery_quote_temporarily_unavailable",
+                "message": "Не удалось подтвердить доставку для этого адреса. Попробуйте ещё раз чуть позже.",
+            }
+        }
+    }
+    authenticated_client.post(
+        "/api/cart/items/",
+        {"variant_id": variant.id, "quantity": 2},
+        format="json",
+    )
+
+    response = authenticated_client.post(
+        "/api/orders/checkout/",
+        shipping_payload(delivery_method_code="courier-msk"),
+        format="json",
+    )
+
+    variant.refresh_from_db()
+    assert response.status_code == 503
+    assert response.data["error"]["code"] == "delivery_quote_temporarily_unavailable"
+    assert (
+        response.data["error"]["message"]
+        == "Не удалось подтвердить доставку для этого адреса. Попробуйте ещё раз чуть позже."
+    )
+    assert Order.objects.filter(user=user).count() == 0
+    assert variant.stock_quantity == 2
+
+
 def test_pickup_point_search_returns_provider_format_points(api_client, settings):
     DeliveryMethod.objects.create(
         code="pickup-cdek",

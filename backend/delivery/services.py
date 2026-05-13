@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.exceptions import APIException, ValidationError
 
 from delivery.models import DeliveryMethod, DeliveryTrackingEvent, OrderDeliverySnapshot
 from delivery.providers import (
@@ -11,6 +12,21 @@ from delivery.providers import (
     get_delivery_provider,
 )
 from orders.models import Order
+
+
+class DeliveryProviderUnavailable(APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_code = "delivery_provider_temporarily_unavailable"
+    default_detail = {
+        "delivery": {
+            "code": "delivery_provider_temporarily_unavailable",
+            "message": "Служба расчёта доставки временно недоступна. Попробуйте ещё раз чуть позже.",
+        }
+    }
+
+
+def _delivery_provider_error(code, message):
+    return {"delivery": {"code": code, "message": message}}
 
 
 def _delivery_fixture_key(*, country="", city="", postal_code=""):
@@ -33,6 +49,23 @@ def _delivery_fixture_quote(*, country="", city="", postal_code=""):
     fixture = overrides.get(key, {})
     if not isinstance(fixture, dict):
         return {}
+    error = fixture.get("error")
+    if isinstance(error, dict):
+        raise DeliveryProviderUnavailable(
+            _delivery_provider_error(
+                str(error.get("code", "")).strip()
+                or "delivery_provider_temporarily_unavailable",
+                str(error.get("message", "")).strip()
+                or "Служба расчёта доставки временно недоступна. Попробуйте ещё раз чуть позже.",
+            )
+        )
+    if isinstance(error, str) and error.strip():
+        raise DeliveryProviderUnavailable(
+            _delivery_provider_error(
+                "delivery_provider_temporarily_unavailable",
+                error.strip(),
+            )
+        )
     return fixture
 
 

@@ -40,6 +40,7 @@ def _set_required_env(monkeypatch):
         "https://animeattire.ru/checkout/return",
     )
     monkeypatch.setenv("PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON", "{}")
+    monkeypatch.setenv("DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON", "{}")
     monkeypatch.setenv("DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON", "{}")
 
 
@@ -128,6 +129,11 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
             "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON",
             '{"external-1":{"status":"succeeded"}}',
             "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON",
+        ),
+        (
+            "DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON",
+            '{"RU|moscow|101000":{"available_methods":["courier-msk"]}}',
+            "DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON",
         ),
         (
             "DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON",

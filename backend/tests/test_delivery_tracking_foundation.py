@@ -278,8 +278,11 @@ def test_provider_tracking_refresh_keeps_state_on_unsupported_status(
     response = authenticated_client.post(f"/api/orders/{order.id}/tracking-refresh/")
 
     assert response.status_code == 400
-    assert response.data["error"]["code"] == "validation_error"
-    assert "provider_tracking_status_unsupported" in str(response.data)
+    assert response.data["error"]["code"] == "provider_tracking_status_unsupported"
+    assert (
+        response.data["error"]["message"]
+        == "Sandbox-статус доставки не поддерживается."
+    )
     order.refresh_from_db()
     snapshot = order.delivery_snapshot
     assert snapshot.tracking_status == OrderDeliverySnapshot.TrackingStatus.CREATED

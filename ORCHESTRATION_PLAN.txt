@@ -375,12 +375,12 @@ Delivery Provider Tests
 [x] Pickup point search returns provider-format points.
 [x] Shipment creation after payment stores tracking number.
 [x] Tracking sync updates status.
-[ ] Delivery provider failure shows recoverable checkout error.
+[x] Delivery provider failure shows recoverable checkout error.
 
 Frontend Unit and Component Tests
 ---------------------------------
 [x] Footer renders brand and commerce links.
-[ ] Header renders Russian nav and cart button.
+[x] Header renders Russian nav and cart button.
 [x] Cart drawer empty state.
 [ ] Cart drawer item quantity changes.
 [ ] Zustand cart persistence and merge behavior.
