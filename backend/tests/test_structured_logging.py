@@ -4,7 +4,19 @@ import logging
 import pytest
 from django.test import override_settings
 
-from config.logging import JsonFormatter, get_log_context, scrub_log_payload
+from config.celery import (
+    TASK_CONTEXT_HEADER,
+    _extract_task_log_context,
+    inject_task_log_context,
+    log_task_failure,
+)
+from config.logging import (
+    JsonFormatter,
+    bind_log_context,
+    get_log_context,
+    reset_log_context,
+    scrub_log_payload,
+)
 
 
 pytestmark = pytest.mark.django_db
@@ -106,6 +118,92 @@ def test_log_context_is_cleared_after_request(client):
         "user_id": "-",
         "order_id": "-",
     }
+
+
+def test_celery_publish_injects_request_and_correlation_context():
+    tokens = bind_log_context(
+        request_id="req-task-1",
+        correlation_id="corr-task-1",
+        user_id="42",
+        order_id="501",
+    )
+    try:
+        headers = {}
+        inject_task_log_context(headers=headers)
+    finally:
+        reset_log_context(tokens)
+
+    assert headers[TASK_CONTEXT_HEADER] == {
+        "request_id": "req-task-1",
+        "correlation_id": "corr-task-1",
+        "user_id": "42",
+        "order_id": "501",
+    }
+
+
+def test_extract_task_log_context_fails_closed_on_invalid_headers():
+    context = _extract_task_log_context(
+        {
+            TASK_CONTEXT_HEADER: {
+                "request_id": "bad id with spaces",
+                "correlation_id": "corr.task:1",
+                "user_id": 17,
+                "order_id": "",
+            }
+        }
+    )
+
+    assert context == {
+        "request_id": "-",
+        "correlation_id": "corr.task:1",
+        "user_id": "17",
+        "order_id": "-",
+    }
+
+
+@override_settings(LOGGING_CONFIG=None)
+def test_celery_task_failure_log_contains_correlation_id():
+    captured_records = []
+
+    class CaptureHandler(logging.Handler):
+        def emit(self, record):
+            captured_records.append(record)
+
+    logger = logging.getLogger("animeattire.celery")
+    handler = CaptureHandler()
+    logger.addHandler(handler)
+    logger.setLevel(logging.ERROR)
+    tokens = bind_log_context(
+        request_id="req-celery-fail-1",
+        correlation_id="corr-celery-fail-1",
+        user_id="7",
+        order_id="9001",
+    )
+    try:
+        try:
+            raise RuntimeError("provider gateway timeout")
+        except RuntimeError as exc:
+            log_task_failure(
+                task_id="task-123",
+                exception=exc,
+                sender=type(
+                    "Sender",
+                    (),
+                    {"name": "notifications.send_order_confirmation_email"},
+                )(),
+            )
+    finally:
+        reset_log_context(tokens)
+        logger.removeHandler(handler)
+
+    record = captured_records[0]
+    assert record.request_id == "req-celery-fail-1"
+    assert record.correlation_id == "corr-celery-fail-1"
+    assert record.user_id == "7"
+    assert record.order_id == "9001"
+    assert record.task_id == "task-123"
+    assert record.task_name == "notifications.send_order_confirmation_email"
+    assert "provider gateway timeout" in record.getMessage() or record.exc_info
 
 
 def test_scrub_log_payload_redacts_pii_and_secrets_recursively():

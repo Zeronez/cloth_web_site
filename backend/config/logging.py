@@ -54,6 +54,28 @@ def get_log_context():
     }
 
 
+def bind_log_context(
+    *,
+    request_id="-",
+    correlation_id="-",
+    user_id="-",
+    order_id="-",
+):
+    return (
+        request_id_var.set(request_id or "-"),
+        correlation_id_var.set(correlation_id or "-"),
+        user_id_var.set(user_id or "-"),
+        order_id_var.set(order_id or "-"),
+    )
+
+
+def reset_log_context(tokens):
+    order_id_var.reset(tokens[3])
+    user_id_var.reset(tokens[2])
+    correlation_id_var.reset(tokens[1])
+    request_id_var.reset(tokens[0])
+
+
 def scrub_log_payload(value):
     if isinstance(value, dict):
         return {

@@ -354,7 +354,7 @@ Celery and Async Tests
 [x] Cart cleanup task deletes expired guest carts.
 [x] Payment timeout task cancels unpaid stale orders.
 [x] Notification retry behavior works after transient failure.
-[ ] Failed task logging includes correlation id.
+[x] Failed task logging includes correlation id.
 
 Payment Provider Tests
 ----------------------
