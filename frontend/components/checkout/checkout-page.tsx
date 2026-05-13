@@ -32,6 +32,10 @@ import {
   type CartItem
 } from "../../stores/cart-store";
 import { useUserStore } from "../../stores/user-store";
+import {
+  CheckoutMethodListSkeleton,
+  CheckoutPageSkeleton
+} from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
 
 const currencyFormatter = new Intl.NumberFormat("ru-RU", {
@@ -661,14 +665,7 @@ export function CheckoutPage() {
   }
 
   if (!isMounted) {
-    return (
-      <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
-        <section className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_420px]">
-          <div className="h-[580px] animate-pulse border border-white/10 bg-white/[0.04]" />
-          <div className="h-[420px] animate-pulse border border-white/10 bg-white/[0.04]" />
-        </section>
-      </main>
-    );
+    return <CheckoutPageSkeleton />;
   }
 
   if (successOrder) {
@@ -851,9 +848,7 @@ export function CheckoutPage() {
                 <p className="text-xs font-black uppercase text-neon-teal">
                   Способ доставки
                 </p>
-                {deliveryMethodsQuery.isLoading ? (
-                  <div className="mt-4 h-24 animate-pulse border border-white/10 bg-ink-900/60" />
-                ) : null}
+                {deliveryMethodsQuery.isLoading ? <CheckoutMethodListSkeleton /> : null}
                 {deliveryMethods.length > 0 ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {deliveryMethods.map((method) => (
@@ -897,9 +892,7 @@ export function CheckoutPage() {
                 <p className="text-xs font-black uppercase text-neon-teal">
                   Способ оплаты
                 </p>
-                {paymentMethodsQuery.isLoading ? (
-                  <div className="mt-4 h-24 animate-pulse border border-white/10 bg-ink-900/60" />
-                ) : null}
+                {paymentMethodsQuery.isLoading ? <CheckoutMethodListSkeleton /> : null}
                 {paymentMethods.length > 0 ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {paymentMethods.map((method) => (

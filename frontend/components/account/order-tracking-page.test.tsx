@@ -38,11 +38,19 @@ function renderWithQueryClient(children: ReactNode) {
   );
 }
 
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+  return { promise, resolve };
+}
+
 function makeOrder() {
   return {
     id: 77,
     status: "shipped",
-    status_label: "Передан в доставку",
+    status_label: "РџРµСЂРµРґР°РЅ РІ РґРѕСЃС‚Р°РІРєСѓ",
     total_amount: "18900.00",
     track_number: "TRACK-77",
     items_count: 2,
@@ -57,18 +65,18 @@ function makeOrder() {
     },
     delivery: {
       method_code: "courier-msk",
-      method_name: "Курьер по Москве",
+      method_name: "РљСѓСЂСЊРµСЂ РїРѕ РњРѕСЃРєРІРµ",
       method_kind: "courier",
-      method_kind_label: "Курьер",
+      method_kind_label: "РљСѓСЂСЊРµСЂ",
       price_amount: "350.00",
       currency: "RUB",
       estimated_days_min: 1,
       estimated_days_max: 2,
       provider_code: "cdek",
       tracking_status: "out_for_delivery",
-      tracking_status_label: "Курьер уже едет",
+      tracking_status_label: "РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚",
       external_shipment_id: "SHIP-77",
-      current_location: "Москва",
+      current_location: "РњРѕСЃРєРІР°",
       last_tracking_sync_at: "2026-05-05T10:30:00Z",
       recipient_name: "QA Shopper",
       recipient_phone: "+15551234567",
@@ -83,9 +91,9 @@ function makeOrder() {
           event_type: "tracking_sync",
           previous_status: "in_transit",
           new_status: "out_for_delivery",
-          new_status_label: "Курьер уже едет",
-          message: "Курьер выехал.",
-          location: "Москва",
+          new_status_label: "РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚",
+          message: "РљСѓСЂСЊРµСЂ РІС‹РµС…Р°Р».",
+          location: "РњРѕСЃРєРІР°",
           payload: {},
           external_event_id: "evt-1",
           happened_at: "2026-05-05T10:30:00Z",
@@ -121,8 +129,30 @@ describe("OrderTrackingPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /Войдите, чтобы открыть историю доставки/i
+        name: /Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ РёСЃС‚РѕСЂРёСЋ РґРѕСЃС‚Р°РІРєРё/i
       })
+    ).toBeInTheDocument();
+  });
+
+  it("shows an order tracking skeleton while the query is pending", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    const pending = deferredPromise<any>();
+    jest.mocked(fetchOrder).mockReturnValue(pending.promise);
+
+    renderWithQueryClient(<OrderTrackingPage orderId={77} />);
+
+    expect(
+      screen.getByLabelText("Р—Р°РіСЂСѓР·РєР° РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ Р·Р°РєР°Р·Р°")
+    ).toBeInTheDocument();
+
+    pending.resolve(makeOrder() as any);
+
+    expect(
+      await screen.findByRole("heading", { name: /Р—Р°РєР°Р· #77/i })
     ).toBeInTheDocument();
   });
 
@@ -136,11 +166,13 @@ describe("OrderTrackingPage", () => {
 
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
-    expect(await screen.findByRole("heading", { name: /Заказ #77/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /Р—Р°РєР°Р· #77/i })
+    ).toBeInTheDocument();
     expect(fetchOrder).toHaveBeenCalledWith("access-token", 77);
     expect(screen.getByText("TRACK-77")).toBeInTheDocument();
-    expect(screen.getAllByText("Курьер уже едет").length).toBeGreaterThan(0);
-    expect(screen.getByText("Курьер выехал.")).toBeInTheDocument();
+    expect(screen.getAllByText("РљСѓСЂСЊРµСЂ СѓР¶Рµ РµРґРµС‚").length).toBeGreaterThan(0);
+    expect(screen.getByText("РљСѓСЂСЊРµСЂ РІС‹РµС…Р°Р».")).toBeInTheDocument();
   });
 
   it("can refresh tracking status from the API", async () => {
@@ -154,7 +186,9 @@ describe("OrderTrackingPage", () => {
 
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
-    const button = await screen.findByRole("button", { name: /Обновить статус/i });
+    const button = await screen.findByRole("button", {
+      name: /РћР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ/i
+    });
     fireEvent.click(button);
 
     await waitFor(() => {

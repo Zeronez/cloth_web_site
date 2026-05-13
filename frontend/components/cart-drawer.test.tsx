@@ -5,6 +5,23 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useCartStore } from "../stores/cart-store";
 import { CartDrawer } from "./cart-drawer";
 
+jest.mock("next/link", () => {
+  return function MockLink({
+    children,
+    href,
+    ...props
+  }: {
+    children: ReactNode;
+    href: string;
+  }) {
+    return (
+      <a href={href} {...props}>
+        {children}
+      </a>
+    );
+  };
+});
+
 jest.mock("framer-motion", () => {
   const React = require("react");
 
@@ -26,6 +43,33 @@ jest.mock("./product-image-placeholder", () => ({
   ProductImagePlaceholder: () => <div data-testid="product-image-placeholder" />
 }));
 
+const subtotalText = (value: number) =>
+  new Intl.NumberFormat("ru-RU", {
+    currency: "RUB",
+    style: "currency"
+  }).format(value);
+
+const normalizeWhitespace = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const expectCartTotal = (value: number) => {
+  expect(
+    normalizeWhitespace(screen.getByText("Итого").parentElement?.textContent ?? "")
+  ).toContain(normalizeWhitespace(subtotalText(value)));
+};
+
+const expectLinePrice = (value: number) => {
+  expect(
+    screen.getByText((_, element) => {
+      if (!element || element.tagName.toLowerCase() !== "p") {
+        return false;
+      }
+
+      return normalizeWhitespace(element.textContent ?? "") ===
+        normalizeWhitespace(subtotalText(value));
+    })
+  );
+};
+
 describe("CartDrawer", () => {
   beforeEach(() => {
     useCartStore.setState({
@@ -39,9 +83,15 @@ describe("CartDrawer", () => {
 
     render(<CartDrawer />);
 
-    expect(screen.getByRole("heading", { name: "Корзина пока пуста" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Оформить заказ" })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Очистить корзину" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Корзина пока пуста" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Оформить заказ" })
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Очистить корзину" })
+    ).not.toBeInTheDocument();
   });
 
   it("renders items, subtotal, and checkout actions when the drawer has content", async () => {
@@ -62,13 +112,108 @@ describe("CartDrawer", () => {
 
     expect(screen.getByText("Neon Ronin Shell")).toBeInTheDocument();
     expect(screen.getByText("Размер M")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Оформить заказ" })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: "Очистить корзину" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Оформить заказ" })
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Очистить корзину" })
+    ).toBeInTheDocument();
+    expectCartTotal(29600);
 
     fireEvent.click(screen.getByRole("button", { name: "Очистить корзину" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Оформить заказ" })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Оформить заказ" })
+      ).toBeDisabled();
     });
+  });
+
+  it("increases item quantity and updates totals", async () => {
+    useCartStore.setState({
+      isOpen: true,
+      items: [
+        {
+          id: "variant-44",
+          name: "Neon Ronin Shell",
+          price: 14800,
+          size: "M",
+          quantity: 2
+        }
+      ]
+    });
+
+    render(<CartDrawer />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Увеличить количество Neon Ronin Shell"
+      })
+    );
+
+    await waitFor(() => {
+      expect(useCartStore.getState().items).toEqual([
+        expect.objectContaining({
+          id: "variant-44",
+          size: "M",
+          quantity: 3
+        })
+      ]);
+    });
+
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expectLinePrice(44400);
+    expectCartTotal(44400);
+  });
+
+  it("decreases item quantity and removes the item when it reaches zero", async () => {
+    useCartStore.setState({
+      isOpen: true,
+      items: [
+        {
+          id: "variant-44",
+          name: "Neon Ronin Shell",
+          price: 14800,
+          size: "M",
+          quantity: 2
+        }
+      ]
+    });
+
+    render(<CartDrawer />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Уменьшить количество Neon Ronin Shell"
+      })
+    );
+
+    await waitFor(() => {
+      expect(useCartStore.getState().items).toEqual([
+        expect.objectContaining({
+          id: "variant-44",
+          size: "M",
+          quantity: 1
+        })
+      ]);
+    });
+
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expectLinePrice(14800);
+    expectCartTotal(14800);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Удалить Neon Ronin Shell из корзины"
+      })
+    );
+
+    await waitFor(() => {
+      expect(useCartStore.getState().items).toEqual([]);
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "Корзина пока пуста" })
+    ).toBeInTheDocument();
   });
 });

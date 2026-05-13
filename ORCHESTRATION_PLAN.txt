@@ -197,7 +197,7 @@ Phase 3.2: Frontend Production UX
 [ ] Remove demo fallbacks from production paths or gate them behind dev mode.
 [x] Add reusable product image placeholders until real media is connected.
 [x] Implement skeleton loaders for catalog and product pages.
-[ ] Implement skeleton loaders for cart/order pages.
+[x] Implement skeleton loaders for cart/order pages.
 [ ] Implement error boundaries and retry states.
 [x] Implement API fallback warnings for catalog and product pages.
 [x] Implement no-results catalog state.
@@ -382,7 +382,7 @@ Frontend Unit and Component Tests
 [x] Footer renders brand and commerce links.
 [x] Header renders Russian nav and cart button.
 [x] Cart drawer empty state.
-[ ] Cart drawer item quantity changes.
+[x] Cart drawer item quantity changes.
 [ ] Zustand cart persistence and merge behavior.
 [x] User store session set/clear.
 [ ] Product card renders price/stock/category.

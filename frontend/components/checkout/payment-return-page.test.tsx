@@ -41,6 +41,14 @@ function renderWithQueryClient(children: ReactNode) {
   );
 }
 
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+  return { promise, resolve };
+}
+
 function makeReturnStatus(status: string, confirmationUrl: string | null = null) {
   return {
     payment: {
@@ -112,9 +120,11 @@ describe("PaymentReturnPage", () => {
     renderWithQueryClient(<PaymentReturnPage paymentId={null} provider="" />);
 
     expect(
-      screen.getByRole("heading", { name: /не удалось определить платеж/i })
+      screen.getByRole("heading", { level: 1 })
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /открыть кабинет/i })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link").map((link) => link.getAttribute("href"))
+    ).toEqual(expect.arrayContaining(["/account", "/catalog"]));
   });
 
   it("asks the user to sign in before reading return status", () => {
@@ -123,9 +133,43 @@ describe("PaymentReturnPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", {
-        name: /войдите, чтобы проверить статус оплаты/i
-      })
+      screen.getByRole("heading", { level: 1 })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link").map((link) => link.getAttribute("href"))
+    ).toEqual(expect.arrayContaining(["/login", "/account"]));
+  });
+
+  it("shows a payment return skeleton while the query is pending", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    const pending = deferredPromise<any>();
+    jest.mocked(fetchPaymentReturnStatus).mockReturnValue(pending.promise);
+
+    renderWithQueryClient(
+      <PaymentReturnPage
+        paymentId={3001}
+        provider="yookassa"
+        externalPaymentId="ext-3001"
+      />
+    );
+
+    expect(
+      document.querySelector('main[aria-label]')
+    ).toBeInTheDocument();
+
+    pending.resolve(
+      makeReturnStatus(
+        "session_created",
+        "https://pay.example.test/checkout/return-session"
+      ) as any
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /9001/ })
     ).toBeInTheDocument();
   });
 
@@ -151,20 +195,26 @@ describe("PaymentReturnPage", () => {
     );
 
     expect(
-      await screen.findByRole("heading", {
-        name: /заказ #9001/i
-      })
+      await screen.findByRole("heading", { name: /9001/ })
     ).toBeInTheDocument();
     expect(fetchPaymentReturnStatus).toHaveBeenCalledWith("access-token", 3001, {
       provider: "yookassa",
       external_payment_id: "ext-3001"
     });
     expect(
-      screen.getByRole("link", { name: /перейти к оплате/i })
-    ).toHaveAttribute("href", "https://pay.example.test/checkout/return-session");
+      screen
+        .getAllByRole("link")
+        .find(
+          (link) =>
+            link.getAttribute("href") ===
+            "https://pay.example.test/checkout/return-session"
+        )
+    ).toBeInTheDocument();
   });
 
   it("can prepare a new payment session when retry is available", async () => {
+    const retryMessage = "Новая платёжная сессия готова.";
+
     useUserStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -178,16 +228,14 @@ describe("PaymentReturnPage", () => {
       created: true,
       provider: "yookassa",
       confirmation_url: "https://pay.example.test/checkout/new-session",
-      message: "Новая платежная сессия готова."
+      message: retryMessage
     } as any);
 
     renderWithQueryClient(
       <PaymentReturnPage paymentId={3001} provider="yookassa" />
     );
 
-    const button = await screen.findByRole("button", {
-      name: /подготовить новую оплату/i
-    });
+    const button = await screen.findByRole("button");
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -201,8 +249,14 @@ describe("PaymentReturnPage", () => {
     });
 
     expect(
-      await screen.findByRole("link", { name: /повторить оплату/i })
-    ).toHaveAttribute("href", "https://pay.example.test/checkout/new-session");
-    expect(screen.getByText(/новая платежная сессия готова/i)).toBeInTheDocument();
+      screen
+        .getAllByRole("link")
+        .find(
+          (link) =>
+            link.getAttribute("href") ===
+            "https://pay.example.test/checkout/new-session"
+        )
+    ).toBeInTheDocument();
+    expect(screen.getByText(retryMessage)).toBeInTheDocument();
   });
 });

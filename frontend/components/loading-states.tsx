@@ -37,6 +37,145 @@ export function ProductDetailSkeleton() {
   );
 }
 
+export function CheckoutMethodListSkeleton() {
+  return (
+    <div
+      className="mt-4 grid gap-3 sm:grid-cols-2"
+      aria-label="Р—Р°РіСЂСѓР·РєР° СЃРїРѕСЃРѕР±РѕРІ"
+    >
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="animate-pulse border border-white/10 bg-ink-900/60 p-4"
+        >
+          <div className="h-5 w-32 bg-white/10" />
+          <div className="mt-3 h-4 w-full bg-white/10" />
+          <div className="mt-2 h-4 w-24 bg-white/10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function CheckoutPageSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
+      aria-label="Р—Р°РіСЂСѓР·РєР° РѕС„РѕСЂРјР»РµРЅРёСЏ Р·Р°РєР°Р·Р°"
+    >
+      <section className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_420px]">
+        <div className="border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-3 w-36 bg-white/10" />
+            <div className="h-10 w-64 bg-white/10" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="h-12 bg-white/10" />
+              ))}
+            </div>
+            <CheckoutMethodListSkeleton />
+            <CheckoutMethodListSkeleton />
+            <div className="h-12 w-full bg-white/10" />
+          </div>
+        </div>
+        <div className="border border-white/10 bg-white/[0.04] p-5">
+          <div className="animate-pulse space-y-4">
+            <div className="h-3 w-20 bg-white/10" />
+            <div className="h-8 w-40 bg-white/10" />
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-24 bg-white/10" />
+            ))}
+            <div className="h-12 bg-white/10" />
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export function OrderTrackingSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
+      aria-label="Р—Р°РіСЂСѓР·РєР° РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ Р·Р°РєР°Р·Р°"
+    >
+      <section className="mx-auto max-w-5xl space-y-6">
+        <div className="border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-3 w-40 bg-white/10" />
+            <div className="h-10 w-72 bg-white/10" />
+            <div className="h-5 max-w-2xl bg-white/10" />
+            <div className="h-5 max-w-xl bg-white/10" />
+          </div>
+        </div>
+
+        <div className="grid gap-3 border border-white/10 bg-white/[0.04] p-4 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="animate-pulse border border-white/10 bg-ink-900/60 p-4"
+            >
+              <div className="h-3 w-28 bg-white/10" />
+              <div className="mt-3 h-5 w-40 bg-white/10" />
+            </div>
+          ))}
+        </div>
+
+        <section className="border border-white/10 bg-white/[0.04] p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-3 w-24 bg-white/10" />
+            <div className="h-8 w-56 bg-white/10" />
+          </div>
+          <div className="mt-6 space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse border border-white/10 bg-ink-900/60 p-4"
+              >
+                <div className="h-4 w-36 bg-white/10" />
+                <div className="mt-3 h-4 w-full max-w-2xl bg-white/10" />
+                <div className="mt-2 h-4 w-48 bg-white/10" />
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+export function PaymentReturnSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
+      aria-label="Р—Р°РіСЂСѓР·РєР° СЃС‚Р°С‚СѓСЃР° РѕРїР»Р°С‚С‹"
+    >
+      <section className="mx-auto max-w-4xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-3 w-40 bg-white/10" />
+          <div className="h-10 w-72 bg-white/10" />
+          <div className="h-5 max-w-2xl bg-white/10" />
+          <div className="h-5 max-w-xl bg-white/10" />
+        </div>
+
+        <div className="mt-6 grid gap-3 border border-white/10 bg-ink-950/50 p-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="animate-pulse space-y-3">
+              <div className="h-3 w-24 bg-white/10" />
+              <div className="h-5 w-40 bg-white/10" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <div className="h-12 w-52 animate-pulse bg-white/10" />
+          <div className="h-12 w-44 animate-pulse bg-white/10" />
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export function InlineNotice({
   title,
   text,

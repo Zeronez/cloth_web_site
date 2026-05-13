@@ -20,6 +20,22 @@ export function CartDrawer() {
   const setItemQuantity = useCartStore((state) => state.setItemQuantity);
   const subtotal = useCartStore(selectCartSubtotal);
 
+  const handleDecreaseQuantity = (
+    id: string,
+    size: string,
+    quantity: number
+  ) => {
+    setItemQuantity(id, size, quantity - 1);
+  };
+
+  const handleIncreaseQuantity = (
+    id: string,
+    size: string,
+    quantity: number
+  ) => {
+    setItemQuantity(id, size, quantity + 1);
+  };
+
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -97,33 +113,45 @@ export function CartDrawer() {
                             Удалить
                           </button>
                         </div>
-                        <div className="mt-4 flex items-center justify-between">
-                          <div className="flex items-center border border-white/10">
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <div
+                            className="flex items-center border border-white/10"
+                            role="group"
+                            aria-label={`Количество товара ${item.name}, размер ${item.size}`}
+                          >
                             <button
                               type="button"
-                              className="grid h-8 w-8 place-items-center hover:bg-white/10"
+                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal"
                               onClick={() =>
-                                setItemQuantity(
+                                handleDecreaseQuantity(
                                   item.id,
                                   item.size,
-                                  item.quantity - 1
+                                  item.quantity
                                 )
                               }
-                              aria-label={`Уменьшить количество ${item.name}`}
+                              aria-label={
+                                item.quantity === 1
+                                  ? `Удалить ${item.name} из корзины`
+                                  : `Уменьшить количество ${item.name}`
+                              }
                             >
                               -
                             </button>
-                            <span className="grid h-8 w-9 place-items-center text-sm font-bold">
+                            <span
+                              className="grid h-8 min-w-10 place-items-center px-2 text-sm font-bold tabular-nums"
+                              aria-live="polite"
+                              aria-atomic="true"
+                            >
                               {item.quantity}
                             </span>
                             <button
                               type="button"
-                              className="grid h-8 w-8 place-items-center hover:bg-white/10"
+                              className="grid h-8 w-8 place-items-center transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-neon-teal"
                               onClick={() =>
-                                setItemQuantity(
+                                handleIncreaseQuantity(
                                   item.id,
                                   item.size,
-                                  item.quantity + 1
+                                  item.quantity
                                 )
                               }
                               aria-label={`Увеличить количество ${item.name}`}
