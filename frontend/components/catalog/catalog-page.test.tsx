@@ -80,4 +80,46 @@ describe("CatalogPage", () => {
       screen.queryByRole("link", { name: /neon ronin/i })
     ).not.toBeInTheDocument();
   });
+
+  it("renders product media from API images and keeps hover media in the card", async () => {
+    jest.mocked(fetchProducts).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 1,
+          name: "Neon Ronin Shell",
+          slug: "neon-ronin-shell",
+          category: { id: 10, name: "Куртки", slug: "jackets" },
+          franchise: { id: 11, name: "Akira", slug: "akira" },
+          base_price: "12990.00",
+          is_featured: true,
+          main_image: {
+            id: 100,
+            url: "https://cdn.example.com/products/ronin-front.jpg",
+            alt_text: "Neon Ronin front",
+            is_main: true
+          },
+          images: [
+            {
+              id: 101,
+              url: "https://cdn.example.com/products/ronin-back.jpg",
+              alt_text: "Neon Ronin back",
+              is_main: false
+            }
+          ],
+          total_stock: 8
+        }
+      ]
+    } as any);
+
+    renderWithQueryClient(<CatalogPage />);
+
+    expect(await screen.findByAltText("Neon Ronin front")).toBeInTheDocument();
+    expect(screen.getByAltText("Neon Ronin back")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /neon ronin shell/i })
+    ).toHaveAttribute("href", "/products/neon-ronin-shell");
+  });
 });

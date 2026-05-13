@@ -202,7 +202,7 @@ Phase 3.2: Frontend Production UX
 [x] Add retry actions for account query failures; finish checkout query retries.
 [x] Implement API fallback warnings for catalog and product pages.
 [x] Implement no-results catalog state.
-[ ] Implement product gallery with images/video hover behavior.
+[x] Implement product gallery with images/video hover behavior.
 [ ] Implement size selector with stock awareness.
 [ ] Implement cart drawer synced with backend for authenticated users.
 [ ] Implement guest cart persistence and merge after login.

@@ -15,7 +15,7 @@ import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
 import { FavoriteToggleButton } from "../catalog/favorite-toggle-button";
 import { InlineNotice, ProductDetailSkeleton } from "../loading-states";
-import { ProductImagePlaceholder } from "../product-image-placeholder";
+import { ProductMediaGallery } from "../product-media";
 
 const money = new Intl.NumberFormat("ru-RU", {
   currency: "RUB",
@@ -132,18 +132,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   return (
     <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
       <section className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.82fr]">
-        <div className="relative min-h-[620px] overflow-hidden border border-white/10 bg-white/[0.04]">
-          <ProductImagePlaceholder
-            label={product.category.name}
-            variant="jacket"
-            className="absolute inset-0"
-          />
-          <div className="absolute bottom-12 left-8 border border-white/10 bg-ink-950/80 px-4 py-3">
-            <p className="text-sm font-bold text-slate-300">
-              {product.franchise?.name ?? "AnimeAttire"}
-            </p>
-          </div>
-        </div>
+        <ProductMediaGallery product={product} placeholderVariant="jacket" />
 
         <div>
           <Link

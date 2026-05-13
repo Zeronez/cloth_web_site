@@ -12,7 +12,7 @@ import {
   fetchProducts
 } from "../../lib/api";
 import { CatalogGridSkeleton, InlineNotice } from "../loading-states";
-import { ProductImagePlaceholder } from "../product-image-placeholder";
+import { CatalogProductMedia } from "../product-media";
 import { FavoriteToggleButton } from "./favorite-toggle-button";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
@@ -215,10 +215,9 @@ export function CatalogPage() {
                     }`}
                   >
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,56,92,0.2),transparent_42%,rgba(20,184,166,0.18))] opacity-70 transition group-hover:scale-105" />
-                    <ProductImagePlaceholder
-                      label={product.category.name}
-                      variant={placeholderVariants[index % placeholderVariants.length]}
-                      className="absolute inset-0 opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                    <CatalogProductMedia
+                      product={product}
+                      placeholderVariant={placeholderVariants[index % placeholderVariants.length]}
                     />
                     <div className="relative flex h-full flex-col justify-between">
                       <div className="flex items-start justify-between gap-3">
