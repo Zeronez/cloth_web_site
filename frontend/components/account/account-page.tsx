@@ -8,7 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ApiError,
   createAddress,
+  deleteAccount,
   deleteAddress,
+  exportAccountData,
   fetchAddresses,
   fetchFavorites,
   fetchMe,
@@ -318,6 +320,10 @@ export function AccountPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [accountToolsError, setAccountToolsError] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isExportingAccount, setIsExportingAccount] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -565,6 +571,66 @@ export function AccountPage() {
     }
   }
 
+  async function handleExportAccount() {
+    if (!accessToken) {
+      return;
+    }
+
+    setAccountToolsError(null);
+    setIsExportingAccount(true);
+
+    try {
+      const payload = await exportAccountData(accessToken);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json"
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `animeattire-account-export-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setAccountToolsError(getErrorMessage(error));
+    } finally {
+      setIsExportingAccount(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!accessToken || !deletePassword) {
+      setAccountToolsError("Введите текущий пароль, чтобы удалить аккаунт.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Удалить аккаунт? Профиль, адреса, корзина и избранное будут очищены, а история заказов и платежей сохранится для учета."
+      )
+    ) {
+      return;
+    }
+
+    setAccountToolsError(null);
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteAccount(accessToken, deletePassword);
+      setFavorites([]);
+      clearSession();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      setAccountToolsError(getErrorMessage(error));
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }
+
   if (!isMounted) {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
@@ -720,6 +786,64 @@ export function AccountPage() {
                 {isSavingProfile ? "Сохранение..." : "Сохранить профиль"}
               </button>
             </form>
+
+            <div className="mt-8 border border-white/10 bg-ink-900/60 p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase text-neon-amber">
+                    Данные и доступ
+                  </p>
+                  <h3 className="mt-2 text-lg font-black text-white">
+                    Экспорт и удаление аккаунта
+                  </h3>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
+                    Можно выгрузить профиль и историю в JSON. При удалении аккаунта
+                    профиль, адреса, корзина и избранное очищаются, а заказы и
+                    платежи остаются в архиве для учета.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  data-testid="account-export-button"
+                  onClick={() => void handleExportAccount()}
+                  disabled={isExportingAccount}
+                  className="inline-flex h-11 items-center justify-center border border-neon-teal/30 bg-neon-teal/10 px-5 text-sm font-semibold text-ice transition hover:bg-neon-teal/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isExportingAccount ? "Экспорт..." : "Экспортировать данные"}
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3 border border-red-400/20 bg-red-500/5 p-4">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-red-100">
+                    Текущий пароль
+                  </span>
+                  <input
+                    name="delete-account-password"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(event) => setDeletePassword(event.target.value)}
+                    className="h-12 w-full border border-red-400/20 bg-ink-900/80 px-4 text-white outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-300/20"
+                  />
+                </label>
+
+                {accountToolsError ? (
+                  <div className="border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                    {accountToolsError}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  data-testid="delete-account-submit"
+                  onClick={() => void handleDeleteAccount()}
+                  disabled={isDeletingAccount}
+                  className="inline-flex h-11 items-center justify-center border border-red-400/30 bg-red-500/10 px-5 text-sm font-black uppercase text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeletingAccount ? "Удаление..." : "Удалить аккаунт"}
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className="border border-white/10 bg-white/[0.04] p-6">

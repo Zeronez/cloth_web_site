@@ -503,6 +503,56 @@ export type FavoriteProductMutationResult = FavoriteProductEntry & {
   created: boolean;
 };
 
+export type AccountExportPayload = {
+  exported_at: string;
+  profile: UserProfile;
+  addresses: Address[];
+  favorites: FavoriteProductEntry[];
+  cart: ServerCart | null;
+  orders: Order[];
+  payments: Payment[];
+  notifications: Array<{
+    id: number;
+    order_id: number;
+    notification_type: string;
+    channel: string;
+    status: string;
+    recipient: string;
+    subject: string;
+    body: string;
+    error_message: string;
+    delivered_at: string | null;
+    created_at: string;
+    updated_at: string;
+    attempts: Array<{
+      id: number;
+      status: string;
+      provider_message_id: string;
+      error_message: string;
+      created_at: string;
+    }>;
+  }>;
+  contact_requests: Array<{
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    topic: string;
+    order_number: string;
+    message: string;
+    status: string;
+    created_at: string;
+  }>;
+};
+
+export type DeleteAccountResponse = {
+  status: "deleted";
+  deleted_at: string;
+  retained_order_count: number;
+  retained_payment_count: number;
+  deleted_email: string;
+};
+
 type Paginated<T> = {
   count: number;
   next: string | null;
@@ -784,6 +834,20 @@ export async function updateMe(token: string, input: Partial<UserProfile>) {
     method: "PATCH",
     token,
     body: input
+  });
+}
+
+export async function exportAccountData(token: string) {
+  return apiRequest<AccountExportPayload>(apiPath("/users/me/export/"), {
+    token
+  });
+}
+
+export async function deleteAccount(token: string, currentPassword: string) {
+  return apiRequest<DeleteAccountResponse>(apiPath("/users/me/delete/"), {
+    method: "POST",
+    token,
+    body: { current_password: currentPassword }
   });
 }
 

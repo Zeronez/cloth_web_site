@@ -89,7 +89,7 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement order history and order detail API.
 [x] Implement wishlist/favorites API.
 [x] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
-[ ] Implement account deletion/export flow if required by legal policy.
+[x] Implement account deletion/export flow if required by legal policy.
 
 Phase 2.3: Catalog and Merchandising
 ------------------------------------

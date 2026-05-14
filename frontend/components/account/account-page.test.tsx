@@ -2,7 +2,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 
-import { fetchAddresses, fetchFavorites, fetchMe, fetchOrders } from "../../lib/api";
+import {
+  deleteAccount,
+  exportAccountData,
+  fetchAddresses,
+  fetchFavorites,
+  fetchMe,
+  fetchOrders
+} from "../../lib/api";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
 import { AccountPage } from "./account-page";
@@ -31,7 +38,9 @@ jest.mock("../../lib/api", () => ({
   },
   addFavorite: jest.fn(),
   createAddress: jest.fn(),
+  deleteAccount: jest.fn(),
   deleteAddress: jest.fn(),
+  exportAccountData: jest.fn(),
   fetchAddresses: jest.fn(),
   fetchFavorites: jest.fn(),
   fetchMe: jest.fn(),
@@ -59,6 +68,7 @@ function renderWithQueryClient(children: ReactNode) {
 describe("AccountPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.confirm = jest.fn(() => true);
     useUserStore.setState({
       accessToken: null,
       refreshToken: null,
@@ -372,6 +382,135 @@ describe("AccountPage", () => {
 
     await waitFor(() => {
       expect(fetchOrders).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("exports account data from the profile tools block", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 7,
+      username: "shopper",
+      email: "shopper@example.com",
+      first_name: "QA",
+      last_name: "Shopper",
+      phone: "+15551234567"
+    });
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchOrders).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    });
+    jest.mocked(fetchFavorites).mockResolvedValue([]);
+    jest.mocked(exportAccountData).mockResolvedValue({
+      exported_at: "2026-05-14T15:00:00Z",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com"
+      },
+      addresses: [],
+      favorites: [],
+      cart: null,
+      orders: [],
+      payments: [],
+      notifications: [],
+      contact_requests: []
+    });
+    const createObjectURL = jest.fn(() => "blob:test");
+    const revokeObjectURL = jest.fn();
+    const anchorClick = jest
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    Object.defineProperty(window.URL, "createObjectURL", {
+      writable: true,
+      value: createObjectURL
+    });
+    Object.defineProperty(window.URL, "revokeObjectURL", {
+      writable: true,
+      value: revokeObjectURL
+    });
+
+    renderWithQueryClient(<AccountPage />);
+
+    fireEvent.click(await screen.findByTestId("account-export-button"));
+
+    await waitFor(() => {
+      expect(exportAccountData).toHaveBeenCalledWith("access-token");
+      expect(createObjectURL).toHaveBeenCalled();
+    });
+
+    anchorClick.mockRestore();
+  });
+
+  it("deletes the account and clears the local session", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 7,
+      username: "shopper",
+      email: "shopper@example.com",
+      first_name: "QA",
+      last_name: "Shopper",
+      phone: "+15551234567"
+    });
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchOrders).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    });
+    jest.mocked(fetchFavorites).mockResolvedValue([]);
+    jest.mocked(deleteAccount).mockResolvedValue({
+      status: "deleted",
+      deleted_at: "2026-05-14T15:00:00Z",
+      retained_order_count: 0,
+      retained_payment_count: 0,
+      deleted_email: "shopper@example.com"
+    });
+
+    const { container } = renderWithQueryClient(<AccountPage />);
+
+    await screen.findByText("QA Shopper");
+
+    fireEvent.change(
+      container.querySelector('input[name="delete-account-password"]')!,
+      {
+        target: { value: "GhibliMerch!2026" }
+      }
+    );
+    fireEvent.click(screen.getByTestId("delete-account-submit"));
+
+    await waitFor(() => {
+      expect(deleteAccount).toHaveBeenCalledWith(
+        "access-token",
+        "GhibliMerch!2026"
+      );
+      expect(push).toHaveBeenCalledWith("/login");
+      expect(useUserStore.getState().accessToken).toBeNull();
     });
   });
 });

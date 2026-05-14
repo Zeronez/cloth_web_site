@@ -19,6 +19,8 @@ from payments.views import PaymentMethodViewSet, PaymentViewSet
 from payments.views import PaymentWebhookView
 from support.views import ContactRequestViewSet
 from users.views import (
+    AccountDeleteView,
+    AccountExportView,
     AddressViewSet,
     EmailConfirmationConfirmView,
     EmailConfirmationRequestView,
@@ -73,6 +75,8 @@ def build_api_urlpatterns(*, schema_url_name):
             name="token_refresh",
         ),
         path("users/me/", UserMeView.as_view(), name="user_me"),
+        path("users/me/export/", AccountExportView.as_view(), name="user_me_export"),
+        path("users/me/delete/", AccountDeleteView.as_view(), name="user_me_delete"),
         path(
             "auth/password-reset/request/",
             PasswordResetRequestView.as_view(),

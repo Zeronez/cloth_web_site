@@ -16,12 +16,14 @@ from config.permissions import IsObjectOwner
 from users.models import Address
 from users.serializers import (
     AddressSerializer,
+    DeleteAccountSerializer,
     EmailConfirmationConfirmSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
     UserSerializer,
 )
+from users.services import build_account_export_payload, delete_customer_account
 from users.tasks import send_email_confirmation_email, send_password_reset_email
 
 
@@ -83,6 +85,34 @@ class UserMeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class AccountExportView(APIView):
+    permission_classes = (IsAuthenticated,)
+    throttle_scope = "auth"
+
+    @extend_schema(responses={200: None})
+    def get(self, request):
+        payload = build_account_export_payload(
+            user=request.user,
+            serializer_context={"request": request},
+        )
+        return Response(payload, status=status.HTTP_200_OK)
+
+
+class AccountDeleteView(APIView):
+    permission_classes = (IsAuthenticated,)
+    throttle_scope = "auth"
+
+    @extend_schema(request=DeleteAccountSerializer, responses={200: None})
+    def post(self, request):
+        serializer = DeleteAccountSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        result = delete_customer_account(user=request.user)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class AddressViewSet(viewsets.ModelViewSet):

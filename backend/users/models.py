@@ -6,6 +6,7 @@ from django.utils import timezone
 class User(AbstractUser):
     phone = models.CharField(max_length=32, blank=True)
     avatar = models.ImageField(upload_to="avatars/", blank=True)
+    account_deleted_at = models.DateTimeField(null=True, blank=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_version = models.CharField(max_length=32, blank=True)
@@ -20,6 +21,10 @@ class User(AbstractUser):
     @property
     def is_email_verified(self):
         return self.email_verified_at is not None
+
+    @property
+    def is_account_deleted(self):
+        return self.account_deleted_at is not None
 
     def mark_email_verified(self):
         if self.email_verified_at is None:
