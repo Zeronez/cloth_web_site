@@ -343,7 +343,7 @@ Backend Integration Tests Against Real PostgreSQL
 [x] Checkout clears cart after order creation.
 [x] Checkout rejects empty cart.
 [x] Checkout rejects insufficient stock.
-[ ] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
+[x] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
 [x] Order history only returns current user's orders.
 [ ] Admin/staff-only endpoints reject regular users.
 [ ] Uploaded product images persist through configured storage.
