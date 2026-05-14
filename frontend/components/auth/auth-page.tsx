@@ -24,6 +24,13 @@ type FormState = {
   marketing_opt_in: boolean;
 };
 
+type ConsentFieldName =
+  | "privacy_policy_accepted"
+  | "offer_agreement_accepted"
+  | "marketing_opt_in";
+
+type TextFieldName = Exclude<keyof FormState, ConsentFieldName>;
+
 const initialFormState: FormState = {
   username: "",
   email: "",
@@ -38,7 +45,7 @@ const initialFormState: FormState = {
 };
 
 type FieldConfig = {
-  name: keyof FormState;
+  name: TextFieldName;
   label: string;
   type: string;
   autoComplete: string;
@@ -119,11 +126,6 @@ function AuthSidePanel({ mode }: { mode: Mode }) {
     </div>
   );
 }
-
-type ConsentFieldName =
-  | "privacy_policy_accepted"
-  | "offer_agreement_accepted"
-  | "marketing_opt_in";
 
 export function AuthPage({ mode }: { mode: Mode }) {
   const router = useRouter();
