@@ -1,13 +1,24 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
     phone = models.CharField(max_length=32, blank=True)
     avatar = models.ImageField(upload_to="avatars/", blank=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+    @property
+    def is_email_verified(self):
+        return self.email_verified_at is not None
+
+    def mark_email_verified(self):
+        if self.email_verified_at is None:
+            self.email_verified_at = timezone.now()
+            self.save(update_fields=["email_verified_at"])
 
 
 class Address(models.Model):

@@ -20,6 +20,10 @@ from payments.views import PaymentWebhookView
 from support.views import ContactRequestViewSet
 from users.views import (
     AddressViewSet,
+    EmailConfirmationConfirmView,
+    EmailConfirmationRequestView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     RegisterView,
     ScopedTokenObtainPairView,
     ScopedTokenRefreshView,
@@ -69,6 +73,26 @@ def build_api_urlpatterns(*, schema_url_name):
             name="token_refresh",
         ),
         path("users/me/", UserMeView.as_view(), name="user_me"),
+        path(
+            "auth/password-reset/request/",
+            PasswordResetRequestView.as_view(),
+            name="password_reset_request",
+        ),
+        path(
+            "auth/password-reset/confirm/",
+            PasswordResetConfirmView.as_view(),
+            name="password_reset_confirm",
+        ),
+        path(
+            "auth/email-confirmation/request/",
+            EmailConfirmationRequestView.as_view(),
+            name="email_confirmation_request",
+        ),
+        path(
+            "auth/email-confirmation/confirm/",
+            EmailConfirmationConfirmView.as_view(),
+            name="email_confirmation_confirm",
+        ),
         path(
             "payments/webhooks/<slug:provider_code>/",
             PaymentWebhookView.as_view(),

@@ -82,7 +82,7 @@ Phase 2.2: Authentication and Customer Account
 ----------------------------------------------
 [x] Implement registration with email/phone fields.
 [x] Implement login, refresh, logout, token rotation and blacklist.
-[ ] Implement password reset and email confirmation.
+[x] Implement password reset and email confirmation.
 [ ] Implement phone confirmation if SMS provider is selected.
 [x] Implement customer profile API.
 [x] Implement address CRUD with default address.
@@ -160,7 +160,7 @@ Phase 2.7: Notifications and Support
 [x] Add order confirmation email foundation.
 [ ] Add payment success/failure email.
 [ ] Add shipping/tracking email.
-[ ] Add password reset email.
+[x] Add password reset email.
 [ ] Add low-stock/internal admin email.
 [ ] Add SMS/Telegram notifications if provider selected.
 [x] Add support request/contact form.

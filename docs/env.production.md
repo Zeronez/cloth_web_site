@@ -67,6 +67,21 @@ These are used by Django email settings and are required when you switch to SMTP
 - `EMAIL_USE_TLS`
 - `EMAIL_USE_SSL`
 - `EMAIL_TIMEOUT`
+- `FRONTEND_APP_URL`
+- `AUTH_EMAIL_CONFIRMATION_PATH`
+- `AUTH_PASSWORD_RESET_PATH`
+
+Current auth email contract:
+
+- registration enqueues an email-confirmation message;
+- authenticated users can request a confirmation resend through
+  `/api/v1/auth/email-confirmation/request/`;
+- confirmation is completed through `/api/v1/auth/email-confirmation/confirm/`
+  with `uid` and `token`;
+- password reset is requested through `/api/v1/auth/password-reset/request/`
+  without leaking whether the email exists;
+- password reset is completed through `/api/v1/auth/password-reset/confirm/`
+  with `uid`, `token`, and a validated new password.
 
 ## S3 / object storage
 

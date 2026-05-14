@@ -279,6 +279,11 @@ EMAIL_HOST_PASSWORD = env_value("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 10)
+FRONTEND_APP_URL = env_value("FRONTEND_APP_URL", "http://localhost:3000")
+AUTH_EMAIL_CONFIRMATION_PATH = env_value(
+    "AUTH_EMAIL_CONFIRMATION_PATH", "/auth/confirm-email"
+)
+AUTH_PASSWORD_RESET_PATH = env_value("AUTH_PASSWORD_RESET_PATH", "/auth/reset-password")
 
 AWS_STORAGE_BUCKET_NAME = env_value("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")
