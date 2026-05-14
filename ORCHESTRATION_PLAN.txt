@@ -346,7 +346,7 @@ Backend Integration Tests Against Real PostgreSQL
 [x] Concurrent checkout test: two transactions competing for the same SKU, only valid stock amount succeeds.
 [x] Order history only returns current user's orders.
 [x] Admin/staff-only endpoints reject regular users.
-[ ] Uploaded product images persist through configured storage.
+[x] Uploaded product images persist through configured storage.
 
 Celery and Async Tests
 ----------------------

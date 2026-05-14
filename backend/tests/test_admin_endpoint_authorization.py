@@ -89,9 +89,7 @@ def test_regular_user_cannot_open_admin_custom_packing_slip_view(
     assert "AUTH-SLIP-M" not in response.content.decode("utf-8", errors="ignore")
 
 
-def test_regular_user_cannot_execute_staff_admin_action(
-    client, user, product_factory
-):
+def test_regular_user_cannot_execute_staff_admin_action(client, user, product_factory):
     order, _variant = create_order(user, product_factory, sku="AUTH-ACTION-M")
     client.force_login(user)
 
