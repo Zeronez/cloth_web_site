@@ -330,13 +330,13 @@ Backend Integration Tests Against Real PostgreSQL
 [x] Category/franchise/product/variant creation and querying.
 [x] Product filters: category, franchise, size, color, in_stock, min/max price, ordering, search.
 [x] Product detail returns images and variants.
-[ ] Cart creation for guest session.
-[ ] Cart creation for authenticated user.
+[x] Cart creation for guest session.
+[x] Cart creation for authenticated user.
 [x] Add SKU to cart.
 [x] Update cart quantity.
 [x] Remove cart item.
-[ ] Reject inactive product/variant.
-[ ] Reject quantity above stock.
+[x] Reject inactive product/variant.
+[x] Reject quantity above stock.
 [ ] Merge guest cart into user cart after login.
 [x] Checkout creates order and order items.
 [x] Checkout decrements stock in same transaction.
