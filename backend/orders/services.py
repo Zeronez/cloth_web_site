@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -19,6 +20,10 @@ from notifications.tasks import send_order_confirmation_email
 
 def _cart_error(code, message):
     return ValidationError({"cart": {"code": code, "message": message}})
+
+
+def _consent_error(code, message):
+    return ValidationError({"consent": {"code": code, "message": message}})
 
 
 @transaction.atomic
@@ -99,6 +104,21 @@ def confirm_order_return_received(*, order, performed_by=None, note=""):
 
 @transaction.atomic
 def checkout_cart(user, shipping_data):
+    if not user.has_accepted_privacy_policy or (
+        user.privacy_policy_version != settings.PRIVACY_POLICY_VERSION
+    ):
+        raise _consent_error(
+            "privacy_policy_reaccept_required",
+            "Перед оформлением заказа нужно принять актуальную политику конфиденциальности.",
+        )
+    if not user.has_accepted_offer_agreement or (
+        user.offer_agreement_version != settings.OFFER_AGREEMENT_VERSION
+    ):
+        raise _consent_error(
+            "offer_agreement_reaccept_required",
+            "Перед оформлением заказа нужно принять актуальную оферту.",
+        )
+
     shipping_data = dict(shipping_data)
     idempotency_key = shipping_data.pop("idempotency_key", "")
     if idempotency_key:

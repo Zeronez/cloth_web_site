@@ -70,6 +70,9 @@ These are used by Django email settings and are required when you switch to SMTP
 - `FRONTEND_APP_URL`
 - `AUTH_EMAIL_CONFIRMATION_PATH`
 - `AUTH_PASSWORD_RESET_PATH`
+- `PRIVACY_POLICY_VERSION`
+- `OFFER_AGREEMENT_VERSION`
+- `MARKETING_CONSENT_VERSION`
 
 Current auth email contract:
 
@@ -82,6 +85,18 @@ Current auth email contract:
   without leaking whether the email exists;
 - password reset is completed through `/api/v1/auth/password-reset/confirm/`
   with `uid`, `token`, and a validated new password.
+
+Current legal consent contract:
+
+- registration requires explicit acceptance of the current privacy policy and
+  offer agreement versions from `PRIVACY_POLICY_VERSION` and
+  `OFFER_AGREEMENT_VERSION`;
+- optional marketing subscription state is versioned by
+  `MARKETING_CONSENT_VERSION`;
+- the backend stores acceptance timestamps and accepted document versions on the
+  user model for auditability;
+- checkout rejects stale or missing required legal consents until the customer
+  re-accepts the current required versions.
 
 ## S3 / object storage
 

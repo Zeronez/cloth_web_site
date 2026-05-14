@@ -163,12 +163,81 @@ describe("AuthPage", () => {
     fireEvent.change(container.querySelector('input[name="confirmPassword"]')!, {
       target: { value: "DifferentPass!2026" }
     });
+    const consentCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+    fireEvent.click(consentCheckboxes[0]!);
+    fireEvent.click(consentCheckboxes[1]!);
     fireEvent.submit(container.querySelector("form")!);
 
     await waitFor(() => {
       expect(registerUser).not.toHaveBeenCalled();
       expect(loginUser).not.toHaveBeenCalled();
       expect(mergeGuestCartIntoServer).not.toHaveBeenCalled();
+    });
+  });
+
+  it("sends required consents and optional marketing flag during registration", async () => {
+    jest.mocked(registerUser).mockResolvedValue({
+      id: 8,
+      username: "new-shopper",
+      email: "new-shopper@example.com"
+    });
+    jest.mocked(loginUser).mockResolvedValue({
+      access: "register-access-token",
+      refresh: "register-refresh-token"
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 8,
+      username: "new-shopper",
+      email: "new-shopper@example.com",
+      is_marketing_subscribed: true
+    });
+    jest.mocked(mergeGuestCartIntoServer).mockResolvedValue({
+      items: [],
+      skippedItems: []
+    });
+
+    const { container } = render(<AuthPage mode="register" />);
+
+    fireEvent.change(container.querySelector('input[name="username"]')!, {
+      target: { value: "new-shopper" }
+    });
+    fireEvent.change(container.querySelector('input[name="email"]')!, {
+      target: { value: "new-shopper@example.com" }
+    });
+    fireEvent.change(container.querySelector('input[name="first_name"]')!, {
+      target: { value: "New" }
+    });
+    fireEvent.change(container.querySelector('input[name="last_name"]')!, {
+      target: { value: "Shopper" }
+    });
+    fireEvent.change(container.querySelector('input[name="phone"]')!, {
+      target: { value: "+79991234567" }
+    });
+    fireEvent.change(container.querySelector('input[name="password"]')!, {
+      target: { value: "GhibliMerch!2026" }
+    });
+    fireEvent.change(container.querySelector('input[name="confirmPassword"]')!, {
+      target: { value: "GhibliMerch!2026" }
+    });
+
+    const consentCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+    fireEvent.click(consentCheckboxes[0]!);
+    fireEvent.click(consentCheckboxes[1]!);
+    fireEvent.click(consentCheckboxes[2]!);
+    fireEvent.submit(container.querySelector("form")!);
+
+    await waitFor(() => {
+      expect(registerUser).toHaveBeenCalledWith({
+        username: "new-shopper",
+        email: "new-shopper@example.com",
+        password: "GhibliMerch!2026",
+        first_name: "New",
+        last_name: "Shopper",
+        phone: "+79991234567",
+        privacy_policy_accepted: true,
+        offer_agreement_accepted: true,
+        marketing_opt_in: true
+      });
     });
   });
 });

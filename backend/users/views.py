@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
@@ -32,19 +33,53 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     throttle_scope = "auth"
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update(
+            {
+                "privacy_policy_version": settings.PRIVACY_POLICY_VERSION,
+                "offer_agreement_version": settings.OFFER_AGREEMENT_VERSION,
+                "marketing_consent_version": settings.MARKETING_CONSENT_VERSION,
+            }
+        )
+        return context
+
     @extend_schema(auth=[])
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         user = serializer.save()
         if user.email:
             transaction.on_commit(lambda: send_email_confirmation_email.delay(user.id))
+        response_serializer = UserSerializer(
+            user,
+            context={
+                "request": request,
+                "marketing_consent_version": settings.MARKETING_CONSENT_VERSION,
+            },
+        )
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
+
+    def perform_create(self, serializer):
+        serializer.save()
 
 
 class UserMeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["marketing_consent_version"] = settings.MARKETING_CONSENT_VERSION
+        return context
 
     def get_object(self):
         return self.request.user

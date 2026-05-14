@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -25,22 +26,32 @@ def api_client():
 
 @pytest.fixture
 def user(db):
-    return get_user_model().objects.create_user(
+    user = get_user_model().objects.create_user(
         username="shopper",
         email="shopper@example.com",
         password="GhibliMerch!2026",
         first_name="QA",
         last_name="Shopper",
     )
+    user.mark_required_consents_accepted(
+        privacy_version=settings.PRIVACY_POLICY_VERSION,
+        offer_version=settings.OFFER_AGREEMENT_VERSION,
+    )
+    return user
 
 
 @pytest.fixture
 def other_user(db):
-    return get_user_model().objects.create_user(
+    user = get_user_model().objects.create_user(
         username="other-shopper",
         email="other@example.com",
         password="GhibliMerch!2026",
     )
+    user.mark_required_consents_accepted(
+        privacy_version=settings.PRIVACY_POLICY_VERSION,
+        offer_version=settings.OFFER_AGREEMENT_VERSION,
+    )
+    return user
 
 
 @pytest.fixture

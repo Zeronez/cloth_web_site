@@ -88,7 +88,7 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement address CRUD with default address.
 [x] Implement order history and order detail API.
 [x] Implement wishlist/favorites API.
-[ ] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
+[x] Implement consent tracking for privacy policy, offer agreement, marketing subscription.
 [ ] Implement account deletion/export flow if required by legal policy.
 
 Phase 2.3: Catalog and Merchandising
@@ -252,7 +252,7 @@ Phase 5: Security and Compliance
 [ ] Add PII handling policy and minimal logging of personal data.
 [ ] Add backup encryption plan.
 [ ] Add legal review tasks for CIS/Russian ecommerce requirements.
-[ ] Add privacy consent and marketing opt-in storage.
+[x] Add privacy consent and marketing opt-in storage.
 [ ] Add data retention policy.
 
 Phase 6: Observability, Reliability, and Performance

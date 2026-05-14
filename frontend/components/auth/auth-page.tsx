@@ -19,6 +19,9 @@ type FormState = {
   first_name: string;
   last_name: string;
   phone: string;
+  privacy_policy_accepted: boolean;
+  offer_agreement_accepted: boolean;
+  marketing_opt_in: boolean;
 };
 
 const initialFormState: FormState = {
@@ -28,7 +31,10 @@ const initialFormState: FormState = {
   confirmPassword: "",
   first_name: "",
   last_name: "",
-  phone: ""
+  phone: "",
+  privacy_policy_accepted: false,
+  offer_agreement_accepted: false,
+  marketing_opt_in: false
 };
 
 type FieldConfig = {
@@ -114,6 +120,11 @@ function AuthSidePanel({ mode }: { mode: Mode }) {
   );
 }
 
+type ConsentFieldName =
+  | "privacy_policy_accepted"
+  | "offer_agreement_accepted"
+  | "marketing_opt_in";
+
 export function AuthPage({ mode }: { mode: Mode }) {
   const router = useRouter();
   const setSession = useUserStore((state) => state.setSession);
@@ -159,7 +170,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     [mode]
   );
 
-  function updateField(name: keyof FormState, value: string) {
+  function updateField(name: keyof FormState, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
@@ -206,7 +217,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
         password: form.password,
         first_name: form.first_name,
         last_name: form.last_name,
-        phone: form.phone
+        phone: form.phone,
+        privacy_policy_accepted: form.privacy_policy_accepted,
+        offer_agreement_accepted: form.offer_agreement_accepted,
+        marketing_opt_in: form.marketing_opt_in
       });
 
       const tokens = await loginUser({
@@ -277,6 +291,45 @@ export function AuthPage({ mode }: { mode: Mode }) {
                 </label>
               ))}
             </div>
+
+            {mode === "register" ? (
+              <div className="space-y-3 border border-white/10 bg-ink-900/50 p-4">
+                {[
+                  {
+                    name: "privacy_policy_accepted" as ConsentFieldName,
+                    label:
+                      "Принимаю политику конфиденциальности и обработку персональных данных",
+                    required: true
+                  },
+                  {
+                    name: "offer_agreement_accepted" as ConsentFieldName,
+                    label: "Принимаю оферту и условия продажи",
+                    required: true
+                  },
+                  {
+                    name: "marketing_opt_in" as ConsentFieldName,
+                    label: "Хочу получать новости о дропах и специальных предложениях",
+                    required: false
+                  }
+                ].map((field) => (
+                  <label
+                    key={field.name}
+                    className="flex items-start gap-3 text-sm leading-6 text-slate-200"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[field.name])}
+                      onChange={(event) =>
+                        updateField(field.name, event.target.checked)
+                      }
+                      required={field.required}
+                      className="mt-1 h-4 w-4 border-white/20 bg-ink-900 text-neon-teal focus:ring-neon-teal"
+                    />
+                    <span>{field.label}</span>
+                  </label>
+                ))}
+              </div>
+            ) : null}
 
             <div className="space-y-3">
               {error ? (

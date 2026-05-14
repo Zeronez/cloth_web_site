@@ -154,6 +154,50 @@ def test_checkout_uses_first_active_delivery_method_when_code_is_omitted(
     assert snapshot.price_amount == Decimal("0.00")
 
 
+def test_checkout_requires_actual_legal_consents(
+    authenticated_client, user, product_factory, settings
+):
+    settings.PRIVACY_POLICY_VERSION = "2026-06-privacy"
+    settings.OFFER_AGREEMENT_VERSION = "2026-06-offer"
+    user.privacy_policy_accepted_at = None
+    user.privacy_policy_version = ""
+    user.offer_agreement_accepted_at = None
+    user.offer_agreement_version = ""
+    user.save(
+        update_fields=[
+            "privacy_policy_accepted_at",
+            "privacy_policy_version",
+            "offer_agreement_accepted_at",
+            "offer_agreement_version",
+        ]
+    )
+    product = product_factory(
+        name="Consent Checkout Tee",
+        base_price="40.00",
+        variants=[{"sku": "CONSENT-TEE-M", "stock_quantity": 1}],
+    )
+    variant = product.variants.get()
+    authenticated_client.post(
+        "/api/cart/items/",
+        {"variant_id": variant.id, "quantity": 1},
+        format="json",
+    )
+
+    response = authenticated_client.post(
+        "/api/orders/checkout/",
+        shipping_payload(),
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data["error"]["code"] == "privacy_policy_reaccept_required"
+    assert (
+        response.data["error"]["details"]["consent"]["code"]
+        == "privacy_policy_reaccept_required"
+    )
+    assert Order.objects.filter(user=user).count() == 0
+
+
 def test_payment_session_placeholder_is_safe_and_idempotent(authenticated_client, user):
     order = Order.objects.create(
         user=user,

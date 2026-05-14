@@ -35,6 +35,8 @@ def test_register_queues_email_confirmation_message(
                 "password": "GhibliMerch!2026",
                 "first_name": "Confirm",
                 "last_name": "Me",
+                "privacy_policy_accepted": True,
+                "offer_agreement_accepted": True,
             },
             format="json",
         )

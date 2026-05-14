@@ -67,6 +67,9 @@ def test_v1_auth_and_user_profile_flow(api_client):
             "first_name": "Versioned",
             "last_name": "Shopper",
             "phone": "+79991234567",
+            "privacy_policy_accepted": True,
+            "offer_agreement_accepted": True,
+            "marketing_opt_in": True,
         },
         format="json",
     )
@@ -86,6 +89,9 @@ def test_v1_auth_and_user_profile_flow(api_client):
 
     assert profile_response.status_code == 200
     assert profile_response.data["username"] == "versioned-shopper"
+    assert profile_response.data["has_accepted_privacy_policy"] is True
+    assert profile_response.data["has_accepted_offer_agreement"] is True
+    assert profile_response.data["is_marketing_subscribed"] is True
 
 
 def test_v1_cart_checkout_path_uses_same_stock_transaction_contract(

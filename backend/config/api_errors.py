@@ -34,7 +34,7 @@ DEFAULT_ERROR_CODES = {
     500: "server_error",
 }
 
-BUSINESS_ERROR_KEYS = {"cart", "payment", "webhook", "order", "delivery"}
+BUSINESS_ERROR_KEYS = {"cart", "payment", "webhook", "order", "delivery", "consent"}
 
 
 def custom_exception_handler(exc, context):

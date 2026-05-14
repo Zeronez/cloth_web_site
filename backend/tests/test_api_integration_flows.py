@@ -66,6 +66,8 @@ def test_user_can_register_login_and_refresh_jwt(api_client):
         "first_name": "New",
         "last_name": "Shopper",
         "phone": "+15550001111",
+        "privacy_policy_accepted": True,
+        "offer_agreement_accepted": True,
     }
 
     register_response = api_client.post(
@@ -74,6 +76,8 @@ def test_user_can_register_login_and_refresh_jwt(api_client):
 
     assert register_response.status_code == 201
     assert register_response.data["username"] == "new-shopper"
+    assert register_response.data["has_accepted_privacy_policy"] is True
+    assert register_response.data["has_accepted_offer_agreement"] is True
     assert "password" not in register_response.data
 
     user = get_user_model().objects.get(username="new-shopper")
