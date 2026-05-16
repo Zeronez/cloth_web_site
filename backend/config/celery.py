@@ -9,6 +9,7 @@ from config.logging import (
     bind_log_context,
     get_log_context,
     reset_log_context,
+    sanitize_log_text,
 )
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
@@ -91,19 +92,13 @@ def log_task_failure(
     **rest,
 ):
     task_name = getattr(sender, "name", rest.get("task_name", "unknown"))
+    sanitized_error = sanitize_log_text(exception, limit=255) if exception else ""
     logger.error(
-        "celery task failed",
+        "celery task failed: %s" if sanitized_error else "celery task failed",
+        sanitized_error,
         extra={
             "task_name": task_name,
             "task_id": task_id or "-",
+            "exception_type": type(exception).__name__ if exception else "-",
         },
-        exc_info=(
-            (
-                type(exception),
-                exception,
-                getattr(einfo, "tb", traceback),
-            )
-            if exception is not None
-            else None
-        ),
     )

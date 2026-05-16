@@ -3,10 +3,12 @@ from decimal import Decimal
 from django.db.models import Model
 
 from audit.models import AuditLog
+from config.logging import sanitize_log_text
 
 
 REDACTED = "[redacted]"
 SENSITIVE_TOKENS = (
+    "admin_note",
     "password",
     "token",
     "secret",
@@ -14,12 +16,20 @@ SENSITIVE_TOKENS = (
     "signature",
     "phone",
     "email",
+    "recipient_name",
+    "recipient_phone",
+    "shipping_name",
     "address",
     "line1",
     "line2",
     "postal",
     "note",
+    "first_name",
+    "last_name",
+    "body",
+    "message",
 )
+SENSITIVE_REPR_MODELS = {"address", "contactrequest", "order", "user"}
 
 
 def is_sensitive_field(field_name):
@@ -34,7 +44,9 @@ def safe_value(field_name, value):
         return None
     if isinstance(value, Decimal):
         return str(value)
-    if isinstance(value, (str, int, float, bool)):
+    if isinstance(value, str):
+        return sanitize_log_text(value, limit=255)
+    if isinstance(value, (int, float, bool)):
         return value
     if hasattr(value, "isoformat"):
         return value.isoformat()
@@ -45,11 +57,15 @@ def safe_value(field_name, value):
 
 def model_identity(obj):
     meta = obj._meta
+    if meta.model_name in SENSITIVE_REPR_MODELS:
+        object_repr = f"{meta.verbose_name.capitalize()} #{obj.pk or ''}".strip()
+    else:
+        object_repr = sanitize_log_text(str(obj), limit=255)
     return {
         "app_label": meta.app_label,
         "model": meta.model_name,
         "object_id": str(obj.pk or ""),
-        "object_repr": str(obj)[:255],
+        "object_repr": object_repr,
     }
 
 
@@ -86,8 +102,26 @@ def request_metadata(request):
     return {
         "request_path": request.path[:255],
         "ip_address": ip_address,
-        "user_agent": request.META.get("HTTP_USER_AGENT", "")[:255],
+        "user_agent": sanitize_log_text(
+            request.META.get("HTTP_USER_AGENT", ""),
+            limit=255,
+        ),
     }
+
+
+def scrub_audit_metadata(value, *, field_name=""):
+    if isinstance(value, dict):
+        return {
+            key: scrub_audit_metadata(item, field_name=str(key))
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [scrub_audit_metadata(item, field_name=field_name) for item in value]
+    if isinstance(value, tuple):
+        return tuple(
+            scrub_audit_metadata(item, field_name=field_name) for item in value
+        )
+    return safe_value(field_name or "metadata", value)
 
 
 def log_admin_event(
@@ -107,6 +141,6 @@ def log_admin_event(
         **identity,
         changes=changes or {},
         snapshot=snapshot or {},
-        metadata=metadata or {},
+        metadata=scrub_audit_metadata(metadata or {}),
         **request_metadata(request),
     )

@@ -73,6 +73,9 @@ These are used by Django email settings and are required when you switch to SMTP
 - `PRIVACY_POLICY_VERSION`
 - `OFFER_AGREEMENT_VERSION`
 - `MARKETING_CONSENT_VERSION`
+- `AVATAR_UPLOAD_MAX_BYTES`
+- `PRODUCT_IMAGE_UPLOAD_MAX_BYTES`
+- `IMAGE_UPLOAD_MAX_PIXELS`
 
 Current auth email contract:
 
@@ -97,6 +100,14 @@ Current legal consent contract:
   user model for auditability;
 - checkout rejects stale or missing required legal consents until the customer
   re-accepts the current required versions.
+
+Current upload safety contract:
+
+- avatar uploads are limited by `AVATAR_UPLOAD_MAX_BYTES`;
+- catalog product images are limited by `PRODUCT_IMAGE_UPLOAD_MAX_BYTES`;
+- all uploaded images must be valid JPG, PNG, or WEBP files;
+- the backend rejects images whose total pixel count exceeds
+  `IMAGE_UPLOAD_MAX_PIXELS` to avoid oversized or decompression-bomb-like files.
 
 ## S3 / object storage
 

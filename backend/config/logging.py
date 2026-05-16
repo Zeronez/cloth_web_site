@@ -1,6 +1,7 @@
 import contextvars
 import json
 import logging
+import re
 import time
 import uuid
 
@@ -14,18 +15,27 @@ SENSITIVE_LOG_KEYS = {
     "access",
     "access_token",
     "address",
+    "admin_notes",
     "authorization",
     "city",
     "email",
     "external_payment_id",
+    "first_name",
+    "last_name",
     "line1",
     "line2",
     "password",
     "phone",
+    "postal_code",
     "refresh",
     "refresh_token",
+    "recipient",
+    "recipient_name",
+    "recipient_phone",
     "secret",
     "signature",
+    "shipping_name",
+    "shipping_postal_code",
     "shipping_city",
     "shipping_line1",
     "shipping_line2",
@@ -33,6 +43,11 @@ SENSITIVE_LOG_KEYS = {
     "token",
 }
 REDACTED = "[redacted]"
+EMAIL_PATTERN = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
+PHONE_PATTERN = re.compile(r"(?<!\w)(?:\+?\d[\d\-\s()]{7,}\d)(?!\w)")
+SECRET_PATTERN = re.compile(
+    r"(?i)\b(access|refresh|token|secret|signature|authorization|password)\b\s*[:=]\s*([^\s,;]+)"
+)
 
 
 def _safe_header_id(value):
@@ -93,6 +108,18 @@ def scrub_log_payload(value):
     return value
 
 
+def sanitize_log_text(value, *, limit=None):
+    if value is None:
+        return ""
+    text = str(value)
+    text = EMAIL_PATTERN.sub(REDACTED, text)
+    text = PHONE_PATTERN.sub(REDACTED, text)
+    text = SECRET_PATTERN.sub(lambda match: f"{match.group(1)}={REDACTED}", text)
+    if limit is not None:
+        return text[:limit]
+    return text
+
+
 class RequestContextFilter(logging.Filter):
     def filter(self, record):
         for key, value in get_log_context().items():
@@ -106,17 +133,32 @@ class JsonFormatter(logging.Formatter):
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": sanitize_log_text(record.getMessage(), limit=1000),
             "request_id": getattr(record, "request_id", "-"),
             "correlation_id": getattr(record, "correlation_id", "-"),
             "user_id": getattr(record, "user_id", "-"),
             "order_id": getattr(record, "order_id", "-"),
         }
-        for field in ("method", "path", "status_code", "duration_ms", "route"):
+        for field in (
+            "method",
+            "path",
+            "status_code",
+            "duration_ms",
+            "route",
+            "task_id",
+            "task_name",
+            "exception_type",
+        ):
             if hasattr(record, field):
                 payload[field] = getattr(record, field)
+        for field in ("payload", "metadata", "details"):
+            if hasattr(record, field):
+                payload[field] = scrub_log_payload(getattr(record, field))
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = sanitize_log_text(
+                self.formatException(record.exc_info),
+                limit=2000,
+            )
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 

@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+from config.uploads import validate_avatar_upload
+
 
 class User(AbstractUser):
     phone = models.CharField(max_length=32, blank=True)
@@ -79,6 +81,11 @@ class User(AbstractUser):
                 update_fields.append("marketing_opt_in_version")
         if update_fields:
             self.save(update_fields=update_fields)
+
+    def save(self, *args, **kwargs):
+        if self.avatar and not getattr(self.avatar, "_committed", True):
+            validate_avatar_upload(self.avatar)
+        super().save(*args, **kwargs)
 
 
 class Address(models.Model):

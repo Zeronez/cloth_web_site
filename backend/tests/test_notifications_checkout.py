@@ -154,6 +154,39 @@ def test_order_confirmation_failed_send_is_logged(user, monkeypatch, settings):
     assert "SMTP provider is unavailable" in attempt.error_message
 
 
+def test_notification_failure_redacts_pii_from_persisted_error_message(
+    user, monkeypatch, settings
+):
+    clear_outbox()
+    order = Order.objects.create(
+        user=user,
+        total_amount=Decimal("270.00"),
+        **shipping_payload(),
+    )
+    settings.CELERY_NOTIFICATION_MAX_RETRIES = 0
+
+    class FailingEmail:
+        def send(self, fail_silently=False):
+            raise RuntimeError(
+                "SMTP provider is unavailable for shopper@example.com token=abc123"
+            )
+
+    monkeypatch.setattr(
+        "notifications.tasks._build_order_confirmation_email",
+        lambda log: FailingEmail(),
+    )
+
+    with pytest.raises(RuntimeError, match="SMTP provider is unavailable"):
+        send_order_confirmation_email.delay(order.id).get()
+
+    log = NotificationLog.objects.get(order=order)
+    attempt = log.attempts.get()
+    assert "shopper@example.com" not in log.error_message
+    assert "abc123" not in log.error_message
+    assert "shopper@example.com" not in attempt.error_message
+    assert "abc123" not in attempt.error_message
+
+
 def test_order_confirmation_retryable_failure_can_recover(user, monkeypatch):
     clear_outbox()
     order = Order.objects.create(

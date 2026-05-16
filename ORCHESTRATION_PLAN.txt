@@ -240,7 +240,7 @@ Phase 4: Admin and Operations Product
 Phase 5: Security and Compliance
 --------------------------------
 [ ] Threat model the system: auth, checkout, payment webhooks, admin, file uploads.
-[ ] Add dependency vulnerability scanning.
+[x] Add dependency vulnerability scanning.
 [ ] Add secret scanning.
 [ ] Add SAST for backend and frontend.
 [ ] Add container image scanning.
@@ -248,8 +248,8 @@ Phase 5: Security and Compliance
 [ ] Add admin 2FA strategy if package/provider is selected.
 [ ] Add brute-force protection for login/password reset.
 [x] Add webhook signature verification tests.
-[ ] Add file upload type/size validation.
-[ ] Add PII handling policy and minimal logging of personal data.
+[x] Add file upload type/size validation.
+[x] Add PII handling policy and minimal logging of personal data.
 [ ] Add backup encryption plan.
 [ ] Add legal review tasks for CIS/Russian ecommerce requirements.
 [x] Add privacy consent and marketing opt-in storage.
@@ -434,8 +434,8 @@ API Contract Tests
 
 Security Tests
 --------------
-[ ] Dependency audit backend.
-[ ] Dependency audit frontend.
+[x] Dependency audit backend.
+[x] Dependency audit frontend.
 [ ] Secret scanning.
 [ ] SAST backend.
 [ ] SAST frontend.
@@ -445,7 +445,7 @@ Security Tests
 [ ] Permission bypass tests.
 [ ] IDOR tests for orders/addresses.
 [ ] CSRF/CORS production config tests.
-[ ] File upload validation tests.
+[x] File upload validation tests.
 [ ] Webhook replay/idempotency tests.
 
 Performance and Load Tests

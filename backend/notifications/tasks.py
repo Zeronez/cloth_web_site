@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from config.celery import app
+from config.logging import sanitize_log_text
 from notifications.models import NotificationAttempt, NotificationLog
 from orders.models import Order
 
@@ -101,15 +102,19 @@ def _build_order_confirmation_email(log):
 
 
 def _mark_notification_retry_scheduled(log, *, exc, retry_number, countdown):
+    safe_error = sanitize_log_text(exc, limit=255)
     NotificationAttempt.objects.create(
         notification=log,
         status=NotificationAttempt.Status.RETRY_SCHEDULED,
         provider_message_id=_notification_message_id(log),
-        error_message=f"retry #{retry_number} scheduled in {countdown}s: {exc}",
+        error_message=sanitize_log_text(
+            f"retry #{retry_number} scheduled in {countdown}s: {safe_error}",
+            limit=255,
+        ),
     )
     NotificationLog.objects.filter(id=log.id).update(
         status=NotificationLog.Status.PENDING,
-        error_message=str(exc),
+        error_message=safe_error,
         processing_started_at=None,
         updated_at=timezone.now(),
     )
@@ -124,14 +129,15 @@ def _mark_notification_terminal_failure(log, *, exc, dead_lettered):
     attempts_count = log.attempts.exclude(
         status=NotificationAttempt.Status.RETRY_SCHEDULED
     ).count()
+    safe_error = sanitize_log_text(exc, limit=255)
     message = (
-        f"dead-lettered after {attempts_count} delivery attempts: {exc}"
+        f"dead-lettered after {attempts_count} delivery attempts: {safe_error}"
         if dead_lettered
-        else str(exc)
+        else safe_error
     )
     NotificationLog.objects.filter(id=log.id).update(
         status=status,
-        error_message=message,
+        error_message=sanitize_log_text(message, limit=255),
         dead_lettered_at=timezone.now() if dead_lettered else None,
         processing_started_at=None,
         updated_at=timezone.now(),
@@ -192,11 +198,12 @@ def send_order_confirmation_email(self, order_id):
     try:
         delivered_count = _build_order_confirmation_email(log).send(fail_silently=False)
     except Exception as exc:
+        safe_error = sanitize_log_text(exc, limit=255)
         NotificationAttempt.objects.create(
             notification=log,
             status=NotificationAttempt.Status.FAILED,
             provider_message_id=_notification_message_id(log),
-            error_message=str(exc),
+            error_message=safe_error,
         )
 
         is_retryable = isinstance(exc, RETRYABLE_NOTIFICATION_EXCEPTIONS)

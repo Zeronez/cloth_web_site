@@ -2,6 +2,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from config.uploads import validate_product_image_upload
+
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -227,6 +229,11 @@ class ProductImage(TimeStampedModel):
                 name="catalog_pro_product_292fff_idx",
             )
         ]
+
+    def save(self, *args, **kwargs):
+        if self.image and not getattr(self.image, "_committed", True):
+            validate_product_image_upload(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.alt_text

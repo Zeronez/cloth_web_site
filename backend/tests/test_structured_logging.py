@@ -15,6 +15,7 @@ from config.logging import (
     bind_log_context,
     get_log_context,
     reset_log_context,
+    sanitize_log_text,
     scrub_log_payload,
 )
 
@@ -109,6 +110,29 @@ def test_json_formatter_serializes_context_fields():
     assert payload["status_code"] == 201
 
 
+def test_json_formatter_scrubs_payload_metadata():
+    record = logging.LogRecord(
+        name="animeattire.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="profile update",
+        args=(),
+        exc_info=None,
+    )
+    record.payload = {
+        "email": "shopper@example.com",
+        "shipping_phone": "+79991234567",
+        "safe": "hoodie",
+    }
+
+    payload = json.loads(JsonFormatter().format(record))
+
+    assert payload["payload"]["email"] == "[redacted]"
+    assert payload["payload"]["shipping_phone"] == "[redacted]"
+    assert payload["payload"]["safe"] == "hoodie"
+
+
 def test_log_context_is_cleared_after_request(client):
     client.get("/api/health/live/", HTTP_X_REQUEST_ID="req-cleanup")
 
@@ -181,7 +205,9 @@ def test_celery_task_failure_log_contains_correlation_id():
     )
     try:
         try:
-            raise RuntimeError("provider gateway timeout")
+            raise RuntimeError(
+                "provider gateway timeout for shopper@example.com token=secret-123"
+            )
         except RuntimeError as exc:
             log_task_failure(
                 task_id="task-123",
@@ -203,7 +229,11 @@ def test_celery_task_failure_log_contains_correlation_id():
     assert record.order_id == "9001"
     assert record.task_id == "task-123"
     assert record.task_name == "notifications.send_order_confirmation_email"
-    assert "provider gateway timeout" in record.getMessage() or record.exc_info
+    assert "provider gateway timeout" in record.getMessage()
+    assert "shopper@example.com" not in record.getMessage()
+    assert "secret-123" not in record.getMessage()
+    assert record.exception_type == "RuntimeError"
+    assert record.exc_info is None
 
 
 def test_scrub_log_payload_redacts_pii_and_secrets_recursively():
@@ -236,3 +266,13 @@ def test_scrub_log_payload_redacts_pii_and_secrets_recursively():
     assert "+79991234567" not in serialized
     assert "GhibliMerch!2026" not in serialized
     assert "jwt-token" not in serialized
+
+
+def test_sanitize_log_text_redacts_inline_pii():
+    text = sanitize_log_text(
+        "customer=shopper@example.com phone=+79991234567 token=secret-123"
+    )
+
+    assert "shopper@example.com" not in text
+    assert "+79991234567" not in text
+    assert "secret-123" not in text

@@ -9,7 +9,7 @@ from django.test import RequestFactory
 from django.urls import reverse
 
 from audit.models import AuditLog
-from audit.services import log_admin_event, model_changes
+from audit.services import log_admin_event, model_changes, model_snapshot
 from catalog.admin import ProductAdmin
 from catalog.models import Category, InventoryAdjustment, Product
 from delivery.models import DeliveryMethod
@@ -283,3 +283,36 @@ def test_payment_export_creates_audit_without_exporting_pii_to_metadata(
         "selected_count": 1,
     }
     assert user.email not in str(log.metadata)
+
+
+def test_audit_log_redacts_sensitive_metadata_and_object_repr(admin_user, user):
+    address = user.addresses.create(
+        label="Home",
+        recipient_name="QA Shopper",
+        phone="+79990001122",
+        country="RU",
+        city="Moscow",
+        postal_code="101000",
+        line1="Hidden street 1",
+        line2="Apt 5",
+        is_default=True,
+    )
+
+    log = log_admin_event(
+        actor=admin_user,
+        action=AuditLog.Action.ADMIN_ACTION,
+        obj=address,
+        metadata={
+            "email": user.email,
+            "shipping_phone": "+79990001122",
+            "safe_flag": "ok",
+        },
+        snapshot=model_snapshot(address),
+    )
+
+    assert log.object_repr.startswith("Address #")
+    assert log.metadata["email"] == "[redacted]"
+    assert log.metadata["shipping_phone"] == "[redacted]"
+    assert log.metadata["safe_flag"] == "ok"
+    assert log.snapshot["recipient_name"] == "[redacted]"
+    assert log.snapshot["line1"] == "[redacted]"
