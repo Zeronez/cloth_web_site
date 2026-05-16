@@ -1,0 +1,52 @@
+title = "AnimeAttire Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Example env placeholders and documentation are not real secrets"
+paths = [
+  '''^\.env\.example$''',
+  '''^docs/env\.production\.md$''',
+]
+
+[[allowlists]]
+description = "Frontend tests use fake auth tokens and passwords"
+paths = [
+  '''^frontend/.*\.test\.(ts|tsx)$''',
+  '''^frontend/stores/.*\.test\.ts$''',
+]
+regexes = [
+  '''access-token''',
+  '''refresh-token''',
+  '''register-access-token''',
+  '''register-refresh-token''',
+  '''GhibliMerch!2026''',
+]
+
+[[allowlists]]
+description = "Backend tests use fake credentials and sanitized token strings"
+paths = [
+  '''^backend/tests/.*\.py$''',
+  '''^backend/config/settings/test\.py$''',
+]
+regexes = [
+  '''GhibliMerch!2026''',
+  '''access-token''',
+  '''refresh-token''',
+  '''secret-123''',
+  '''abc123''',
+  '''replace-with-provider-webhook-secret''',
+  '''ci-secret-key''',
+  '''animeattire-test-secret-key-with-enough-entropy-for-hmac''',
+  '''animeattire-production-secret-key-2026-with-64-characters''',
+  '''yookassa-webhook-secret-with-at-least-32-chars''',
+  '''prod-secret-key''',
+  '''media-access-key''',
+]
+
+[[allowlists]]
+description = "Development fallback secret is intentional and must never be used in production"
+regexes = [
+  '''unsafe-local-secret-key''',
+]

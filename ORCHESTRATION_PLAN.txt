@@ -239,9 +239,9 @@ Phase 4: Admin and Operations Product
 
 Phase 5: Security and Compliance
 --------------------------------
-[ ] Threat model the system: auth, checkout, payment webhooks, admin, file uploads.
+[x] Threat model the system: auth, checkout, payment webhooks, admin, file uploads.
 [x] Add dependency vulnerability scanning.
-[ ] Add secret scanning.
+[x] Add secret scanning.
 [ ] Add SAST for backend and frontend.
 [ ] Add container image scanning.
 [ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
@@ -436,7 +436,7 @@ Security Tests
 --------------
 [x] Dependency audit backend.
 [x] Dependency audit frontend.
-[ ] Secret scanning.
+[x] Secret scanning.
 [ ] SAST backend.
 [ ] SAST frontend.
 [ ] Container image scan backend.
