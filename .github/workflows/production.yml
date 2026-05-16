@@ -133,8 +133,8 @@ jobs:
         run: |
           docker run --rm \
             -v "$PWD:/repo" \
-            zricethezav/gitleaks:8.24.2 \
-            dir /repo --config /repo/.gitleaks.toml --redact --no-banner
+            ghcr.io/gitleaks/gitleaks:v8.30.0 \
+            detect --source=/repo --config=/repo/.gitleaks.toml --redact --no-banner
 
   testing:
     name: Job 2 - Testing
