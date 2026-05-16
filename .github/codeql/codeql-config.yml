@@ -1,0 +1,15 @@
+name: AnimeAttire CodeQL
+
+paths:
+  - backend
+  - frontend
+
+paths-ignore:
+  - backend/tests
+  - backend/**/migrations
+  - backend/.venv
+  - frontend/**/*.test.ts
+  - frontend/**/*.test.tsx
+  - frontend/node_modules
+  - frontend/.next
+  - docs

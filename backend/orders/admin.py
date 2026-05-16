@@ -3,8 +3,7 @@ from django.db.models import Q
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html, format_html_join
 from rest_framework.exceptions import ValidationError
 
 from audit.admin_mixins import AuditedModelAdminMixin
@@ -81,18 +80,17 @@ class OrderDeliverySnapshotInline(admin.StackedInline):
         events = list(obj.tracking_events.order_by("-created_at", "-id")[:5])
         if not events:
             return "Событий доставки пока нет."
-        return format_html(
-            "{}",
-            mark_safe(
-                "<br>".join(
-                    "{}: {} -> {} ({})".format(
-                        event.created_at.strftime("%d.%m %H:%M"),
-                        event.get_previous_status_display() or "старт",
-                        event.get_new_status_display(),
-                        event.message or event.event_type,
-                    )
-                    for event in events
+        return format_html_join(
+            "<br>",
+            "{}: {} -> {} ({})",
+            (
+                (
+                    event.created_at.strftime("%d.%m %H:%M"),
+                    event.get_previous_status_display() or "старт",
+                    event.get_new_status_display(),
+                    event.message or event.event_type,
                 )
+                for event in events
             ),
         )
 
@@ -122,18 +120,17 @@ class PaymentInline(admin.TabularInline):
         events = list(obj.events.order_by("-created_at", "-id")[:5])
         if not events:
             return "Событий оплаты пока нет."
-        return format_html(
-            "{}",
-            mark_safe(
-                "<br>".join(
-                    "{}: {} -> {} ({})".format(
-                        event.created_at.strftime("%d.%m %H:%M"),
-                        event.get_previous_status_display() or "старт",
-                        event.get_new_status_display(),
-                        event.message or event.event_type,
-                    )
-                    for event in events
+        return format_html_join(
+            "<br>",
+            "{}: {} -> {} ({})",
+            (
+                (
+                    event.created_at.strftime("%d.%m %H:%M"),
+                    event.get_previous_status_display() or "старт",
+                    event.get_new_status_display(),
+                    event.message or event.event_type,
                 )
+                for event in events
             ),
         )
 

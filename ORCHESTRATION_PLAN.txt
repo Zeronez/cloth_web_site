@@ -242,7 +242,7 @@ Phase 5: Security and Compliance
 [x] Threat model the system: auth, checkout, payment webhooks, admin, file uploads.
 [x] Add dependency vulnerability scanning.
 [x] Add secret scanning.
-[ ] Add SAST for backend and frontend.
+[x] Add SAST for backend and frontend.
 [ ] Add container image scanning.
 [ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
 [ ] Add admin 2FA strategy if package/provider is selected.
@@ -437,8 +437,8 @@ Security Tests
 [x] Dependency audit backend.
 [x] Dependency audit frontend.
 [x] Secret scanning.
-[ ] SAST backend.
-[ ] SAST frontend.
+[x] SAST backend.
+[x] SAST frontend.
 [ ] Container image scan backend.
 [ ] Container image scan frontend.
 [x] Auth rate-limit tests.
