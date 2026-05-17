@@ -140,6 +140,14 @@ These are used when media is routed to S3 or an S3-compatible service.
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_S3_REGION_NAME`
 
+Operational expectations for production storage:
+
+- the live media bucket should have default server-side encryption enabled;
+- backup or replication targets for media should remain encrypted at rest;
+- all storage endpoints must use HTTPS/TLS;
+- backup and restore credentials must be distinct from live application
+  runtime credentials.
+
 ## Payment webhook signatures
 
 These define which providers may bypass signature checks and which providers must present a valid HMAC signature.
@@ -213,3 +221,14 @@ Current production contract:
   cancelled and their stock returned by background processing;
 - guest carts expire after a bounded inactivity window so abandoned anonymous
   carts do not accumulate forever in the production database.
+
+## Backup and retention baseline
+
+AnimeAttire currently expects the following production operational baseline:
+
+- daily database backups retained for 35 days;
+- monthly database backups retained for 12 months;
+- quarterly restore drill on staging or an isolated restore target;
+- data retention rules aligned with `docs/data-retention-policy.md`;
+- backup encryption and restore-access separation aligned with
+  `docs/backup-encryption-runbook.md`.

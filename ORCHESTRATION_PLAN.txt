@@ -245,15 +245,15 @@ Phase 5: Security and Compliance
 [x] Add SAST for backend and frontend.
 [x] Add container image scanning.
 [x] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
-[ ] Add admin 2FA strategy if package/provider is selected.
+[x] Add admin 2FA strategy if package/provider is selected.
 [x] Add brute-force protection for login/password reset.
 [x] Add webhook signature verification tests.
 [x] Add file upload type/size validation.
 [x] Add PII handling policy and minimal logging of personal data.
-[ ] Add backup encryption plan.
+[x] Add backup encryption plan.
 [ ] Add legal review tasks for CIS/Russian ecommerce requirements.
 [x] Add privacy consent and marketing opt-in storage.
-[ ] Add data retention policy.
+[x] Add data retention policy.
 
 Phase 6: Observability, Reliability, and Performance
 ----------------------------------------------------

@@ -62,8 +62,6 @@ Current controls:
 
 Remaining gaps:
 
-- explicit brute-force protection and lockout strategy is still open in the
-  plan;
 - admin 2FA is still open;
 - formal secrets-management policy for environments is still open.
 
@@ -130,7 +128,6 @@ Current controls:
 
 Remaining gaps:
 
-- admin 2FA strategy is still open;
 - richer operational dashboards remain incomplete.
 
 ### 5. File Uploads
@@ -163,12 +160,12 @@ Highest-risk current domains:
 3. payment webhook authenticity;
 4. admin privilege misuse.
 
-The repository now has concrete controls for all four, but auth abuse
-protection, admin 2FA, and broader secret handling still need implementation.
+The repository now has concrete controls for all four, but admin 2FA and
+broader secret handling still need implementation.
 
 ## Security Priorities After This Document
 
 1. Add secret scanning in CI and keep false positives under control.
 2. Add backend/frontend SAST.
-3. Add security headers and brute-force protection.
-4. Add secrets-management and backup-encryption runbooks.
+3. Add admin 2FA rollout and enforcement.
+4. Add secrets-management implementation and backup/restore drills.

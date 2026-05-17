@@ -38,3 +38,15 @@ regulatory operations, and keeps operational logs as lean as possible.
   counters unless a stronger business reason exists;
 - file uploads must be validated for type, size, and image integrity before
   they are persisted.
+
+## Retention alignment
+
+PII-containing operational records should follow the current retention baseline
+in `docs/data-retention-policy.md`:
+
+- structured logs: 30 days;
+- audit logs: 18 months;
+- notification history: 12 months;
+- support requests: 12 months after resolution;
+- order, payment, delivery, consent, and deleted-account tombstone history:
+  5 years.
