@@ -227,6 +227,33 @@ def _validate_background_cleanup_settings():
     _validate_positive_int("CART_CLEANUP_BATCH_SIZE", CART_CLEANUP_BATCH_SIZE)
 
 
+def _validate_auth_abuse_protection_settings():
+    _validate_positive_int(
+        "AUTH_LOGIN_FAILURE_WINDOW_SECONDS", AUTH_LOGIN_FAILURE_WINDOW_SECONDS
+    )
+    _validate_positive_int("AUTH_LOGIN_FAILURE_IP_LIMIT", AUTH_LOGIN_FAILURE_IP_LIMIT)
+    _validate_positive_int(
+        "AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT", AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT
+    )
+    _validate_positive_int(
+        "AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS",
+        AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS,
+    )
+    _validate_positive_int(
+        "AUTH_PASSWORD_RESET_REQUEST_LIMIT", AUTH_PASSWORD_RESET_REQUEST_LIMIT
+    )
+    _validate_positive_int(
+        "AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS",
+        AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS,
+    )
+    _validate_positive_int(
+        "AUTH_PASSWORD_RESET_CONFIRM_LIMIT", AUTH_PASSWORD_RESET_CONFIRM_LIMIT
+    )
+    _require_non_empty(
+        "CONTENT_SECURITY_POLICY", str(globals().get("CONTENT_SECURITY_POLICY", ""))
+    )
+
+
 DEBUG = False
 SECRET_KEY = env_required("SECRET_KEY")
 DATABASE_URL = env_required("DATABASE_URL")
@@ -251,6 +278,17 @@ PAYMENT_SESSION_TIMEOUT_MINUTES = env_int("PAYMENT_SESSION_TIMEOUT_MINUTES", 20)
 PAYMENT_EXPIRATION_BATCH_SIZE = env_int("PAYMENT_EXPIRATION_BATCH_SIZE", 100)
 CART_GUEST_TTL_HOURS = env_int("CART_GUEST_TTL_HOURS", 72)
 CART_CLEANUP_BATCH_SIZE = env_int("CART_CLEANUP_BATCH_SIZE", 200)
+AUTH_LOGIN_FAILURE_WINDOW_SECONDS = env_int("AUTH_LOGIN_FAILURE_WINDOW_SECONDS", 900)
+AUTH_LOGIN_FAILURE_IP_LIMIT = env_int("AUTH_LOGIN_FAILURE_IP_LIMIT", 5)
+AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT = env_int("AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT", 10)
+AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS = env_int(
+    "AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS", 3600
+)
+AUTH_PASSWORD_RESET_REQUEST_LIMIT = env_int("AUTH_PASSWORD_RESET_REQUEST_LIMIT", 3)
+AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS = env_int(
+    "AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS", 3600
+)
+AUTH_PASSWORD_RESET_CONFIRM_LIMIT = env_int("AUTH_PASSWORD_RESET_CONFIRM_LIMIT", 5)
 ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = env_csv("CORS_ALLOWED_ORIGINS")
@@ -317,6 +355,7 @@ _validate_payment_webhook_settings()
 _validate_no_sandbox_overrides()
 _validate_celery_notification_settings()
 _validate_background_cleanup_settings()
+_validate_auth_abuse_protection_settings()
 
 DATABASES = {
     "default": dj_database_url.config(

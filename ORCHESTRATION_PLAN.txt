@@ -244,9 +244,9 @@ Phase 5: Security and Compliance
 [x] Add secret scanning.
 [x] Add SAST for backend and frontend.
 [x] Add container image scanning.
-[ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
+[x] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
 [ ] Add admin 2FA strategy if package/provider is selected.
-[ ] Add brute-force protection for login/password reset.
+[x] Add brute-force protection for login/password reset.
 [x] Add webhook signature verification tests.
 [x] Add file upload type/size validation.
 [x] Add PII handling policy and minimal logging of personal data.

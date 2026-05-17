@@ -16,12 +16,17 @@ from config.permissions import IsObjectOwner
 from users.models import Address
 from users.serializers import (
     AddressSerializer,
+    BruteForceAwareTokenObtainPairSerializer,
     DeleteAccountSerializer,
     EmailConfirmationConfirmSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
     UserSerializer,
+)
+from users.security import (
+    record_password_reset_request,
+    should_suppress_password_reset_request,
 )
 from users.services import build_account_export_payload, delete_customer_account
 from users.tasks import send_email_confirmation_email, send_password_reset_email
@@ -151,6 +156,7 @@ def logout(request):
 class ScopedTokenObtainPairView(TokenObtainPairView):
     permission_classes = (AllowAny,)
     throttle_scope = "auth"
+    serializer_class = BruteForceAwareTokenObtainPairSerializer
 
 
 class ScopedTokenRefreshView(TokenRefreshView):
@@ -170,11 +176,12 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = (
-            User.objects.filter(email__iexact=serializer.validated_data["email"])
-            .exclude(email="")
-            .first()
-        )
+        email = serializer.validated_data["email"]
+        if should_suppress_password_reset_request(email):
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+        record_password_reset_request(email)
+        user = User.objects.filter(email__iexact=email).exclude(email="").first()
         if user is not None:
             transaction.on_commit(lambda: send_password_reset_email.delay(user.id))
         return Response(status=status.HTTP_202_ACCEPTED)
@@ -190,7 +197,10 @@ class PasswordResetConfirmView(APIView):
         responses={200: UserSerializer},
     )
     def post(self, request):
-        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer = PasswordResetConfirmSerializer(
+            data=request.data,
+            context={"request": request},
+        )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(UserSerializer(user, context={"request": request}).data)

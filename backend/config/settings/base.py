@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "config.logging.RequestContextMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "config.security_headers.SecurityHeadersMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -118,6 +119,26 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
+CONTENT_SECURITY_POLICY = env_value(
+    "CONTENT_SECURITY_POLICY",
+    "; ".join(
+        (
+            "default-src 'self'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "object-src 'none'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+        )
+    ),
+)
+CONTENT_SECURITY_POLICY_REPORT_ONLY = env_bool(
+    "CONTENT_SECURITY_POLICY_REPORT_ONLY", False
+)
 
 LOG_LEVEL = env_value("LOG_LEVEL", "INFO")
 LOGGING = {
@@ -191,6 +212,17 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 24,
 }
+AUTH_LOGIN_FAILURE_WINDOW_SECONDS = env_int("AUTH_LOGIN_FAILURE_WINDOW_SECONDS", 900)
+AUTH_LOGIN_FAILURE_IP_LIMIT = env_int("AUTH_LOGIN_FAILURE_IP_LIMIT", 5)
+AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT = env_int("AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT", 10)
+AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS = env_int(
+    "AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS", 3600
+)
+AUTH_PASSWORD_RESET_REQUEST_LIMIT = env_int("AUTH_PASSWORD_RESET_REQUEST_LIMIT", 3)
+AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS = env_int(
+    "AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS", 3600
+)
+AUTH_PASSWORD_RESET_CONFIRM_LIMIT = env_int("AUTH_PASSWORD_RESET_CONFIRM_LIMIT", 5)
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "AnimeAttire API",

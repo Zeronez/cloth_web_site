@@ -4,10 +4,36 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from users.models import Address
+from users.security import (
+    clear_login_failures,
+    clear_password_reset_confirm_failures,
+    ensure_login_allowed,
+    ensure_password_reset_confirm_allowed,
+    record_login_failure,
+    record_password_reset_confirm_failure,
+)
 
 User = get_user_model()
+
+
+class BruteForceAwareTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        request = self.context["request"]
+        username = attrs.get(self.username_field, "")
+
+        ensure_login_allowed(request, username)
+        try:
+            data = super().validate(attrs)
+        except AuthenticationFailed:
+            record_login_failure(request, username)
+            raise
+
+        clear_login_failures(request, username)
+        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -173,19 +199,25 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return user
 
     def validate(self, attrs):
+        request = self.context["request"]
+        ensure_password_reset_confirm_allowed(request, attrs["uid"])
+
         try:
             user_id = force_str(urlsafe_base64_decode(attrs["uid"]))
             user = User.objects.get(pk=user_id)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            record_password_reset_confirm_failure(request, attrs["uid"])
             raise serializers.ValidationError(
                 {"token": self.error_messages["invalid_token"]}
             )
 
         if not default_token_generator.check_token(user, attrs["token"]):
+            record_password_reset_confirm_failure(request, attrs["uid"])
             raise serializers.ValidationError(
                 {"token": self.error_messages["invalid_token"]}
             )
 
+        clear_password_reset_confirm_failures(request, attrs["uid"])
         self.context["user"] = user
         return attrs
 

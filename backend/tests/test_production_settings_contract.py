@@ -262,6 +262,8 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.CSRF_COOKIE_HTTPONLY is True
     assert settings_module.SESSION_COOKIE_SAMESITE == "Lax"
     assert settings_module.CSRF_COOKIE_SAMESITE == "Lax"
+    assert settings_module.CONTENT_SECURITY_POLICY
+    assert settings_module.CONTENT_SECURITY_POLICY_REPORT_ONLY is False
     assert settings_module.X_FRAME_OPTIONS == "DENY"
     assert settings_module.SECURE_CROSS_ORIGIN_OPENER_POLICY == "same-origin"
     assert settings_module.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] == (
@@ -295,6 +297,13 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.PAYMENT_EXPIRATION_BATCH_SIZE == 100
     assert settings_module.CART_GUEST_TTL_HOURS == 72
     assert settings_module.CART_CLEANUP_BATCH_SIZE == 200
+    assert settings_module.AUTH_LOGIN_FAILURE_WINDOW_SECONDS == 900
+    assert settings_module.AUTH_LOGIN_FAILURE_IP_LIMIT == 5
+    assert settings_module.AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT == 10
+    assert settings_module.AUTH_PASSWORD_RESET_REQUEST_WINDOW_SECONDS == 3600
+    assert settings_module.AUTH_PASSWORD_RESET_REQUEST_LIMIT == 3
+    assert settings_module.AUTH_PASSWORD_RESET_CONFIRM_WINDOW_SECONDS == 3600
+    assert settings_module.AUTH_PASSWORD_RESET_CONFIRM_LIMIT == 5
 
 
 def test_production_cors_middleware_order_is_safe(monkeypatch):

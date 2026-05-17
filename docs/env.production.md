@@ -89,6 +89,17 @@ Current auth email contract:
 - password reset is completed through `/api/v1/auth/password-reset/confirm/`
   with `uid`, `token`, and a validated new password.
 
+Current auth abuse-protection contract:
+
+- login failures are limited both per `username + IP` and per `username`
+  across IPs;
+- successful login clears accumulated login-failure counters;
+- repeated password-reset requests for the same normalized email are cooled
+  down without changing the public `202 Accepted` response shape;
+- password-reset confirm attempts are limited per `uid + IP`;
+- these protections are backed by the configured Django cache, which should
+  point to Redis in production.
+
 Current legal consent contract:
 
 - registration requires explicit acceptance of the current privacy policy and
@@ -108,6 +119,16 @@ Current upload safety contract:
 - all uploaded images must be valid JPG, PNG, or WEBP files;
 - the backend rejects images whose total pixel count exceeds
   `IMAGE_UPLOAD_MAX_PIXELS` to avoid oversized or decompression-bomb-like files.
+
+Current security-header contract:
+
+- Django production responses include HSTS, `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options`, and a baseline
+  `Content-Security-Policy`;
+- the public storefront should emit matching security headers from Next.js so
+  the HTML surface is not weaker than the API/admin surface;
+- `CONTENT_SECURITY_POLICY_REPORT_ONLY=1` is only for staged rollout or
+  debugging, not as a permanent production mode.
 
 ## S3 / object storage
 
