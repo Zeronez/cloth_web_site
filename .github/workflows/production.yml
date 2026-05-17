@@ -152,7 +152,7 @@ jobs:
         run: docker build -f frontend/Dockerfile -t animeattire-frontend:scan frontend
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: animeattire-backend:scan
           format: table
@@ -162,7 +162,7 @@ jobs:
           exit-code: "1"
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: animeattire-frontend:scan
           format: table
