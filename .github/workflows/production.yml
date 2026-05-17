@@ -136,6 +136,41 @@ jobs:
             ghcr.io/gitleaks/gitleaks:v8.30.0 \
             detect --source=/repo --config=/repo/.gitleaks.toml --redact --no-banner
 
+  container-scan:
+    name: Job 1.7 - Container Image Scan
+    runs-on: ubuntu-latest
+    needs: linting
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image for scan
+        run: docker build -f backend/Dockerfile -t animeattire-backend:scan backend
+
+      - name: Build frontend image for scan
+        run: docker build -f frontend/Dockerfile -t animeattire-frontend:scan frontend
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: animeattire-backend:scan
+          format: table
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: animeattire-frontend:scan
+          format: table
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
   testing:
     name: Job 2 - Testing
     runs-on: ubuntu-latest
@@ -143,6 +178,7 @@ jobs:
       - linting
       - dependency-scan
       - secret-scan
+      - container-scan
     timeout-minutes: 25
     services:
       postgres:

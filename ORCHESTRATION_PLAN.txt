@@ -243,7 +243,7 @@ Phase 5: Security and Compliance
 [x] Add dependency vulnerability scanning.
 [x] Add secret scanning.
 [x] Add SAST for backend and frontend.
-[ ] Add container image scanning.
+[x] Add container image scanning.
 [ ] Add security headers: HSTS, CSP, X-Content-Type-Options, Referrer-Policy.
 [ ] Add admin 2FA strategy if package/provider is selected.
 [ ] Add brute-force protection for login/password reset.
@@ -439,8 +439,8 @@ Security Tests
 [x] Secret scanning.
 [x] SAST backend.
 [x] SAST frontend.
-[ ] Container image scan backend.
-[ ] Container image scan frontend.
+[x] Container image scan backend.
+[x] Container image scan frontend.
 [x] Auth rate-limit tests.
 [ ] Permission bypass tests.
 [ ] IDOR tests for orders/addresses.
