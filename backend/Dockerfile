@@ -15,8 +15,10 @@ RUN apt-get update \
         netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY requirements.txt requirements.in ./
 RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+COPY . .
 
 RUN addgroup --system django \
     && adduser --system --ingroup django django \
