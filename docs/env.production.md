@@ -251,6 +251,14 @@ Current production contract:
   cancelled and their stock returned by background processing;
 - guest carts expire after a bounded inactivity window so abandoned anonymous
   carts do not accumulate forever in the production database.
+- production should run both a Celery worker and a Celery beat scheduler so the
+  payment expiry and guest-cart cleanup tasks execute without manual operator
+  intervention.
+
+Additional schedule tunables:
+
+- `PAYMENT_EXPIRATION_SCHEDULE_MINUTES`
+- `GUEST_CART_CLEANUP_SCHEDULE_MINUTES`
 
 ## Backup and retention baseline
 

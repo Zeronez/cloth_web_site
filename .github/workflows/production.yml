@@ -217,6 +217,12 @@ jobs:
             caddy:2.10-alpine \
             caddy validate --config /etc/caddy/Caddyfile
 
+      - name: Validate deploy scripts
+        run: |
+          bash -n deploy/scripts/preflight.sh
+          bash -n deploy/scripts/release.sh
+          bash -n deploy/scripts/rollback.sh
+
   testing:
     name: Job 2 - Testing
     runs-on: ubuntu-latest

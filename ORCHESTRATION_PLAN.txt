@@ -283,11 +283,11 @@ Phase 7: DevOps and Deployment
 [x] Add reverse proxy config: Nginx/Traefik/Caddy.
 [x] Add TLS/HTTPS automation.
 [x] Add secrets management: GitHub Environments, Vault, Doppler, cloud secrets, or server env.
-[ ] Add zero-downtime migration/deploy strategy.
-[ ] Add static collection/media storage deployment flow.
-[ ] Add Celery worker and beat deployment.
-[ ] Add rollback commands.
-[ ] Add release checklist.
+[x] Add zero-downtime migration/deploy strategy.
+[x] Add static collection/media storage deployment flow.
+[x] Add Celery worker and beat deployment.
+[x] Add rollback commands.
+[x] Add release checklist.
 
 Phase 8: Real Product Test Strategy - Final Hardening Gate
 ----------------------------------------------------------

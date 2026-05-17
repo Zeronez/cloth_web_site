@@ -166,8 +166,18 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
         ),
         ("PAYMENT_SESSION_TIMEOUT_MINUTES", "0", "PAYMENT_SESSION_TIMEOUT_MINUTES"),
         ("PAYMENT_EXPIRATION_BATCH_SIZE", "0", "PAYMENT_EXPIRATION_BATCH_SIZE"),
+        (
+            "PAYMENT_EXPIRATION_SCHEDULE_MINUTES",
+            "0",
+            "PAYMENT_EXPIRATION_SCHEDULE_MINUTES",
+        ),
         ("CART_GUEST_TTL_HOURS", "0", "CART_GUEST_TTL_HOURS"),
         ("CART_CLEANUP_BATCH_SIZE", "0", "CART_CLEANUP_BATCH_SIZE"),
+        (
+            "GUEST_CART_CLEANUP_SCHEDULE_MINUTES",
+            "0",
+            "GUEST_CART_CLEANUP_SCHEDULE_MINUTES",
+        ),
     ),
 )
 def test_production_settings_rejects_unsafe_required_config(
@@ -298,8 +308,20 @@ def test_production_settings_loads_with_explicit_contract(monkeypatch):
     assert settings_module.CELERY_NOTIFICATION_PROCESSING_LEASE_SECONDS == 600
     assert settings_module.PAYMENT_SESSION_TIMEOUT_MINUTES == 20
     assert settings_module.PAYMENT_EXPIRATION_BATCH_SIZE == 100
+    assert settings_module.PAYMENT_EXPIRATION_SCHEDULE_MINUTES == 5
     assert settings_module.CART_GUEST_TTL_HOURS == 72
     assert settings_module.CART_CLEANUP_BATCH_SIZE == 200
+    assert settings_module.GUEST_CART_CLEANUP_SCHEDULE_MINUTES == 60
+    assert (
+        settings_module.CELERY_BEAT_SCHEDULE["payments.expire_stale_payment_sessions"][
+            "task"
+        ]
+        == "payments.expire_stale_payment_sessions"
+    )
+    assert (
+        settings_module.CELERY_BEAT_SCHEDULE["cart.cleanup_expired_guest_carts"]["task"]
+        == "cart.cleanup_expired_guest_carts"
+    )
     assert settings_module.AUTH_LOGIN_FAILURE_WINDOW_SECONDS == 900
     assert settings_module.AUTH_LOGIN_FAILURE_IP_LIMIT == 5
     assert settings_module.AUTH_LOGIN_FAILURE_ACCOUNT_LIMIT == 10

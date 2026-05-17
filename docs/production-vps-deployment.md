@@ -64,8 +64,7 @@ docker compose --env-file /etc/animeattire/production.env -f docker-compose.vps.
 What this does today:
 
 - starts PostgreSQL and Redis with persistent named volumes;
-- runs Django migrations during backend startup;
-- collects Django static assets into a shared volume served by Caddy;
+- runs Django, frontend, Celery worker, and Celery beat as separate services;
 - starts the Celery worker;
 - starts the Next.js storefront;
 - obtains and renews TLS certificates through Caddy automatically.
@@ -99,6 +98,13 @@ sudo systemctl reload animeattire.service
 docker compose --env-file /etc/animeattire/production.env -f docker-compose.vps.yml logs -f
 ```
 
+Release commands:
+
+```bash
+bash deploy/scripts/preflight.sh
+bash deploy/scripts/release.sh
+```
+
 ## Operational notes
 
 - do not expose backend or frontend ports directly on the public interface;
@@ -106,15 +112,17 @@ docker compose --env-file /etc/animeattire/production.env -f docker-compose.vps.
   `CORS_ALLOWED_ORIGINS` aligned;
 - if media is routed to S3-compatible storage, `/media/*` becomes a fallback
   only and runtime uploads should use the configured object storage backend;
-- database migrations currently run at container startup; the more advanced
-  zero-downtime release strategy remains a separate later plan item.
+- migrations and `collectstatic` now belong to the explicit release flow, not
+  to ordinary container startup;
+- static and media lifecycle rules are documented in
+  [docs/static-media-deployment-flow.md](c:/Users/Всеволод/Desktop/cloth_web_site/docs/static-media-deployment-flow.md);
+- rollout sequencing and rollback boundaries are documented in
+  [docs/zero-downtime-release-strategy.md](c:/Users/Всеволод/Desktop/cloth_web_site/docs/zero-downtime-release-strategy.md).
 
 ## What stays open after this
 
 This deployment target closes the current base infrastructure choice. These
 follow-up items remain intentionally separate:
 
-- zero-downtime migration/deploy strategy;
-- rollback commands and release checklist;
 - scheduled backup drill execution on staging;
-- dedicated Celery beat deployment if periodic workloads become required.
+- advanced multi-node or blue/green rollout beyond a single VPS.
