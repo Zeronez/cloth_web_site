@@ -1,0 +1,139 @@
+x-staging-backend-env: &staging-backend-env
+  DJANGO_SETTINGS_MODULE: config.settings.staging
+  DEBUG: "0"
+  DATABASE_URL: postgres://${POSTGRES_USER:-animeattire}:${POSTGRES_PASSWORD:-animeattire-staging}@postgres:5432/${POSTGRES_DB:-animeattire_staging}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  SECRET_KEY: ${SECRET_KEY:-animeattire-staging-secret-key-change-me-please}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3001}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3001}
+  STAGING_PUBLIC_BASE_URL: ${STAGING_PUBLIC_BASE_URL:-http://localhost:3001}
+  STAGING_RESTORE_DRILL_ENABLED: ${STAGING_RESTORE_DRILL_ENABLED:-0}
+  STAGING_MEDIA_BUCKET: ${STAGING_MEDIA_BUCKET:-animeattire-staging-media}
+  STAGING_MEDIA_BACKUP_PREFIX: ${STAGING_MEDIA_BACKUP_PREFIX:-backups/media}
+  STAGING_DATABASE_BACKUP_PREFIX: ${STAGING_DATABASE_BACKUP_PREFIX:-backups/postgres}
+  STAGING_RESTORE_MAX_AGE_HOURS: ${STAGING_RESTORE_MAX_AGE_HOURS:-72}
+  AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-animeattire-staging-media}
+  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-http://minio:9000}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+  AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-us-east-1}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-AnimeAttire Staging <no-reply@example.com>}
+  SERVER_EMAIL: ${SERVER_EMAIL:-AnimeAttire Staging <no-reply@example.com>}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+  PAYMENT_PROVIDER_RETURN_BASE_URL: ${PAYMENT_PROVIDER_RETURN_BASE_URL:-http://localhost:3001/checkout/return}
+  PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON: ${PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON:-{"yookassa":"https://checkout.example.com/yookassa"}}
+  PAYMENT_WEBHOOK_SECRETS_JSON: ${PAYMENT_WEBHOOK_SECRETS_JSON:-{"yookassa":"staging-webhook-secret-with-at-least-32-chars"}}
+  PAYMENT_WEBHOOK_BYPASS_PROVIDERS: ${PAYMENT_WEBHOOK_BYPASS_PROVIDERS:-}
+  PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON: ${PAYMENT_WEBHOOK_SIGNATURE_HEADERS_JSON:-{}}
+  PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON: ${PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON:-{}}
+  DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON: ${DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON:-{}}
+  DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON: ${DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON:-{}}
+  DELIVERY_PICKUP_POINT_OVERRIDES_JSON: ${DELIVERY_PICKUP_POINT_OVERRIDES_JSON:-{}}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-animeattire_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-animeattire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-animeattire-staging}
+    ports:
+      - "${STAGING_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${STAGING_REDIS_PORT:-6380}:6379"
+    volumes:
+      - staging_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2025-03-12T18-04-18Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    ports:
+      - "${STAGING_MINIO_PORT:-9000}:9000"
+      - "${STAGING_MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - staging_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    environment:
+      <<: *staging-backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "${STAGING_BACKEND_PORT:-8001}:8000"
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    environment:
+      <<: *staging-backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+      NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/v1}
+    depends_on:
+      - backend
+    ports:
+      - "${STAGING_FRONTEND_PORT:-3001}:3000"
+
+volumes:
+  staging_postgres_data:
+  staging_redis_data:
+  staging_minio_data:

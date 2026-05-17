@@ -278,7 +278,7 @@ Phase 7: DevOps and Deployment
 [ ] Create production-grade Docker images with non-root users and minimal layers.
 [ ] Add frontend lockfile and deterministic installs.
 [ ] Add backend dependency lock/compile strategy.
-[ ] Add staging docker-compose or IaC environment.
+[x] Add staging docker-compose or IaC environment.
 [ ] Add production deployment target: VPS/Kubernetes/managed platform.
 [ ] Add reverse proxy config: Nginx/Traefik/Caddy.
 [ ] Add TLS/HTTPS automation.

@@ -179,6 +179,15 @@ These define sandbox-like tracking responses for provider-shaped shipping adapte
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_API_PREFIX`
 
+## Staging compose helpers
+
+- `STAGING_PUBLIC_BASE_URL`
+- `STAGING_RESTORE_DRILL_ENABLED`
+- `STAGING_MEDIA_BUCKET`
+- `STAGING_MEDIA_BACKUP_PREFIX`
+- `STAGING_DATABASE_BACKUP_PREFIX`
+- `STAGING_RESTORE_MAX_AGE_HOURS`
+
 ## Celery delivery policy
 
 These settings control retry and dead-letter behavior for transactional
