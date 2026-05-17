@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "test": "jest --passWithNoTests"
   },
+  "overrides": {
+    "picomatch": "^4.0.4"
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.51.0",
     "framer-motion": "^11.3.0",
