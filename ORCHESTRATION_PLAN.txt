@@ -262,8 +262,8 @@ Phase 6: Observability, Reliability, and Performance
 [ ] Add metrics endpoint or OpenTelemetry instrumentation.
 [ ] Add dashboards for API latency, error rate, payment failures, Celery failures.
 [ ] Add uptime checks for frontend, backend, checkout, payment webhook endpoint.
-[ ] Add database backup schedule and restore drill.
-[ ] Add media backup strategy.
+[x] Add database backup schedule and restore drill.
+[x] Add media backup strategy.
 [ ] Add Celery queue monitoring.
 [ ] Add slow query logging and index review.
 [ ] Add CDN/cache strategy for static/media files.

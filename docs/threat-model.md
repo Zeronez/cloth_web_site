@@ -149,7 +149,8 @@ Current controls:
 Remaining gaps:
 
 - staff moderation flow for uploaded media is still open;
-- downstream CDN and object-storage policy hardening is still open.
+- downstream CDN hardening and executable media-backup automation are still
+  open.
 
 ## Threat Severity Summary
 
@@ -168,4 +169,4 @@ broader secret handling still need implementation.
 1. Add secret scanning in CI and keep false positives under control.
 2. Add backend/frontend SAST.
 3. Add admin 2FA rollout and enforcement.
-4. Add secrets-management implementation and backup/restore drills.
+4. Add secrets-management implementation and executable backup/restore drills.

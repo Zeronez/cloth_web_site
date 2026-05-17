@@ -231,4 +231,8 @@ AnimeAttire currently expects the following production operational baseline:
 - quarterly restore drill on staging or an isolated restore target;
 - data retention rules aligned with `docs/data-retention-policy.md`;
 - backup encryption and restore-access separation aligned with
-  `docs/backup-encryption-runbook.md`.
+  `docs/backup-encryption-runbook.md`;
+- database restore procedure aligned with
+  `docs/database-backup-restore-drill.md`;
+- media lifecycle and backup expectations aligned with
+  `docs/media-backup-strategy.md`.
