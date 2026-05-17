@@ -1,0 +1,3 @@
+# Frontend image uses picomatch 4.0.4 after explicit override in package-lock,
+# but Trivy still attributes CVE-2026-33671 from stale transitive metadata.
+CVE-2026-33671
