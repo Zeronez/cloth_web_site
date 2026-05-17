@@ -162,6 +162,50 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
+  deploy-config:
+    name: Job 1.8 - Deploy Config Validation
+    runs-on: ubuntu-latest
+    needs: linting
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate VPS compose
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DEBUG: "0"
+          APP_DOMAIN: animeattire.ru
+          ACME_EMAIL: ops@animeattire.ru
+          POSTGRES_DB: animeattire
+          POSTGRES_USER: animeattire
+          POSTGRES_PASSWORD: animeattire-production-password
+          REDIS_URL: redis://redis:6379/0
+          CELERY_BROKER_URL: redis://redis:6379/1
+          CELERY_RESULT_BACKEND: redis://redis:6379/2
+          ALLOWED_HOSTS: animeattire.ru,www.animeattire.ru
+          CSRF_TRUSTED_ORIGINS: https://animeattire.ru,https://www.animeattire.ru
+          CORS_ALLOWED_ORIGINS: https://animeattire.ru,https://www.animeattire.ru
+          SECRET_KEY: animeattire-production-secret-key-2026-with-64-characters
+          EMAIL_HOST: smtp.example.com
+          EMAIL_HOST_USER: mailer
+          EMAIL_HOST_PASSWORD: not-a-real-secret
+          PAYMENT_WEBHOOK_SECRETS_JSON: '{"yookassa":"yookassa-webhook-secret-with-at-least-32-chars"}'
+          PAYMENT_PROVIDER_CONFIRMATION_URLS_JSON: '{"yookassa":"https://checkout.animeattire.ru/yookassa"}'
+        run: docker compose -f docker-compose.vps.yml config
+
+      - name: Validate Caddyfile
+        env:
+          APP_DOMAIN: animeattire.ru
+          ACME_EMAIL: ops@animeattire.ru
+        run: |
+          docker run --rm \
+            -e APP_DOMAIN \
+            -e ACME_EMAIL \
+            -v "$PWD/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.10-alpine \
+            caddy validate --config /etc/caddy/Caddyfile
+
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -181,6 +225,7 @@ jobs:
       - dependency-scan
       - secret-scan
       - container-scan
+      - deploy-config
     timeout-minutes: 25
     services:
       postgres:

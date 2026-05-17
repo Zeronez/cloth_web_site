@@ -125,6 +125,10 @@ def _validate_smtp_settings():
     _require_non_empty("EMAIL_HOST_PASSWORD", EMAIL_HOST_PASSWORD)
 
 
+def _validate_frontend_app_url():
+    _validate_https_url("FRONTEND_APP_URL", FRONTEND_APP_URL)
+
+
 def _validate_s3_settings():
     if not (AWS_STORAGE_BUCKET_NAME or AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY):
         return
@@ -316,6 +320,7 @@ EMAIL_HOST_PASSWORD = env_value("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 10)
+FRONTEND_APP_URL = env_required("FRONTEND_APP_URL")
 AWS_STORAGE_BUCKET_NAME = env_value("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_ENDPOINT_URL = env_value("AWS_S3_ENDPOINT_URL", "")
 AWS_ACCESS_KEY_ID = env_value("AWS_ACCESS_KEY_ID", "")
@@ -350,6 +355,7 @@ _validate_hosts("ALLOWED_HOSTS", ALLOWED_HOSTS)
 _validate_http_origins("CSRF_TRUSTED_ORIGINS", CSRF_TRUSTED_ORIGINS)
 _validate_http_origins("CORS_ALLOWED_ORIGINS", CORS_ALLOWED_ORIGINS)
 _validate_smtp_settings()
+_validate_frontend_app_url()
 _validate_s3_settings()
 _validate_payment_webhook_settings()
 _validate_no_sandbox_overrides()

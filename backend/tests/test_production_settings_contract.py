@@ -42,6 +42,7 @@ def _set_required_env(monkeypatch):
     monkeypatch.setenv("PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON", "{}")
     monkeypatch.setenv("DELIVERY_METHOD_AVAILABILITY_OVERRIDES_JSON", "{}")
     monkeypatch.setenv("DELIVERY_PROVIDER_TRACKING_OVERRIDES_JSON", "{}")
+    monkeypatch.setenv("FRONTEND_APP_URL", "https://animeattire.ru")
 
 
 @pytest.mark.parametrize(
@@ -55,6 +56,7 @@ def _set_required_env(monkeypatch):
         "ALLOWED_HOSTS",
         "CSRF_TRUSTED_ORIGINS",
         "CORS_ALLOWED_ORIGINS",
+        "FRONTEND_APP_URL",
         "PAYMENT_PROVIDER_RETURN_BASE_URL",
     ),
 )
@@ -125,6 +127,7 @@ def test_production_settings_rejects_wildcard_hosts(monkeypatch):
             "http://localhost:3000/checkout/return",
             "PAYMENT_PROVIDER_RETURN_BASE_URL",
         ),
+        ("FRONTEND_APP_URL", "http://animeattire.ru", "FRONTEND_APP_URL"),
         (
             "PAYMENT_PROVIDER_STATUS_OVERRIDES_JSON",
             '{"external-1":{"status":"succeeded"}}',

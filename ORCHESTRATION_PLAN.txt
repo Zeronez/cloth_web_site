@@ -279,10 +279,10 @@ Phase 7: DevOps and Deployment
 [ ] Add frontend lockfile and deterministic installs.
 [ ] Add backend dependency lock/compile strategy.
 [x] Add staging docker-compose or IaC environment.
-[ ] Add production deployment target: VPS/Kubernetes/managed platform.
-[ ] Add reverse proxy config: Nginx/Traefik/Caddy.
-[ ] Add TLS/HTTPS automation.
-[ ] Add secrets management: GitHub Environments, Vault, Doppler, cloud secrets, or server env.
+[x] Add production deployment target: VPS/Kubernetes/managed platform.
+[x] Add reverse proxy config: Nginx/Traefik/Caddy.
+[x] Add TLS/HTTPS automation.
+[x] Add secrets management: GitHub Environments, Vault, Doppler, cloud secrets, or server env.
 [ ] Add zero-downtime migration/deploy strategy.
 [ ] Add static collection/media storage deployment flow.
 [ ] Add Celery worker and beat deployment.

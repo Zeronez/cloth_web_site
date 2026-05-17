@@ -1,6 +1,8 @@
 # Production Env Contract
 
-This repository keeps the production contract in sync with `backend/config/settings/*` and `.env.example`.
+This repository keeps the production contract in sync with
+`backend/config/settings/*`, `.env.example`, and
+`production.env.example`.
 Values here are examples only. Do not reuse placeholders in production.
 
 ## Required in production
@@ -14,6 +16,8 @@ Values here are examples only. Do not reuse placeholders in production.
 - `ALLOWED_HOSTS`: comma-separated Django hosts.
 - `CSRF_TRUSTED_ORIGINS`: comma-separated absolute origins.
 - `CORS_ALLOWED_ORIGINS`: comma-separated absolute origins.
+- `FRONTEND_APP_URL`: absolute HTTPS customer-facing storefront URL used in
+  emails and account flows.
 
 Production CORS is fail-closed: wildcard origins and credentialed cross-origin
 cookies are disabled. The frontend should call `/api/v1/` with JWT bearer
@@ -129,6 +133,23 @@ Current security-header contract:
   the HTML surface is not weaker than the API/admin surface;
 - `CONTENT_SECURITY_POLICY_REPORT_ONLY=1` is only for staged rollout or
   debugging, not as a permanent production mode.
+
+## VPS deployment helpers
+
+- `APP_DOMAIN`
+- `ACME_EMAIL`
+
+Current VPS deployment contract:
+
+- the recommended production target is a single VPS running
+  [docker-compose.vps.yml](c:/Users/Всеволод/Desktop/cloth_web_site/docker-compose.vps.yml);
+- Caddy terminates TLS, renews certificates automatically, and proxies traffic
+  according to [deploy/caddy/Caddyfile](c:/Users/Всеволод/Desktop/cloth_web_site/deploy/caddy/Caddyfile);
+- runtime secrets are expected from a server-side env file such as
+  `/etc/animeattire/production.env`, not from committed repo files;
+- the operational procedure is documented in
+  [docs/production-vps-deployment.md](c:/Users/Всеволод/Desktop/cloth_web_site/docs/production-vps-deployment.md)
+  and [docs/secrets-management.md](c:/Users/Всеволод/Desktop/cloth_web_site/docs/secrets-management.md).
 
 ## S3 / object storage
 
