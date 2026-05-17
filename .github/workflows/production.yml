@@ -162,6 +162,17 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: animeattire-frontend:scan
+          trivyignores: .trivyignore
+          format: table
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
   deploy-config:
     name: Job 1.8 - Deploy Config Validation
     runs-on: ubuntu-latest
@@ -205,17 +216,6 @@ jobs:
             -v "$PWD/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2.10-alpine \
             caddy validate --config /etc/caddy/Caddyfile
-
-      - name: Scan frontend image
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: animeattire-frontend:scan
-          trivyignores: .trivyignore
-          format: table
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: HIGH,CRITICAL
-          exit-code: "1"
 
   testing:
     name: Job 2 - Testing
