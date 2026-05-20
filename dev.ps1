@@ -87,16 +87,19 @@ function Get-BackendPython {
 }
 
 function Get-ListeningPids([int]$Port) {
+    $pids = New-Object System.Collections.Generic.HashSet[int]
     try {
-        $conns = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop
-        if ($conns) {
-            return @($conns | Select-Object -ExpandProperty OwningProcess | Sort-Object -Unique)
+        $lines = netstat -ano -p TCP 2>$null
+        foreach ($line in $lines) {
+            if ($line -match "LISTENING\\s+(\\d+)\\s*$" -and $line -match (":$Port\\s")) {
+                [void]$pids.Add([int]$Matches[1])
+            }
         }
     }
     catch {
-        # Fallback for environments without Get-NetTCPConnection
+        return @()
     }
-    return @()
+    return @($pids.ToArray() | Sort-Object)
 }
 
 function Start-Backend {
