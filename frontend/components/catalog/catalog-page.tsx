@@ -206,7 +206,7 @@ export function CatalogPage() {
             ) : null}
 
             {!isInitialLoading && !hasNoResults && !isProductsError ? (
-              <div className="grid auto-rows-[260px] gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid auto-rows-[360px] gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product, index) => {
                   const isHero = index === 0;
                   const mediaHeight = isHero ? "h-[340px] md:h-[420px]" : "h-[240px]";
@@ -243,7 +243,11 @@ export function CatalogPage() {
                           <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.92))]" />
                         </div>
 
-                        <div className="flex flex-col justify-between p-5">
+                        <div
+                          className={`flex flex-col justify-between ${
+                            isHero ? "p-6 md:p-7" : "p-6"
+                          }`}
+                        >
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-white/10 bg-ink-950/60 px-3 py-1.5 text-xs font-bold text-slate-200">
@@ -307,4 +311,3 @@ export function CatalogPage() {
     </main>
   );
 }
-
