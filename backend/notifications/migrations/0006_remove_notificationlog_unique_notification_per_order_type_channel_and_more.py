@@ -4,6 +4,15 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+MIGRATION_SAFETY_PLAN = {
+    "ticket": "OPS-000",
+    "summary": "Replace conditional unique constraint with dedupe_key index/uniqueness for notification logs.",
+    "backfill": "No backfill required for existing rows; new constraints allow empty dedupe_key and preserve previous conditional uniqueness for order/type/channel.",
+    "deploy_strategy": "Deploy code that writes dedupe_key (when applicable) before applying this migration to avoid race conditions during constraint swap.",
+    "rollback": "Rollback application code first; then revert migration which restores previous constraints (dedupe_key column remains but is non-breaking).",
+}
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
