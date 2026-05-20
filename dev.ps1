@@ -189,8 +189,12 @@ function Down {
     if (-not $pids) {
         Write-Host "No PID file found ($PidFile). Nothing to stop."
         # Still try to stop listeners if they exist.
-        foreach ($fp in (Get-ListeningPids -Port 3000)) { Stop-IfRunning -ProcessId $fp -Name "frontend" }
-        foreach ($bp in (Get-ListeningPids -Port 8000)) { Stop-IfRunning -ProcessId $bp -Name "backend" }
+        $frontPids = Get-ListeningPids -Port 3000
+        $backPids = Get-ListeningPids -Port 8000
+        if ($frontPids.Count -gt 0) { Write-Host "Found frontend listeners on 3000: $($frontPids -join ', ')" }
+        if ($backPids.Count -gt 0) { Write-Host "Found backend listeners on 8000: $($backPids -join ', ')" }
+        foreach ($fp in $frontPids) { Stop-IfRunning -ProcessId $fp -Name "frontend" }
+        foreach ($bp in $backPids) { Stop-IfRunning -ProcessId $bp -Name "backend" }
         return
     }
 
