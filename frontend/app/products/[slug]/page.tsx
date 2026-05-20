@@ -4,10 +4,11 @@ export const metadata = {
   title: "Товар"
 };
 
-export default function ProductRoute({
+export default async function ProductRoute({
   params
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  return <ProductDetailPage slug={params.slug} />;
+  const { slug } = await params;
+  return <ProductDetailPage slug={slug} />;
 }
