@@ -208,18 +208,13 @@ export function CatalogPage() {
             {!isInitialLoading && !hasNoResults && !isProductsError ? (
               <div className="grid auto-rows-[minmax(320px,_auto)] gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product, index) => {
-                  const isHero = index === 0;
-                  const mediaHeight = isHero
-                    ? "h-[340px] md:h-[420px]"
-                    : "h-[240px] md:h-[260px]";
+                  const mediaHeight = "h-[240px] md:h-[260px]";
 
                   return (
                     <Link
                       key={product.slug}
                       href={`/products/${product.slug}`}
-                      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] ${
-                        isHero ? "md:col-span-2 md:row-span-2" : ""
-                      }`}
+                      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
                     >
                       <div className="relative flex h-full flex-col">
                         <div
@@ -245,7 +240,7 @@ export function CatalogPage() {
                           <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.92))]" />
                         </div>
 
-                        <div className={`flex flex-1 flex-col ${isHero ? "p-6 md:p-7" : "p-6"}`}>
+                        <div className="flex flex-1 flex-col p-6">
                           <div className="min-h-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-white/10 bg-ink-950/60 px-3 py-1.5 text-xs font-bold text-slate-200">
@@ -255,7 +250,7 @@ export function CatalogPage() {
                                 {product.franchise?.name ?? "AnimeAttire"}
                               </span>
                             </div>
-                            <h3 className="mt-3 text-lg font-black leading-snug sm:text-xl">
+                            <h3 className="mt-3 line-clamp-2 text-lg font-black leading-snug sm:text-xl">
                               {product.name}
                             </h3>
                             <p className="mt-2 line-clamp-2 text-sm text-slate-300">
