@@ -9,8 +9,10 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $RepoRoot ".dev"
 $PidFile = Join-Path $StateDir "pids.json"
-$BackendLog = Join-Path $StateDir "backend.log"
-$FrontendLog = Join-Path $StateDir "frontend.log"
+$BackendOutLog = Join-Path $StateDir "backend.out.log"
+$BackendErrLog = Join-Path $StateDir "backend.err.log"
+$FrontendOutLog = Join-Path $StateDir "frontend.out.log"
+$FrontendErrLog = Join-Path $StateDir "frontend.err.log"
 
 function Ensure-StateDir {
     if (-not (Test-Path $StateDir)) {
@@ -35,8 +37,10 @@ function Write-Pids([int]$BackendPid, [int]$FrontendPid) {
     $obj = [pscustomobject]@{
         backend_pid  = $BackendPid
         frontend_pid = $FrontendPid
-        backend_log  = $BackendLog
-        frontend_log = $FrontendLog
+        backend_out_log  = $BackendOutLog
+        backend_err_log  = $BackendErrLog
+        frontend_out_log = $FrontendOutLog
+        frontend_err_log = $FrontendErrLog
         started_at   = (Get-Date).ToString("o")
     }
     $obj | ConvertTo-Json | Set-Content -Encoding UTF8 $PidFile
@@ -89,7 +93,7 @@ function Start-Backend {
 
     $args = @("manage.py", "runserver", "127.0.0.1:8000")
     Ensure-StateDir
-    $proc = Start-Process -FilePath $python -ArgumentList $args -WorkingDirectory $backendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $BackendLog -RedirectStandardError $BackendLog
+    $proc = Start-Process -FilePath $python -ArgumentList $args -WorkingDirectory $backendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $BackendOutLog -RedirectStandardError $BackendErrLog
     Write-Host "Started backend (PID $($proc.Id)) at http://127.0.0.1:8000"
     return $proc.Id
 }
@@ -104,7 +108,7 @@ function Start-Frontend {
 
     Ensure-StateDir
     # Use cmd.exe to run npm.cmd reliably on Windows and keep a single parent PID to stop.
-    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", "npm", "run", "dev") -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $FrontendLog -RedirectStandardError $FrontendLog
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", "npm", "run", "dev") -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $FrontendOutLog -RedirectStandardError $FrontendErrLog
     Write-Host "Started frontend (PID $($proc.Id)) at http://127.0.0.1:3000"
     return $proc.Id
 }
@@ -135,13 +139,13 @@ function Up {
     Write-Pids -BackendPid $backendPid -FrontendPid $frontendPid
 
     if (-not (Wait-ForHttp -Url "http://127.0.0.1:8000/api/v1/health/live/" -TimeoutSeconds 20)) {
-        Write-Warning "Backend didn't become ready. Check log: $BackendLog"
+        Write-Warning "Backend didn't become ready. Check logs: $BackendOutLog / $BackendErrLog"
         Down
         throw "Backend failed to start."
     }
 
     if (-not (Wait-ForHttp -Url "http://127.0.0.1:3000/healthz" -TimeoutSeconds 40)) {
-        Write-Warning "Frontend didn't become ready. Check log: $FrontendLog"
+        Write-Warning "Frontend didn't become ready. Check logs: $FrontendOutLog / $FrontendErrLog"
         Down
         throw "Frontend failed to start."
     }
