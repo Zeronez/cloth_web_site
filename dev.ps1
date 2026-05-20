@@ -108,6 +108,19 @@ function Start-Backend {
     $python = Get-BackendPython
     $env:DJANGO_SETTINGS_MODULE = "config.settings.development"
 
+    # Ensure DB schema exists; seed demo catalog if empty.
+    try {
+        & $python "manage.py" "migrate" "--noinput" | Out-Null
+        $count = & $python "manage.py" "shell" "-c" "from catalog.models import Product; print(Product.objects.count())"
+        if ([int]($count | Select-Object -Last 1) -eq 0) {
+            & $python "manage.py" "seed_demo_catalog" "--count" "24" | Out-Null
+            Write-Host "Seeded demo catalog (24 products)."
+        }
+    }
+    catch {
+        Write-Warning "Backend preflight (migrate/seed) failed: $($_.Exception.Message)"
+    }
+
     $args = @("manage.py", "runserver", "127.0.0.1:8000")
     Ensure-StateDir
     $proc = Start-Process -FilePath $python -ArgumentList $args -WorkingDirectory $backendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $BackendOutLog -RedirectStandardError $BackendErrLog
