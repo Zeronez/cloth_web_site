@@ -110,11 +110,17 @@ function Start-Backend {
 
     # Ensure DB schema exists; seed demo catalog if empty.
     try {
-        & $python "manage.py" "migrate" "--noinput" | Out-Null
-        $count = & $python "manage.py" "shell" "-c" "from catalog.models import Product; print(Product.objects.count())"
-        if ([int]($count | Select-Object -Last 1) -eq 0) {
-            & $python "manage.py" "seed_demo_catalog" "--count" "24" | Out-Null
-            Write-Host "Seeded demo catalog (24 products)."
+        Push-Location $backendDir
+        try {
+            & $python "manage.py" "migrate" "--noinput" | Out-Null
+            $count = & $python "manage.py" "shell" "-c" "from catalog.models import Product; print(Product.objects.count())"
+            if ([int]($count | Select-Object -Last 1) -eq 0) {
+                & $python "manage.py" "seed_demo_catalog" "--count" "24" | Out-Null
+                Write-Host "Seeded demo catalog (24 products)."
+            }
+        }
+        finally {
+            Pop-Location
         }
     }
     catch {
