@@ -6,16 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 
 import {
   ApiError,
-  fetchFavorites,
   fetchCategories,
+  fetchFavorites,
   fetchFranchises,
   fetchProducts
 } from "../../lib/api";
+import { useFavoritesStore } from "../../stores/favorites-store";
+import { useUserStore } from "../../stores/user-store";
 import { CatalogGridSkeleton, InlineNotice } from "../loading-states";
 import { CatalogProductMedia } from "../product-media";
 import { FavoriteToggleButton } from "./favorite-toggle-button";
-import { useFavoritesStore } from "../../stores/favorites-store";
-import { useUserStore } from "../../stores/user-store";
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const placeholderVariants = ["jacket", "hoodie", "pants"] as const;
@@ -29,6 +29,7 @@ export function CatalogPage() {
   const accessToken = useUserStore((state) => state.accessToken);
   const clearSession = useUserStore((state) => state.clearSession);
   const setFavorites = useFavoritesStore((state) => state.setFavorites);
+
   const [category, setCategory] = useState("");
   const [franchise, setFranchise] = useState("");
   const [size, setSize] = useState("");
@@ -198,60 +199,119 @@ export function CatalogPage() {
               <div className="border border-white/10 bg-white/[0.04] p-10 text-center">
                 <h3 className="text-2xl font-black">Ничего не найдено</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-400">
-                  Попробуйте сбросить фильтры или выбрать другой размер, категорию
-                  или франшизу.
+                  Попробуйте сбросить фильтры или выбрать другой размер, категорию или
+                  франшизу.
                 </p>
               </div>
             ) : null}
 
             {!isInitialLoading && !hasNoResults && !isProductsError ? (
               <div className="grid auto-rows-[260px] gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {products.map((product, index) => (
-                  <Link
-                    key={product.slug}
-                    href={`/products/${product.slug}`}
-                    className={`group relative overflow-hidden border border-white/10 bg-white/[0.04] p-5 transition hover:border-neon-crimson/70 ${
-                      index === 0 ? "md:col-span-2 md:row-span-2" : ""
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,56,92,0.2),transparent_42%,rgba(20,184,166,0.18))] opacity-70 transition group-hover:scale-105" />
-                    <CatalogProductMedia
-                      product={product}
-                      placeholderVariant={placeholderVariants[index % placeholderVariants.length]}
-                    />
-                    <div className="relative flex h-full flex-col justify-between">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="bg-ink-950/80 px-3 py-2 text-sm font-bold text-slate-200">
-                          {product.category.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="bg-neon-teal px-3 py-2 text-sm font-black text-ink-950">
-                            Осталось: {product.total_stock}
-                          </span>
-                          <FavoriteToggleButton
+                {products.map((product, index) => {
+                  const isHero = index === 0;
+                  const mediaHeight = isHero ? "h-[340px] md:h-[420px]" : "h-[240px]";
+
+                  return (
+                    <Link
+                      key={product.slug}
+                      href={`/products/${product.slug}`}
+                      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-0.5 hover:border-neon-crimson/60 hover:bg-white/[0.06] ${
+                        isHero ? "md:col-span-2 md:row-span-2" : ""
+                      }`}
+                    >
+                      <div className="relative h-full">
+                        <div
+                          className={`relative overflow-hidden border-b border-white/10 bg-black/20 ${mediaHeight}`}
+                        >
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_45%),linear-gradient(135deg,rgba(255,56,92,0.22),transparent_42%,rgba(20,184,166,0.16))] opacity-80 transition duration-500 group-hover:scale-[1.02]" />
+                          <CatalogProductMedia
                             product={product}
-                            compact
-                            stopPropagation
+                            placeholderVariant={
+                              placeholderVariants[index % placeholderVariants.length]
+                            }
                           />
+
+                          <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border border-white/10 bg-ink-950/80 px-3 py-1.5 text-xs font-bold text-slate-200">
+                              {product.category.name}
+                            </span>
+                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200">
+                              {product.franchise?.name ?? "AnimeAttire"}
+                            </span>
+                          </div>
+
+                          <div className="absolute right-4 top-4 flex items-center gap-2">
+                            <span
+                              className={`rounded-full px-3 py-1.5 text-xs font-black ${
+                                product.total_stock > 0
+                                  ? "bg-neon-teal text-ink-950"
+                                  : "bg-white/10 text-slate-200"
+                              }`}
+                            >
+                              {product.total_stock > 0
+                                ? `В наличии: ${product.total_stock}`
+                                : "Нет в наличии"}
+                            </span>
+                            <div className="rounded-full border border-white/10 bg-ink-950/70 p-1">
+                              <FavoriteToggleButton
+                                product={product}
+                                compact
+                                stopPropagation
+                              />
+                            </div>
+                          </div>
+
+                          <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.92))]" />
+                        </div>
+
+                        <div className="flex flex-col justify-between p-5">
+                          <div>
+                            <h3 className="text-lg font-black leading-snug sm:text-xl">
+                              {product.name}
+                            </h3>
+                            <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                              {product.category.description}
+                            </p>
+                          </div>
+
+                          <div className="mt-5 flex items-end justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                                Цена
+                              </p>
+                              <p className="mt-1 text-2xl font-black">
+                                {money.format(Number(product.base_price))}
+                              </p>
+                            </div>
+                            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black uppercase text-white transition group-hover:border-neon-crimson/60 group-hover:bg-neon-crimson/10">
+                              Открыть
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                              >
+                                <path
+                                  d="M7 17L17 7"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                />
+                                <path
+                                  d="M9 7h8v8"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-neon-crimson">
-                          {product.franchise?.name ?? "AnimeAttire"}
-                        </p>
-                        <h3 className="mt-2 text-2xl font-black">{product.name}</h3>
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-xl font-black">
-                            {money.format(Number(product.base_price))}
-                          </span>
-                          <span className="translate-y-2 bg-white px-4 py-2 text-sm font-black uppercase text-ink-950 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
-                            Открыть
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             ) : null}
           </section>
@@ -260,3 +320,4 @@ export function CatalogPage() {
     </main>
   );
 }
+
