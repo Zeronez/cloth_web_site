@@ -86,15 +86,17 @@ function Get-BackendPython {
     return "python"
 }
 
-function Get-ListeningPid([int]$Port) {
+function Get-ListeningPids([int]$Port) {
     try {
-        $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop | Select-Object -First 1
-        if ($conn) { return [int]$conn.OwningProcess }
+        $conns = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop
+        if ($conns) {
+            return @($conns | Select-Object -ExpandProperty OwningProcess | Sort-Object -Unique)
+        }
     }
     catch {
         # Fallback for environments without Get-NetTCPConnection
     }
-    return $null
+    return @()
 }
 
 function Start-Backend {
@@ -145,14 +147,14 @@ function Up {
         return
     }
 
-    $existingBackend = Get-ListeningPid -Port 8000
-    if ($existingBackend) {
-        throw "Port 8000 is already in use (PID $existingBackend). Stop it first (try: .\\dev.cmd down)."
+    $existingBackend = Get-ListeningPids -Port 8000
+    if ($existingBackend.Count -gt 0) {
+        throw "Port 8000 is already in use (PID(s) $($existingBackend -join ', ')). Stop it first (try: .\\dev.cmd down)."
     }
 
-    $existingFrontend = Get-ListeningPid -Port 3000
-    if ($existingFrontend) {
-        throw "Port 3000 is already in use (PID $existingFrontend). Stop it first (try: .\\dev.cmd down)."
+    $existingFrontend = Get-ListeningPids -Port 3000
+    if ($existingFrontend.Count -gt 0) {
+        throw "Port 3000 is already in use (PID(s) $($existingFrontend -join ', ')). Stop it first (try: .\\dev.cmd down)."
     }
 
     $backendPid = Start-Backend
@@ -172,10 +174,10 @@ function Up {
     }
 
     # Update PID file with actual listening processes (avoids killing a wrapper cmd.exe PID and missing node/python).
-    $backendListenPid = Get-ListeningPid -Port 8000
-    $frontendListenPid = Get-ListeningPid -Port 3000
-    if ($backendListenPid -and $frontendListenPid) {
-        Write-Pids -BackendPid $backendListenPid -FrontendPid $frontendListenPid
+    $backendListenPids = Get-ListeningPids -Port 8000
+    $frontendListenPids = Get-ListeningPids -Port 3000
+    if ($backendListenPids.Count -gt 0 -and $frontendListenPids.Count -gt 0) {
+        Write-Pids -BackendPid ([int]$backendListenPids[0]) -FrontendPid ([int]$frontendListenPids[0])
     }
 }
 
@@ -184,20 +186,16 @@ function Down {
     if (-not $pids) {
         Write-Host "No PID file found ($PidFile). Nothing to stop."
         # Still try to stop listeners if they exist.
-        $fp = Get-ListeningPid -Port 3000
-        if ($fp) { Stop-IfRunning -ProcessId $fp -Name "frontend" }
-        $bp = Get-ListeningPid -Port 8000
-        if ($bp) { Stop-IfRunning -ProcessId $bp -Name "backend" }
+        foreach ($fp in (Get-ListeningPids -Port 3000)) { Stop-IfRunning -ProcessId $fp -Name "frontend" }
+        foreach ($bp in (Get-ListeningPids -Port 8000)) { Stop-IfRunning -ProcessId $bp -Name "backend" }
         return
     }
 
     Stop-IfRunning -ProcessId $pids.frontend_pid -Name "frontend"
     Stop-IfRunning -ProcessId $pids.backend_pid -Name "backend"
     # In case wrapper PIDs were stored, also stop current listeners.
-    $fp2 = Get-ListeningPid -Port 3000
-    if ($fp2) { Stop-IfRunning -ProcessId $fp2 -Name "frontend" }
-    $bp2 = Get-ListeningPid -Port 8000
-    if ($bp2) { Stop-IfRunning -ProcessId $bp2 -Name "backend" }
+    foreach ($fp2 in (Get-ListeningPids -Port 3000)) { Stop-IfRunning -ProcessId $fp2 -Name "frontend" }
+    foreach ($bp2 in (Get-ListeningPids -Port 8000)) { Stop-IfRunning -ProcessId $bp2 -Name "backend" }
     Remove-Item -LiteralPath $PidFile -ErrorAction SilentlyContinue
 }
 
