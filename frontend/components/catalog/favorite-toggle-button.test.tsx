@@ -40,6 +40,8 @@ function buildFavorite(product: Product): FavoriteProductEntry {
 }
 
 describe("FavoriteToggleButton", () => {
+  let redirectSpy: jest.Mock | null = null;
+
   beforeEach(() => {
     useUserStore.setState({
       accessToken: null,
@@ -49,16 +51,22 @@ describe("FavoriteToggleButton", () => {
     useFavoritesStore.setState({
       favorites: []
     });
+    redirectSpy = jest.fn();
+    (window as unknown as { __APP_REDIRECT__?: jest.Mock }).__APP_REDIRECT__ = redirectSpy;
     jest.clearAllMocks();
   });
 
-  it("disables the toggle for anonymous visitors", () => {
+  it("redirects anonymous visitors to registration", () => {
+    window.history.pushState({}, "", "/catalog");
     render(<FavoriteToggleButton product={buildProduct()} />);
 
     const button = screen.getByRole("button");
 
-    expect(button).toBeDisabled();
+    expect(button).not.toBeDisabled();
     expect(button).toHaveAttribute("aria-label", expect.stringContaining("Neon Ronin Shell"));
+
+    fireEvent.click(button);
+    expect(redirectSpy).toHaveBeenCalledWith("/register?next=%2Fcatalog");
   });
 
   it("adds and removes favorites through the store-backed toggle state", async () => {

@@ -231,34 +231,13 @@ export function CatalogPage() {
                             }
                           />
 
-                          <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full border border-white/10 bg-ink-950/80 px-3 py-1.5 text-xs font-bold text-slate-200">
-                              {product.category.name}
-                            </span>
-                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200">
-                              {product.franchise?.name ?? "AnimeAttire"}
-                            </span>
-                          </div>
-
-                          <div className="absolute right-4 top-4 flex items-center gap-2">
-                            <span
-                              className={`rounded-full px-3 py-1.5 text-xs font-black ${
-                                product.total_stock > 0
-                                  ? "border border-white/10 bg-ink-950/70 text-white"
-                                  : "border border-white/10 bg-white/10 text-slate-200"
-                              }`}
-                            >
-                              {product.total_stock > 0
-                                ? `В наличии: ${product.total_stock}`
-                                : "Нет в наличии"}
-                            </span>
-                            <div className="rounded-full border border-white/10 bg-ink-950/70 p-1">
-                              <FavoriteToggleButton
-                                product={product}
-                                compact
-                                stopPropagation
-                              />
-                            </div>
+                          <div className="absolute right-4 top-4 flex items-center gap-3">
+                            {product.total_stock <= 0 ? (
+                              <span className="rounded-full border border-white/10 bg-ink-950/70 px-3 py-1.5 text-xs font-black text-white">
+                                Нет в наличии
+                              </span>
+                            ) : null}
+                            <FavoriteToggleButton product={product} compact stopPropagation />
                           </div>
 
                           <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.92))]" />
@@ -266,7 +245,15 @@ export function CatalogPage() {
 
                         <div className="flex flex-col justify-between p-5">
                           <div>
-                            <h3 className="text-lg font-black leading-snug sm:text-xl">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-white/10 bg-ink-950/60 px-3 py-1.5 text-xs font-bold text-slate-200">
+                                {product.category.name}
+                              </span>
+                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200">
+                                {product.franchise?.name ?? "AnimeAttire"}
+                              </span>
+                            </div>
+                            <h3 className="mt-3 text-lg font-black leading-snug sm:text-xl">
                               {product.name}
                             </h3>
                             <p className="mt-2 line-clamp-2 text-sm text-slate-300">
@@ -283,11 +270,11 @@ export function CatalogPage() {
                                 {money.format(Number(product.base_price))}
                               </p>
                             </div>
-                          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black uppercase text-white transition group-hover:border-white/25 group-hover:bg-white/10">
-                            Открыть
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
+                            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black uppercase text-white transition group-hover:border-white/25 group-hover:bg-white/10">
+                              Открыть
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
                                 aria-hidden="true"
                                 className="h-4 w-4"
                               >
@@ -320,3 +307,4 @@ export function CatalogPage() {
     </main>
   );
 }
+

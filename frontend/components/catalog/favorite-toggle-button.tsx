@@ -36,13 +36,33 @@ export function FavoriteToggleButton({
 
   const isFavorite = Boolean(favorite);
 
+  function redirectToRegister(nextPathname: string) {
+    if (typeof window === "undefined") return;
+    const url = `/register?next=${encodeURIComponent(nextPathname)}`;
+    const anyWindow = window as unknown as { __APP_REDIRECT__?: (to: string) => void };
+    if (typeof anyWindow.__APP_REDIRECT__ === "function") {
+      anyWindow.__APP_REDIRECT__(url);
+      return;
+    }
+    window.location.assign(url);
+  }
+
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     if (stopPropagation) {
       event.preventDefault();
       event.stopPropagation();
     }
 
-    if (!accessToken || isPending) {
+    if (!accessToken) {
+      const nextPath =
+        typeof window !== "undefined" && window.location?.pathname
+          ? window.location.pathname
+          : "/";
+      redirectToRegister(nextPath);
+      return;
+    }
+
+    if (isPending) {
       return;
     }
 
@@ -62,32 +82,26 @@ export function FavoriteToggleButton({
     }
   }
 
+  const label = !accessToken
+    ? `Войдите, чтобы добавить "${product.name}" в избранное`
+    : isFavorite
+      ? `Убрать "${product.name}" из избранного`
+      : `Добавить "${product.name}" в избранное`;
+
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={!accessToken || isPending}
-      className={`inline-flex items-center justify-center border transition focus:outline-none focus:ring-2 focus:ring-neon-teal disabled:cursor-not-allowed disabled:opacity-60 ${
-        compact ? "h-10 w-10 text-sm" : "h-11 min-w-11 px-3 text-sm font-black uppercase"
-      } ${
-        isFavorite
-          ? "border-neon-crimson bg-neon-crimson text-white shadow-neon-crimson"
-          : "border-white/15 bg-white/10 text-white hover:border-neon-crimson/70 hover:bg-neon-crimson/10"
+      disabled={isPending}
+      aria-label={label}
+      title={label}
+      className={`inline-flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+        compact
+          ? `h-10 w-10 rounded-full bg-transparent text-base ${
+              isFavorite ? "text-white" : "text-slate-200 hover:text-white"
+            }`
+          : `h-11 min-w-11 rounded-full border border-white/15 bg-white/10 px-3 text-sm font-black uppercase text-white hover:border-white/25 hover:bg-white/15`
       } ${className}`}
-      aria-label={
-        !accessToken
-          ? `Войдите, чтобы добавить "${product.name}" в избранное`
-          : isFavorite
-            ? `Убрать "${product.name}" из избранного`
-            : `Добавить "${product.name}" в избранное`
-      }
-      title={
-        !accessToken
-          ? "Войдите, чтобы использовать избранное"
-          : isFavorite
-            ? "Убрать из избранного"
-            : "Добавить в избранное"
-      }
     >
       <span aria-hidden="true" className="text-base leading-none">
         {isFavorite ? "♥" : "♡"}
