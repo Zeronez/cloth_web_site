@@ -91,7 +91,7 @@ function Get-ListeningPids([int]$Port) {
     try {
         $lines = netstat -ano -p TCP 2>$null
         foreach ($line in $lines) {
-            if ($line -match "LISTENING\\s+(\\d+)\\s*$" -and $line -match (":$Port\\s")) {
+            if ($line -match "^\\s*TCP\\s+\\S+:$Port\\s+\\S+\\s+LISTENING\\s+(\\d+)\\s*$") {
                 [void]$pids.Add([int]$Matches[1])
             }
         }
