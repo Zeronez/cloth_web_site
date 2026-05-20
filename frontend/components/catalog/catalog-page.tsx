@@ -206,10 +206,12 @@ export function CatalogPage() {
             ) : null}
 
             {!isInitialLoading && !hasNoResults && !isProductsError ? (
-              <div className="grid auto-rows-[360px] gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product, index) => {
                   const isHero = index === 0;
-                  const mediaHeight = isHero ? "h-[340px] md:h-[420px]" : "h-[240px]";
+                  const mediaHeight = isHero
+                    ? "h-[340px] md:h-[420px]"
+                    : "h-[240px] md:h-[260px]";
 
                   return (
                     <Link
@@ -219,7 +221,7 @@ export function CatalogPage() {
                         isHero ? "md:col-span-2 md:row-span-2" : ""
                       }`}
                     >
-                      <div className="relative h-full">
+                      <div className="relative flex h-full flex-col">
                         <div
                           className={`relative overflow-hidden border-b border-white/10 bg-black/20 ${mediaHeight}`}
                         >
@@ -243,12 +245,8 @@ export function CatalogPage() {
                           <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.92))]" />
                         </div>
 
-                        <div
-                          className={`flex flex-col justify-between ${
-                            isHero ? "p-6 md:p-7" : "p-6"
-                          }`}
-                        >
-                          <div>
+                        <div className={`flex flex-1 flex-col ${isHero ? "p-6 md:p-7" : "p-6"}`}>
+                          <div className="min-h-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-white/10 bg-ink-950/60 px-3 py-1.5 text-xs font-bold text-slate-200">
                                 {product.category.name}
@@ -265,7 +263,7 @@ export function CatalogPage() {
                             </p>
                           </div>
 
-                          <div className="mt-5 flex items-end justify-between gap-3">
+                          <div className="mt-6 flex items-end justify-between gap-3">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                                 Цена
