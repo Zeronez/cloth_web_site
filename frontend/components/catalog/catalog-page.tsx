@@ -84,8 +84,8 @@ export function CatalogPage() {
 
   return (
     <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-7xl">
-        <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+      <section className="mx-auto w-full">
+        <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
           <aside className="h-fit border border-white/10 bg-white/[0.04] p-4">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-black">Каталог</h1>
@@ -168,7 +168,7 @@ export function CatalogPage() {
             </div>
           </aside>
 
-          <section>
+          <section className="mx-auto w-full max-w-5xl">
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-bold uppercase text-neon-teal">
@@ -206,7 +206,7 @@ export function CatalogPage() {
             ) : null}
 
             {!isInitialLoading && !hasNoResults && !isProductsError ? (
-              <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid auto-rows-[minmax(320px,_auto)] gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product, index) => {
                   const isHero = index === 0;
                   const mediaHeight = isHero
@@ -263,7 +263,7 @@ export function CatalogPage() {
                             </p>
                           </div>
 
-                          <div className="mt-6 flex items-end justify-between gap-3">
+                          <div className="mt-auto flex items-end justify-between gap-3 pt-6">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                                 Цена
@@ -304,6 +304,7 @@ export function CatalogPage() {
               </div>
             ) : null}
           </section>
+          <div className="hidden lg:block" />
         </div>
       </section>
     </main>
