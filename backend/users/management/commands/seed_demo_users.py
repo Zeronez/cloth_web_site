@@ -153,4 +153,3 @@ class Command(BaseCommand):
                 f"Demo users ready. created={created} updated={updated} total={len(DEMO_USERS)}"
             )
         )
-
