@@ -46,7 +46,9 @@ class PaymentEventSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     events = PaymentEventSerializer(many=True, read_only=True)
-    refunded_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    refunded_amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
 
     class Meta:
         model = Payment
@@ -87,9 +89,7 @@ class PaymentRefundSerializer(serializers.ModelSerializer):
 
 
 class PaymentRefundRequestSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(
-        max_digits=12, decimal_places=2, required=False
-    )
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
 
 
 class PaymentSessionCreateSerializer(serializers.Serializer):

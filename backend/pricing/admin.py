@@ -32,7 +32,15 @@ class CouponRedemptionAdmin(admin.ModelAdmin):
 
 @admin.register(GiftCard)
 class GiftCardAdmin(admin.ModelAdmin):
-    list_display = ("code", "currency", "initial_amount", "balance_amount", "is_active", "expires_at", "created_at")
+    list_display = (
+        "code",
+        "currency",
+        "initial_amount",
+        "balance_amount",
+        "is_active",
+        "expires_at",
+        "created_at",
+    )
     list_filter = ("currency", "is_active")
     search_fields = ("code",)
 
@@ -42,4 +50,3 @@ class GiftCardRedemptionAdmin(admin.ModelAdmin):
     list_display = ("gift_card", "order", "amount", "created_at")
     list_filter = ("created_at",)
     search_fields = ("gift_card__code",)
-

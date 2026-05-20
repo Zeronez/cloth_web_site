@@ -148,7 +148,9 @@ def build_low_stock_message(alert):
     return subject, body
 
 
-def _get_or_create_log(*, order, notification_type, subject, body, recipient, dedupe_key=""):
+def _get_or_create_log(
+    *, order, notification_type, subject, body, recipient, dedupe_key=""
+):
     defaults = {
         "recipient": recipient,
         "subject": subject,
@@ -164,7 +166,9 @@ def _get_or_create_log(*, order, notification_type, subject, body, recipient, de
     )
 
 
-def _get_or_create_deduped_log(*, dedupe_key, notification_type, subject, body, recipient):
+def _get_or_create_deduped_log(
+    *, dedupe_key, notification_type, subject, body, recipient
+):
     defaults = {
         "recipient": recipient,
         "subject": subject,
@@ -391,7 +395,11 @@ def send_payment_status_email(self, payment_id):
         processing_started_at=None,
         updated_at=timezone.now(),
     )
-    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}
+    return {
+        "status": "delivered",
+        "notification_log_id": log.id,
+        "delivered_count": delivered_count,
+    }
 
 
 @app.task(
@@ -452,7 +460,11 @@ def send_shipping_status_email(self, order_id, tracking_status):
         processing_started_at=None,
         updated_at=timezone.now(),
     )
-    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}
+    return {
+        "status": "delivered",
+        "notification_log_id": log.id,
+        "delivered_count": delivered_count,
+    }
 
 
 @app.task(
@@ -515,4 +527,8 @@ def send_low_stock_admin_email(self, alert_id):
         processing_started_at=None,
         updated_at=timezone.now(),
     )
-    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}
+    return {
+        "status": "delivered",
+        "notification_log_id": log.id,
+        "delivered_count": delivered_count,
+    }

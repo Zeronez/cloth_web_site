@@ -66,9 +66,9 @@ class Command(BaseCommand):
                         "name": product.name,
                         "slug": product.slug,
                         "category_slug": product.category.slug,
-                        "franchise_slug": product.franchise.slug
-                        if product.franchise_id
-                        else "",
+                        "franchise_slug": (
+                            product.franchise.slug if product.franchise_id else ""
+                        ),
                         "description": product.description,
                         "base_price": str(product.base_price),
                         "status": product.status,
@@ -125,4 +125,3 @@ class Command(BaseCommand):
                 f"Exported {products.count()} products to {products_path} and {variants.count()} variants to {variants_path}."
             )
         )
-

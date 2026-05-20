@@ -47,4 +47,3 @@ def test_phone_confirmation_rejects_invalid_code(authenticated_client, user, set
     assert confirm_response.data["error"]["code"] == "validation_error"
     user.refresh_from_db()
     assert user.is_phone_verified is False
-

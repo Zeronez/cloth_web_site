@@ -24,4 +24,3 @@ def record_product_price_history(sender, instance: Product, **kwargs):
                 old_value=old_value,
                 new_value=new_value,
             )
-

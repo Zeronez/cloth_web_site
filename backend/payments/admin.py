@@ -81,7 +81,14 @@ class PaymentEventInline(admin.TabularInline):
 class PaymentRefundInline(admin.TabularInline):
     model = PaymentRefund
     extra = 0
-    fields = ("amount", "currency", "status", "external_refund_id", "message", "created_at")
+    fields = (
+        "amount",
+        "currency",
+        "status",
+        "external_refund_id",
+        "message",
+        "created_at",
+    )
     readonly_fields = fields
     can_delete = False
 

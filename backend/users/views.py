@@ -285,7 +285,9 @@ class PhoneConfirmationConfirmView(APIView):
     permission_classes = (IsAuthenticated,)
     throttle_scope = "auth"
 
-    @extend_schema(request=PhoneConfirmationConfirmSerializer, responses={200: UserSerializer})
+    @extend_schema(
+        request=PhoneConfirmationConfirmSerializer, responses={200: UserSerializer}
+    )
     def post(self, request):
         serializer = PhoneConfirmationConfirmSerializer(
             data=request.data, context={"request": request}

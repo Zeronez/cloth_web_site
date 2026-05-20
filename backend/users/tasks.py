@@ -93,5 +93,7 @@ def send_phone_confirmation_sms(*, user_id, phone, code):
 
     Replace with a real provider integration when selected.
     """
-    logger.info("Phone confirmation code for user=%s phone=%s code=%s", user_id, phone, code)
+    logger.info(
+        "Phone confirmation code for user=%s phone=%s code=%s", user_id, phone, code
+    )
     return {"status": "sent", "phone": phone}

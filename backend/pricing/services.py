@@ -44,7 +44,12 @@ def compute_totals(
     if coupon is not None:
         if coupon.currency != currency:
             raise ValidationError(
-                {"coupon": {"code": "currency_mismatch", "message": "Купон в другой валюте."}}
+                {
+                    "coupon": {
+                        "code": "currency_mismatch",
+                        "message": "Купон в другой валюте.",
+                    }
+                }
             )
         if not coupon.is_currently_active(now=now):
             raise ValidationError(
@@ -52,7 +57,12 @@ def compute_totals(
             )
         if items_subtotal < coupon.min_cart_amount:
             raise ValidationError(
-                {"coupon": {"code": "min_cart_not_met", "message": "Сумма корзины меньше минимума по купону."}}
+                {
+                    "coupon": {
+                        "code": "min_cart_not_met",
+                        "message": "Сумма корзины меньше минимума по купону.",
+                    }
+                }
             )
 
         if coupon.kind == Coupon.Kind.FIXED:
@@ -65,10 +75,17 @@ def compute_totals(
             delivery = Decimal("0.00")
 
         if user is not None and coupon.per_user_limit:
-            used_count = CouponRedemption.objects.filter(coupon=coupon, user=user).count()
+            used_count = CouponRedemption.objects.filter(
+                coupon=coupon, user=user
+            ).count()
             if used_count >= coupon.per_user_limit:
                 raise ValidationError(
-                    {"coupon": {"code": "per_user_limit_reached", "message": "Лимит использования купона исчерпан."}}
+                    {
+                        "coupon": {
+                            "code": "per_user_limit_reached",
+                            "message": "Лимит использования купона исчерпан.",
+                        }
+                    }
                 )
 
     total = _quantize(items_subtotal - discount + delivery + tax)

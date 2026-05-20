@@ -220,7 +220,9 @@ class PaymentRefund(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["payment", "created_at"], name="payments_ref_payment_idx"),
+            models.Index(
+                fields=["payment", "created_at"], name="payments_ref_payment_idx"
+            ),
             models.Index(fields=["status"], name="payments_ref_status_idx"),
         ]
 

@@ -142,7 +142,9 @@ class PhoneConfirmation(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["user", "created_at"], name="users_phone_conf_user_idx"),
+            models.Index(
+                fields=["user", "created_at"], name="users_phone_conf_user_idx"
+            ),
             models.Index(fields=["expires_at"], name="users_phone_conf_exp_idx"),
             models.Index(fields=["consumed_at"], name="users_phone_conf_cons_idx"),
         ]

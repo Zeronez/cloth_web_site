@@ -66,7 +66,9 @@ def create_payment(order, *, status=Payment.Status.SUCCEEDED):
     )
 
 
-def test_staff_can_refund_payment_partially_and_fully(api_client, user, product_factory):
+def test_staff_can_refund_payment_partially_and_fully(
+    api_client, user, product_factory
+):
     staff_user = get_user_model().objects.create_user(
         username="staff-refund",
         email="staff-refund@example.com",
@@ -99,4 +101,3 @@ def test_staff_can_refund_payment_partially_and_fully(api_client, user, product_
     assert payment.refunded_amount == Decimal("100.00")
     assert payment.status == Payment.Status.REFUNDED
     assert order.status == Order.Status.CANCELLED
-

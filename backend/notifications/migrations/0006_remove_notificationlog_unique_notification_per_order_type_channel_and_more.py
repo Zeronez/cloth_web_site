@@ -7,40 +7,65 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notifications', '0005_notificationlog_processing_started_at_and_more'),
-        ('orders', '0007_order_coupon_order_currency_order_delivery_amount_and_more'),
+        ("notifications", "0005_notificationlog_processing_started_at_and_more"),
+        ("orders", "0007_order_coupon_order_currency_order_delivery_amount_and_more"),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='notificationlog',
-            name='unique_notification_per_order_type_channel',
+            model_name="notificationlog",
+            name="unique_notification_per_order_type_channel",
         ),
         migrations.AddField(
-            model_name='notificationlog',
-            name='dedupe_key',
+            model_name="notificationlog",
+            name="dedupe_key",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AlterField(
-            model_name='notificationlog',
-            name='notification_type',
-            field=models.CharField(choices=[('order_created', 'Заказ создан'), ('order_status', 'Статус заказа'), ('payment_status', 'Статус оплаты'), ('shipping_status', 'Статус доставки'), ('low_stock', 'Низкий остаток')], max_length=32),
+            model_name="notificationlog",
+            name="notification_type",
+            field=models.CharField(
+                choices=[
+                    ("order_created", "Заказ создан"),
+                    ("order_status", "Статус заказа"),
+                    ("payment_status", "Статус оплаты"),
+                    ("shipping_status", "Статус доставки"),
+                    ("low_stock", "Низкий остаток"),
+                ],
+                max_length=32,
+            ),
         ),
         migrations.AlterField(
-            model_name='notificationlog',
-            name='order',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='notification_logs', to='orders.order'),
+            model_name="notificationlog",
+            name="order",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="notification_logs",
+                to="orders.order",
+            ),
         ),
         migrations.AddIndex(
-            model_name='notificationlog',
-            index=models.Index(fields=['dedupe_key'], name='notifications_dedupe_key_idx'),
+            model_name="notificationlog",
+            index=models.Index(
+                fields=["dedupe_key"], name="notifications_dedupe_key_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='notificationlog',
-            constraint=models.UniqueConstraint(condition=models.Q(('order', None), _negated=True), fields=('order', 'notification_type', 'channel'), name='unique_notification_per_order_type_channel'),
+            model_name="notificationlog",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("order", None), _negated=True),
+                fields=("order", "notification_type", "channel"),
+                name="unique_notification_per_order_type_channel",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='notificationlog',
-            constraint=models.UniqueConstraint(condition=models.Q(('dedupe_key', ''), _negated=True), fields=('dedupe_key',), name='unique_notification_dedupe_key'),
+            model_name="notificationlog",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("dedupe_key", ""), _negated=True),
+                fields=("dedupe_key",),
+                name="unique_notification_dedupe_key",
+            ),
         ),
     ]

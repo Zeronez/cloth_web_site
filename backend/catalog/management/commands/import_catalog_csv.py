@@ -62,9 +62,11 @@ class Command(BaseCommand):
                         "care": row.get("care") or "",
                         "gender": row.get("gender") or "",
                         "season": row.get("season") or "",
-                        "weight_grams": int(row["weight_grams"])
-                        if (row.get("weight_grams") or "").strip()
-                        else None,
+                        "weight_grams": (
+                            int(row["weight_grams"])
+                            if (row.get("weight_grams") or "").strip()
+                            else None
+                        ),
                         "seo_title": row.get("seo_title") or "",
                         "seo_description": row.get("seo_description") or "",
                         "canonical_url": row.get("canonical_url") or "",
@@ -112,9 +114,10 @@ class Command(BaseCommand):
                     product_id = int(row["product_id"])
                     if not variant_id:
                         raise CommandError("Variants CSV requires non-empty id column.")
-                    if product_id not in products_by_id and not Product.objects.filter(
-                        id=product_id
-                    ).exists():
+                    if (
+                        product_id not in products_by_id
+                        and not Product.objects.filter(id=product_id).exists()
+                    ):
                         raise CommandError(
                             f"Variant references unknown product_id={product_id}."
                         )
@@ -133,4 +136,3 @@ class Command(BaseCommand):
                     )
 
         self.stdout.write(self.style.SUCCESS("Import completed."))
-

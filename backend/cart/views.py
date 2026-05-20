@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -78,14 +76,21 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             CartSerializer(cart, context=self.get_serializer_context()).data
         )
 
-    @action(detail=False, methods=["post", "delete"], url_path="coupon", throttle_scope="cart")
+    @action(
+        detail=False,
+        methods=["post", "delete"],
+        url_path="coupon",
+        throttle_scope="cart",
+    )
     def coupon(self, request):
         cart = get_or_create_cart(request)
         if request.method == "DELETE":
             cart.coupon = None
             cart.save(update_fields=["coupon", "updated_at"])
             cart.refresh_from_db()
-            return Response(CartSerializer(cart, context=self.get_serializer_context()).data)
+            return Response(
+                CartSerializer(cart, context=self.get_serializer_context()).data
+            )
 
         serializer = ApplyCouponSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -94,7 +99,9 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if coupon is None:
             raise ValidationError({"coupon_code": "Купон не найден."})
 
-        user = request.user if getattr(request.user, "is_authenticated", False) else None
+        user = (
+            request.user if getattr(request.user, "is_authenticated", False) else None
+        )
         compute_totals(
             currency="RUB",
             items_subtotal=cart.total_amount,
@@ -105,7 +112,9 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         cart.coupon = coupon
         cart.save(update_fields=["coupon", "updated_at"])
         cart.refresh_from_db()
-        return Response(CartSerializer(cart, context=self.get_serializer_context()).data)
+        return Response(
+            CartSerializer(cart, context=self.get_serializer_context()).data
+        )
 
     @action(detail=False, methods=["post"], url_path="quote", throttle_scope="checkout")
     def quote(self, request):
@@ -136,7 +145,9 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             if coupon is None:
                 raise ValidationError({"coupon_code": "Купон не найден."})
 
-        user = request.user if getattr(request.user, "is_authenticated", False) else None
+        user = (
+            request.user if getattr(request.user, "is_authenticated", False) else None
+        )
         totals = compute_totals(
             currency="RUB",
             items_subtotal=cart.total_amount,

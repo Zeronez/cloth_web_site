@@ -30,7 +30,10 @@ class Coupon(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["is_active", "starts_at", "ends_at"], name="pricing_coupon_active_idx"),
+            models.Index(
+                fields=["is_active", "starts_at", "ends_at"],
+                name="pricing_coupon_active_idx",
+            ),
             models.Index(fields=["code"], name="pricing_coupon_code_idx"),
         ]
 
@@ -51,7 +54,9 @@ class Coupon(models.Model):
 
 
 class CouponRedemption(models.Model):
-    coupon = models.ForeignKey(Coupon, related_name="redemptions", on_delete=models.CASCADE)
+    coupon = models.ForeignKey(
+        Coupon, related_name="redemptions", on_delete=models.CASCADE
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="coupon_redemptions",
@@ -69,7 +74,9 @@ class CouponRedemption(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["coupon", "user", "created_at"], name="pricing_coupon_user_idx"),
+            models.Index(
+                fields=["coupon", "user", "created_at"], name="pricing_coupon_user_idx"
+            ),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -113,8 +120,12 @@ class GiftCard(models.Model):
 
 
 class GiftCardRedemption(models.Model):
-    gift_card = models.ForeignKey(GiftCard, related_name="redemptions", on_delete=models.CASCADE)
-    order = models.ForeignKey("orders.Order", related_name="gift_card_redemptions", on_delete=models.CASCADE)
+    gift_card = models.ForeignKey(
+        GiftCard, related_name="redemptions", on_delete=models.CASCADE
+    )
+    order = models.ForeignKey(
+        "orders.Order", related_name="gift_card_redemptions", on_delete=models.CASCADE
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -123,4 +134,3 @@ class GiftCardRedemption(models.Model):
 
     def __str__(self):
         return f"{self.gift_card.code} {self.amount}"
-

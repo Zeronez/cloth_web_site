@@ -249,12 +249,22 @@ SIMPLE_JWT = {
 }
 
 REDIS_URL = env_value("REDIS_URL", "redis://localhost:6379/0")
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_URL,
+USE_REDIS_CACHE = env_bool("USE_REDIS_CACHE", True)
+CACHES = (
+    {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
     }
-}
+    if USE_REDIS_CACHE
+    else {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "animeattire-local",
+        }
+    }
+)
 
 CELERY_BROKER_URL = env_value("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env_value("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")

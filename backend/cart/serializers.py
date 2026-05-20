@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from rest_framework import serializers
 
 from cart.models import Cart, CartItem
@@ -115,15 +113,27 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class ApplyCouponSerializer(serializers.Serializer):
-    coupon_code = serializers.SlugField(max_length=48, allow_blank=False, trim_whitespace=True)
+    coupon_code = serializers.SlugField(
+        max_length=48, allow_blank=False, trim_whitespace=True
+    )
 
 
 class QuoteTotalsSerializer(serializers.Serializer):
-    delivery_method_code = serializers.SlugField(max_length=48, required=False, allow_blank=True)
-    shipping_country = serializers.CharField(max_length=80, required=False, allow_blank=True)
-    shipping_city = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    shipping_postal_code = serializers.CharField(max_length=32, required=False, allow_blank=True)
-    coupon_code = serializers.SlugField(max_length=48, required=False, allow_blank=True, trim_whitespace=True)
+    delivery_method_code = serializers.SlugField(
+        max_length=48, required=False, allow_blank=True
+    )
+    shipping_country = serializers.CharField(
+        max_length=80, required=False, allow_blank=True
+    )
+    shipping_city = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+    shipping_postal_code = serializers.CharField(
+        max_length=32, required=False, allow_blank=True
+    )
+    coupon_code = serializers.SlugField(
+        max_length=48, required=False, allow_blank=True, trim_whitespace=True
+    )
 
 
 class AddCartItemSerializer(serializers.Serializer):

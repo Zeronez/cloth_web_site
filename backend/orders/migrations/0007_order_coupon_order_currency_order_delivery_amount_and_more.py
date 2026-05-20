@@ -7,44 +7,50 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0006_order_indexes_for_admin_filters'),
-        ('pricing', '0001_initial'),
+        ("orders", "0006_order_indexes_for_admin_filters"),
+        ("pricing", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='coupon',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to='pricing.coupon'),
+            model_name="order",
+            name="coupon",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="orders",
+                to="pricing.coupon",
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='currency',
-            field=models.CharField(default='RUB', max_length=3),
+            model_name="order",
+            name="currency",
+            field=models.CharField(default="RUB", max_length=3),
         ),
         migrations.AddField(
-            model_name='order',
-            name='delivery_amount',
+            model_name="order",
+            name="delivery_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='order',
-            name='discount_amount',
+            model_name="order",
+            name="discount_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='order',
-            name='fiscal_fee_amount',
+            model_name="order",
+            name="fiscal_fee_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='order',
-            name='items_subtotal_amount',
+            model_name="order",
+            name="items_subtotal_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='order',
-            name='tax_amount',
+            model_name="order",
+            name="tax_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
     ]

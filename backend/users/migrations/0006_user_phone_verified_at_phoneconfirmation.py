@@ -8,30 +8,55 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0005_user_account_deleted_at'),
+        ("users", "0005_user_account_deleted_at"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='phone_verified_at',
+            model_name="user",
+            name="phone_verified_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.CreateModel(
-            name='PhoneConfirmation',
+            name="PhoneConfirmation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('phone', models.CharField(max_length=32)),
-                ('code_hash', models.CharField(max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('consumed_at', models.DateTimeField(blank=True, null=True)),
-                ('attempt_count', models.PositiveIntegerField(default=0)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='phone_confirmations', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("phone", models.CharField(max_length=32)),
+                ("code_hash", models.CharField(max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField()),
+                ("consumed_at", models.DateTimeField(blank=True, null=True)),
+                ("attempt_count", models.PositiveIntegerField(default=0)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="phone_confirmations",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at', '-id'],
-                'indexes': [models.Index(fields=['user', 'created_at'], name='users_phone_conf_user_idx'), models.Index(fields=['expires_at'], name='users_phone_conf_exp_idx'), models.Index(fields=['consumed_at'], name='users_phone_conf_cons_idx')],
+                "ordering": ["-created_at", "-id"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "created_at"], name="users_phone_conf_user_idx"
+                    ),
+                    models.Index(
+                        fields=["expires_at"], name="users_phone_conf_exp_idx"
+                    ),
+                    models.Index(
+                        fields=["consumed_at"], name="users_phone_conf_cons_idx"
+                    ),
+                ],
             },
         ),
     ]

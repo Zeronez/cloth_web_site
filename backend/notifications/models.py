@@ -66,8 +66,7 @@ class NotificationLog(models.Model):
                 fields=["order", "notification_type", "channel"],
                 condition=~models.Q(order=None),
                 name="unique_notification_per_order_type_channel",
-            )
-            ,
+            ),
             models.UniqueConstraint(
                 fields=["dedupe_key"],
                 condition=~models.Q(dedupe_key=""),

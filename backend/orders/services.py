@@ -295,7 +295,9 @@ def checkout_cart(user, shipping_data):
             order=order,
             amount=apply_amount,
         )
-        order.discount_amount = (order.discount_amount or Decimal("0.00")) + apply_amount
+        order.discount_amount = (
+            order.discount_amount or Decimal("0.00")
+        ) + apply_amount
         order.total_amount = max(Decimal("0.00"), order.total_amount - apply_amount)
         order.save(update_fields=["discount_amount", "total_amount", "updated_at"])
 

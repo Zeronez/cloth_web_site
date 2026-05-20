@@ -125,11 +125,16 @@ class Product(TimeStampedModel):
                 fields=["is_active", "archived_at", "is_featured", "created_at"],
                 name="catalog_pro_live_list_idx",
             ),
-            models.Index(fields=["status", "created_at"], name="catalog_pro_status_idx"),
+            models.Index(
+                fields=["status", "created_at"], name="catalog_pro_status_idx"
+            ),
         ]
 
     def save(self, *args, **kwargs):
-        if self.archived_at is not None and self.status != self.PublishingStatus.ARCHIVED:
+        if (
+            self.archived_at is not None
+            and self.status != self.PublishingStatus.ARCHIVED
+        ):
             self.status = self.PublishingStatus.ARCHIVED
         elif self.status == self.PublishingStatus.ACTIVE and not self.is_active:
             self.status = self.PublishingStatus.DRAFT
@@ -183,7 +188,9 @@ class Product(TimeStampedModel):
     def restore(self, *, save=True):
         self.status = self.PublishingStatus.ACTIVE
         if save:
-            self.save(update_fields=["status", "archived_at", "is_active", "updated_at"])
+            self.save(
+                update_fields=["status", "archived_at", "is_active", "updated_at"]
+            )
 
     def __str__(self):
         return self.name
@@ -438,7 +445,9 @@ class LowStockAlert(TimeStampedModel):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["variant", "created_at"], name="catalog_low_stock_var_idx"),
+            models.Index(
+                fields=["variant", "created_at"], name="catalog_low_stock_var_idx"
+            ),
             models.Index(fields=["acknowledged_at"], name="catalog_low_stock_ack_idx"),
         ]
 
@@ -526,16 +535,24 @@ class ProductPriceHistory(TimeStampedModel):
         on_delete=models.SET_NULL,
     )
     field_name = models.CharField(max_length=32)
-    old_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    new_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    old_value = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    new_value = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     note = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
-            models.Index(fields=["product", "created_at"], name="catalog_price_hist_prod_idx"),
+            models.Index(
+                fields=["product", "created_at"], name="catalog_price_hist_prod_idx"
+            ),
             models.Index(fields=["field_name"], name="catalog_price_hist_field_idx"),
         ]
 
     def __str__(self):
-        return f"{self.product_id} {self.field_name}: {self.old_value} -> {self.new_value}"
+        return (
+            f"{self.product_id} {self.field_name}: {self.old_value} -> {self.new_value}"
+        )

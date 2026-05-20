@@ -7,31 +7,63 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0004_payment_indexes_for_query_paths'),
+        ("payments", "0004_payment_indexes_for_query_paths"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payment',
-            name='refunded_amount',
+            model_name="payment",
+            name="refunded_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=12),
         ),
         migrations.CreateModel(
-            name='PaymentRefund',
+            name="PaymentRefund",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('currency', models.CharField(default='RUB', max_length=3)),
-                ('status', models.CharField(choices=[('requested', 'Запрошен'), ('succeeded', 'Успешен'), ('failed', 'Ошибка')], default='requested', max_length=24)),
-                ('external_refund_id', models.CharField(blank=True, max_length=120)),
-                ('message', models.CharField(blank=True, max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('payment', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='refunds', to='payments.payment')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("currency", models.CharField(default="RUB", max_length=3)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("requested", "Запрошен"),
+                            ("succeeded", "Успешен"),
+                            ("failed", "Ошибка"),
+                        ],
+                        default="requested",
+                        max_length=24,
+                    ),
+                ),
+                ("external_refund_id", models.CharField(blank=True, max_length=120)),
+                ("message", models.CharField(blank=True, max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "payment",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="refunds",
+                        to="payments.payment",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at', '-id'],
-                'indexes': [models.Index(fields=['payment', 'created_at'], name='payments_ref_payment_idx'), models.Index(fields=['status'], name='payments_ref_status_idx')],
+                "ordering": ["-created_at", "-id"],
+                "indexes": [
+                    models.Index(
+                        fields=["payment", "created_at"],
+                        name="payments_ref_payment_idx",
+                    ),
+                    models.Index(fields=["status"], name="payments_ref_status_idx"),
+                ],
             },
         ),
     ]

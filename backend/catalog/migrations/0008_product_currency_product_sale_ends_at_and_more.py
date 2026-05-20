@@ -8,47 +8,91 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catalog', '0007_inventoryreservation'),
+        ("catalog", "0007_inventoryreservation"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='product',
-            name='currency',
-            field=models.CharField(default='RUB', max_length=3),
+            model_name="product",
+            name="currency",
+            field=models.CharField(default="RUB", max_length=3),
         ),
         migrations.AddField(
-            model_name='product',
-            name='sale_ends_at',
+            model_name="product",
+            name="sale_ends_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='product',
-            name='sale_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="product",
+            name="sale_price",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='product',
-            name='sale_starts_at',
+            model_name="product",
+            name="sale_starts_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.CreateModel(
-            name='ProductPriceHistory',
+            name="ProductPriceHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('field_name', models.CharField(max_length=32)),
-                ('old_value', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('new_value', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('note', models.CharField(blank=True, max_length=255)),
-                ('changed_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='product_price_changes', to=settings.AUTH_USER_MODEL)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='price_history', to='catalog.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("field_name", models.CharField(max_length=32)),
+                (
+                    "old_value",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                (
+                    "new_value",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                ("note", models.CharField(blank=True, max_length=255)),
+                (
+                    "changed_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="product_price_changes",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="price_history",
+                        to="catalog.product",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at', '-id'],
-                'indexes': [models.Index(fields=['product', 'created_at'], name='catalog_price_hist_prod_idx'), models.Index(fields=['field_name'], name='catalog_price_hist_field_idx')],
+                "ordering": ["-created_at", "-id"],
+                "indexes": [
+                    models.Index(
+                        fields=["product", "created_at"],
+                        name="catalog_price_hist_prod_idx",
+                    ),
+                    models.Index(
+                        fields=["field_name"], name="catalog_price_hist_field_idx"
+                    ),
+                ],
             },
         ),
     ]

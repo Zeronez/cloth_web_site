@@ -9,7 +9,9 @@ from delivery.models import DeliveryMethod
 pytestmark = pytest.mark.django_db
 
 
-def test_cart_apply_coupon_percent_updates_totals(authenticated_client, product_factory):
+def test_cart_apply_coupon_percent_updates_totals(
+    authenticated_client, product_factory
+):
     product = product_factory(
         name="Coupon Tee",
         base_price="100.00",

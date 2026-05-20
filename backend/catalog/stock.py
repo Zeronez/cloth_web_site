@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
@@ -120,4 +121,3 @@ def adjust_variant_stock_optimistic(
 
         transaction.on_commit(lambda: send_low_stock_admin_email.delay(alert.id))
     return variant, adjustment
-from django.conf import settings
