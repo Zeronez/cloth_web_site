@@ -36,7 +36,7 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
-dj-database-url==2.3.0
+dj-database-url==3.1.2
     # via -r requirements.in
 django==5.2.14
     # via
@@ -117,7 +117,6 @@ sqlparse==0.5.5
     # via django
 typing-extensions==4.15.0
     # via
-    #   dj-database-url
     #   psycopg
     #   referencing
 tzdata==2026.2
