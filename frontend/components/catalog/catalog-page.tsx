@@ -215,7 +215,7 @@ export function CatalogPage() {
                     <Link
                       key={product.slug}
                       href={`/products/${product.slug}`}
-                      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-0.5 hover:border-neon-crimson/60 hover:bg-white/[0.06] ${
+                      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] ${
                         isHero ? "md:col-span-2 md:row-span-2" : ""
                       }`}
                     >
@@ -223,7 +223,7 @@ export function CatalogPage() {
                         <div
                           className={`relative overflow-hidden border-b border-white/10 bg-black/20 ${mediaHeight}`}
                         >
-                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_45%),linear-gradient(135deg,rgba(255,56,92,0.22),transparent_42%,rgba(20,184,166,0.16))] opacity-80 transition duration-500 group-hover:scale-[1.02]" />
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_55%),linear-gradient(180deg,rgba(0,0,0,0.10),rgba(0,0,0,0.50))] opacity-80 transition duration-500 group-hover:scale-[1.01]" />
                           <CatalogProductMedia
                             product={product}
                             placeholderVariant={
@@ -244,8 +244,8 @@ export function CatalogPage() {
                             <span
                               className={`rounded-full px-3 py-1.5 text-xs font-black ${
                                 product.total_stock > 0
-                                  ? "bg-neon-teal text-ink-950"
-                                  : "bg-white/10 text-slate-200"
+                                  ? "border border-white/10 bg-ink-950/70 text-white"
+                                  : "border border-white/10 bg-white/10 text-slate-200"
                               }`}
                             >
                               {product.total_stock > 0
@@ -283,11 +283,11 @@ export function CatalogPage() {
                                 {money.format(Number(product.base_price))}
                               </p>
                             </div>
-                            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black uppercase text-white transition group-hover:border-neon-crimson/60 group-hover:bg-neon-crimson/10">
-                              Открыть
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
+                          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black uppercase text-white transition group-hover:border-white/25 group-hover:bg-white/10">
+                            Открыть
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
                                 aria-hidden="true"
                                 className="h-4 w-4"
                               >
@@ -320,4 +320,3 @@ export function CatalogPage() {
     </main>
   );
 }
-
