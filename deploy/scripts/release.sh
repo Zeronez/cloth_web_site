@@ -31,7 +31,7 @@ echo "Refreshing application services..."
 
 echo "Waiting for backend health..."
 for attempt in {1..30}; do
-  if "${COMPOSE[@]}" exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready/', timeout=3).read()" >/dev/null 2>&1; then
+  if "${COMPOSE[@]}" exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=3).read()" >/dev/null 2>&1; then
     break
   fi
   if [[ "$attempt" -eq 30 ]]; then
@@ -43,7 +43,7 @@ done
 
 echo "Waiting for frontend health..."
 for attempt in {1..30}; do
-  if "${COMPOSE[@]}" exec -T frontend node -e "fetch('http://127.0.0.1:3000').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))" >/dev/null 2>&1; then
+  if "${COMPOSE[@]}" exec -T frontend node -e "fetch('http://127.0.0.1:3000/healthz').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))" >/dev/null 2>&1; then
     break
   fi
   if [[ "$attempt" -eq 30 ]]; then

@@ -23,8 +23,8 @@ bash deploy/scripts/release.sh
 
 4. Verify:
    - `https://<domain>/`
-   - `https://<domain>/api/v1/health/live/`
-   - `https://<domain>/api/v1/health/ready/`
+   - `https://<domain>/health/live/`
+   - `https://<domain>/health/ready/`
    - admin login
    - a storefront catalog page
 
