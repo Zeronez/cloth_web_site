@@ -37,6 +37,11 @@ import {
   CheckoutPageSkeleton
 } from "../loading-states";
 import { ProductImagePlaceholder } from "../product-image-placeholder";
+import { trackEvent } from "../../lib/analytics";
+import {
+  orderConfirmationEmailHint,
+  orderConfirmationEmailSubject
+} from "../../lib/email-copy";
 
 const currencyFormatter = new Intl.NumberFormat("ru-RU", {
   currency: "RUB",
@@ -366,6 +371,13 @@ export function SuccessState({
             ? "Мы сохранили адрес доставки и состав заказа. Статус оплаты и детали доступны в личном кабинете."
             : "Мы сохранили адрес доставки и состав заказа. Статус и детали доступны в личном кабинете."}
         </p>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+          {orderConfirmationEmailHint} Тема письма:{" "}
+          <span className="font-semibold text-white">
+            {orderConfirmationEmailSubject(order.id)}
+          </span>
+          .
+        </p>
 
         <dl className="mt-6 grid gap-3 border border-white/10 bg-ink-950/50 p-4 text-sm sm:grid-cols-2">
           <div>
@@ -476,6 +488,7 @@ export function CheckoutPage() {
   const subtotal = useCartStore(selectCartSubtotal);
   const cartCount = useCartStore(selectCartCount);
   const [isMounted, setIsMounted] = useState(false);
+  const checkoutStartTrackedRef = useRef(false);
   const [form, setForm] = useState<CheckoutInput>(emptyCheckoutForm);
   const [selectedAddressId, setSelectedAddressId] = useState("manual");
   const [selectedDeliveryCode, setSelectedDeliveryCode] = useState("");
@@ -493,6 +506,23 @@ export function CheckoutPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (checkoutStartTrackedRef.current) {
+      return;
+    }
+
+    if (items.length === 0) {
+      return;
+    }
+
+    checkoutStartTrackedRef.current = true;
+    trackEvent("checkout_start", {
+      items_count: items.length,
+      cart_subtotal: subtotal,
+      currency: "RUB"
+    });
+  }, [items.length, subtotal]);
 
   const addressesQuery = useQuery({
     queryKey: ["addresses", accessToken, "checkout"],

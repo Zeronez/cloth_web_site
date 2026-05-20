@@ -4,7 +4,7 @@ from audit.admin_mixins import AuditedModelAdminMixin
 from audit.models import AuditLog
 from audit.services import log_admin_event
 from config.admin_exports import export_as_csv
-from payments.models import Payment, PaymentEvent, PaymentMethod
+from payments.models import Payment, PaymentEvent, PaymentMethod, PaymentRefund
 from users.staff_roles import (
     ROLE_ACCOUNTANT,
     ROLE_ORDER_MANAGER,
@@ -78,6 +78,14 @@ class PaymentEventInline(admin.TabularInline):
         return False
 
 
+class PaymentRefundInline(admin.TabularInline):
+    model = PaymentRefund
+    extra = 0
+    fields = ("amount", "currency", "status", "external_refund_id", "message", "created_at")
+    readonly_fields = fields
+    can_delete = False
+
+
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = (
@@ -88,6 +96,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "provider_code",
         "status",
         "amount",
+        "refunded_amount",
         "currency",
         "created_at",
     )
@@ -120,6 +129,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "provider_code",
         "status",
         "amount",
+        "refunded_amount",
         "currency",
         "external_payment_id",
         "idempotency_key",
@@ -127,7 +137,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    inlines = [PaymentEventInline]
+    inlines = [PaymentRefundInline, PaymentEventInline]
     actions = ("export_payments_csv",)
 
     def has_module_permission(self, request):

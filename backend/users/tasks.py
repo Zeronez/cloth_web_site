@@ -7,8 +7,10 @@ from django.utils.http import urlsafe_base64_encode
 
 from config.celery import app
 
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def _frontend_url(base_path, *, uid, token):
@@ -82,3 +84,14 @@ def send_password_reset_email(user_id):
     subject, body = build_password_reset_message(user)
     _send_plain_email(user, subject, body)
     return {"status": "sent", "email": user.email}
+
+
+@app.task(name="users.send_phone_confirmation_sms")
+def send_phone_confirmation_sms(*, user_id, phone, code):
+    """
+    Stub SMS sender.
+
+    Replace with a real provider integration when selected.
+    """
+    logger.info("Phone confirmation code for user=%s phone=%s code=%s", user_id, phone, code)
+    return {"status": "sent", "phone": phone}

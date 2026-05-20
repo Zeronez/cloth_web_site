@@ -105,6 +105,7 @@ class Payment(models.Model):
         max_length=24, choices=Status.choices, default=Status.PENDING
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    refunded_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default="RUB")
     external_payment_id = models.CharField(max_length=120, blank=True)
     idempotency_key = models.CharField(max_length=120, blank=True)
@@ -195,6 +196,36 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment #{self.pk} {self.status}"
+
+
+class PaymentRefund(models.Model):
+    class Status(models.TextChoices):
+        REQUESTED = "requested", "Запрошен"
+        SUCCEEDED = "succeeded", "Успешен"
+        FAILED = "failed", "Ошибка"
+
+    payment = models.ForeignKey(
+        Payment, related_name="refunds", on_delete=models.CASCADE
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="RUB")
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.REQUESTED
+    )
+    external_refund_id = models.CharField(max_length=120, blank=True)
+    message = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["payment", "created_at"], name="payments_ref_payment_idx"),
+            models.Index(fields=["status"], name="payments_ref_status_idx"),
+        ]
+
+    def __str__(self):
+        return f"Refund {self.amount} {self.currency} for payment #{self.payment_id}"
 
 
 class PaymentEvent(models.Model):

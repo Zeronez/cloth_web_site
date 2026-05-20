@@ -21,7 +21,7 @@ export default function Error({
           Ошибка интерфейса
         </p>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-          Что-то пошло не так.
+          Что‑то пошло не так.
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-red-50">
           Мы не смогли корректно отрисовать страницу. Попробуйте повторить
@@ -52,3 +52,4 @@ export default function Error({
     </main>
   );
 }
+

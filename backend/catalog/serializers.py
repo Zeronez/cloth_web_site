@@ -4,8 +4,12 @@ from catalog.models import (
     AnimeFranchise,
     Category,
     Product,
+    ProductCollection,
     ProductImage,
+    ProductTag,
     ProductVariant,
+    ProductVideo,
+    SizeChart,
 )
 
 
@@ -23,10 +27,11 @@ class AnimeFranchiseSerializer(serializers.ModelSerializer):
 
 class ProductImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+    variant_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ProductImage
-        fields = ("id", "url", "alt_text", "is_main", "sort_order")
+        fields = ("id", "url", "alt_text", "is_main", "sort_order", "variant_id")
 
     def get_url(self, obj):
         request = self.context.get("request")
@@ -51,6 +56,32 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "price",
             "is_active",
         )
+
+
+class ProductTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductTag
+        fields = ("id", "name", "slug")
+
+
+class ProductCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCollection
+        fields = ("id", "name", "slug", "description")
+
+
+class ProductVideoSerializer(serializers.ModelSerializer):
+    variant_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ProductVideo
+        fields = ("id", "url", "alt_text", "sort_order", "variant_id")
+
+
+class SizeChartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SizeChart
+        fields = ("id", "title", "measurements", "notes", "category_id", "product_id")
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -85,12 +116,30 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(ProductListSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = serializers.SerializerMethodField()
+    tags = ProductTagSerializer(many=True, read_only=True)
+    collections = ProductCollectionSerializer(many=True, read_only=True)
+    videos = ProductVideoSerializer(many=True, read_only=True)
+    size_charts = SizeChartSerializer(many=True, read_only=True)
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + (
             "description",
             "images",
             "variants",
+            "tags",
+            "collections",
+            "videos",
+            "size_charts",
+            "material",
+            "fit",
+            "care",
+            "gender",
+            "season",
+            "weight_grams",
+            "seo_title",
+            "seo_description",
+            "canonical_url",
+            "og_image_url",
         )
 
     def get_variants(self, obj):

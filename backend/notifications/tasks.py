@@ -11,6 +11,8 @@ from config.celery import app
 from config.logging import sanitize_log_text
 from notifications.models import NotificationAttempt, NotificationLog
 from orders.models import Order
+from payments.models import Payment
+from catalog.models import LowStockAlert
 
 RETRYABLE_NOTIFICATION_EXCEPTIONS = (
     ConnectionError,
@@ -83,11 +85,18 @@ def _notification_lease_retry_countdown(processing_started_at):
 def _notification_message_id(log):
     _display_name, from_email = parseaddr(settings.DEFAULT_FROM_EMAIL)
     domain = from_email.partition("@")[2] or "example.com"
-    key = f"order-{log.order_id}-{log.notification_type}-{log.channel}"
+    if log.order_id:
+        key = f"order-{log.order_id}-{log.notification_type}-{log.channel}"
+    else:
+        key = f"{log.notification_type}-{log.dedupe_key}-{log.channel}"
     return f"<{key}@{domain}>"
 
 
 def _build_order_confirmation_email(log):
+    return _build_generic_email(log)
+
+
+def _build_generic_email(log):
     message_id = _notification_message_id(log)
     return EmailMultiAlternatives(
         subject=log.subject,
@@ -98,6 +107,76 @@ def _build_order_confirmation_email(log):
             "Message-ID": message_id,
             "X-Notification-Idempotency-Key": message_id.strip("<>"),
         },
+    )
+
+
+def build_payment_status_message(order, payment):
+    subject = f"AnimeAttire: статус оплаты по заказу #{order.id}"
+    body = (
+        f"Здравствуйте, {order.shipping_name}!\n\n"
+        f"Статус оплаты по заказу #{order.id}: {payment.get_status_display()}.\n"
+        f"Сумма: {_format_money(payment.amount)}.\n\n"
+        "Если у вас есть вопросы, ответьте на это письмо."
+    )
+    return subject, body
+
+
+def build_shipping_status_message(order):
+    snapshot = getattr(order, "delivery_snapshot", None)
+    status_label = snapshot.get_tracking_status_display() if snapshot else ""
+    track_number = order.track_number or ""
+    subject = f"AnimeAttire: статус доставки заказа #{order.id}"
+    body = (
+        f"Здравствуйте, {order.shipping_name}!\n\n"
+        f"Статус доставки по заказу #{order.id}: {status_label}.\n"
+        + (f"Трек-номер: {track_number}.\n" if track_number else "")
+        + "\nЕсли у вас есть вопросы, ответьте на это письмо."
+    )
+    return subject, body
+
+
+def build_low_stock_message(alert):
+    variant = alert.variant
+    product = variant.product
+    subject = f"AnimeAttire: низкий остаток {variant.sku}"
+    body = (
+        "Внимание: низкий остаток товара.\n\n"
+        f"SKU: {variant.sku}\n"
+        f"Товар: {product.name}\n"
+        f"Остаток: {variant.stock_quantity}\n"
+    )
+    return subject, body
+
+
+def _get_or_create_log(*, order, notification_type, subject, body, recipient, dedupe_key=""):
+    defaults = {
+        "recipient": recipient,
+        "subject": subject,
+        "body": body,
+        "dedupe_key": dedupe_key,
+    }
+    return NotificationLog.objects.get_or_create(
+        order=order,
+        dedupe_key=dedupe_key,
+        notification_type=notification_type,
+        channel=NotificationLog.Channel.EMAIL,
+        defaults=defaults,
+    )
+
+
+def _get_or_create_deduped_log(*, dedupe_key, notification_type, subject, body, recipient):
+    defaults = {
+        "recipient": recipient,
+        "subject": subject,
+        "body": body,
+        "dedupe_key": dedupe_key,
+    }
+    return NotificationLog.objects.get_or_create(
+        order=None,
+        dedupe_key=dedupe_key,
+        notification_type=notification_type,
+        channel=NotificationLog.Channel.EMAIL,
+        defaults=defaults,
     )
 
 
@@ -251,3 +330,189 @@ def send_order_confirmation_email(self, order_id):
         "delivered_count": delivered_count,
         "message_id": _notification_message_id(log),
     }
+
+
+@app.task(
+    bind=True,
+    name="notifications.send_payment_status_email",
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def send_payment_status_email(self, payment_id):
+    payment = Payment.objects.select_related("order__user").get(pk=payment_id)
+    order = payment.order
+    if not order.user.email:
+        return {"status": "skipped", "reason": "missing_email"}
+    subject, body = build_payment_status_message(order, payment)
+    dedupe_key = f"payment-{payment.id}-{payment.status}"
+
+    with transaction.atomic():
+        log, _ = _get_or_create_deduped_log(
+            dedupe_key=dedupe_key,
+            notification_type=NotificationLog.Type.PAYMENT_STATUS,
+            subject=subject,
+            body=body,
+            recipient=order.user.email,
+        )
+        log = NotificationLog.objects.select_for_update().get(id=log.id)
+        if log.status == NotificationLog.Status.DELIVERED:
+            return {"status": "skipped", "notification_log_id": log.id}
+        log.status = NotificationLog.Status.PENDING
+        log.recipient = order.user.email
+        log.subject = subject
+        log.body = body
+        log.error_message = ""
+        log.dead_lettered_at = None
+        log.processing_started_at = timezone.now()
+        log.save(
+            update_fields=[
+                "status",
+                "recipient",
+                "subject",
+                "body",
+                "error_message",
+                "dead_lettered_at",
+                "processing_started_at",
+                "updated_at",
+            ]
+        )
+
+    delivered_count = _build_generic_email(log).send(fail_silently=False)
+    NotificationAttempt.objects.create(
+        notification=log,
+        status=NotificationAttempt.Status.DELIVERED,
+        provider_message_id=_notification_message_id(log),
+    )
+    NotificationLog.objects.filter(id=log.id).update(
+        status=NotificationLog.Status.DELIVERED,
+        delivered_at=timezone.now(),
+        dead_lettered_at=None,
+        error_message="",
+        processing_started_at=None,
+        updated_at=timezone.now(),
+    )
+    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}
+
+
+@app.task(
+    bind=True,
+    name="notifications.send_shipping_status_email",
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def send_shipping_status_email(self, order_id, tracking_status):
+    order = Order.objects.select_related("user", "delivery_snapshot").get(pk=order_id)
+    if not order.user.email:
+        return {"status": "skipped", "reason": "missing_email"}
+    subject, body = build_shipping_status_message(order)
+    dedupe_key = f"shipping-{order.id}-{tracking_status}"
+
+    with transaction.atomic():
+        log, _ = _get_or_create_deduped_log(
+            dedupe_key=dedupe_key,
+            notification_type=NotificationLog.Type.SHIPPING_STATUS,
+            subject=subject,
+            body=body,
+            recipient=order.user.email,
+        )
+        log = NotificationLog.objects.select_for_update().get(id=log.id)
+        if log.status == NotificationLog.Status.DELIVERED:
+            return {"status": "skipped", "notification_log_id": log.id}
+        log.status = NotificationLog.Status.PENDING
+        log.recipient = order.user.email
+        log.subject = subject
+        log.body = body
+        log.error_message = ""
+        log.dead_lettered_at = None
+        log.processing_started_at = timezone.now()
+        log.save(
+            update_fields=[
+                "status",
+                "recipient",
+                "subject",
+                "body",
+                "error_message",
+                "dead_lettered_at",
+                "processing_started_at",
+                "updated_at",
+            ]
+        )
+
+    delivered_count = _build_generic_email(log).send(fail_silently=False)
+    NotificationAttempt.objects.create(
+        notification=log,
+        status=NotificationAttempt.Status.DELIVERED,
+        provider_message_id=_notification_message_id(log),
+    )
+    NotificationLog.objects.filter(id=log.id).update(
+        status=NotificationLog.Status.DELIVERED,
+        delivered_at=timezone.now(),
+        dead_lettered_at=None,
+        error_message="",
+        processing_started_at=None,
+        updated_at=timezone.now(),
+    )
+    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}
+
+
+@app.task(
+    bind=True,
+    name="notifications.send_low_stock_admin_email",
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def send_low_stock_admin_email(self, alert_id):
+    recipient = getattr(settings, "STAFF_NOTIFICATION_EMAIL", "") or ""
+    if not recipient:
+        return {"status": "skipped", "reason": "missing_staff_notification_email"}
+
+    alert = LowStockAlert.objects.select_related("variant__product").get(pk=alert_id)
+    subject, body = build_low_stock_message(alert)
+    dedupe_key = f"low-stock-{alert.id}"
+
+    with transaction.atomic():
+        log, _ = _get_or_create_deduped_log(
+            dedupe_key=dedupe_key,
+            notification_type=NotificationLog.Type.LOW_STOCK,
+            subject=subject,
+            body=body,
+            recipient=recipient,
+        )
+        log = NotificationLog.objects.select_for_update().get(id=log.id)
+        if log.status == NotificationLog.Status.DELIVERED:
+            return {"status": "skipped", "notification_log_id": log.id}
+        log.status = NotificationLog.Status.PENDING
+        log.recipient = recipient
+        log.subject = subject
+        log.body = body
+        log.error_message = ""
+        log.dead_lettered_at = None
+        log.processing_started_at = timezone.now()
+        log.save(
+            update_fields=[
+                "status",
+                "recipient",
+                "subject",
+                "body",
+                "error_message",
+                "dead_lettered_at",
+                "processing_started_at",
+                "updated_at",
+            ]
+        )
+
+    delivered_count = _build_generic_email(log).send(fail_silently=False)
+    NotificationAttempt.objects.create(
+        notification=log,
+        status=NotificationAttempt.Status.DELIVERED,
+        provider_message_id=_notification_message_id(log),
+    )
+    NotificationLog.objects.filter(id=log.id).update(
+        status=NotificationLog.Status.DELIVERED,
+        delivered_at=timezone.now(),
+        dead_lettered_at=None,
+        error_message="",
+        processing_started_at=None,
+        updated_at=timezone.now(),
+    )
+    return {"status": "delivered", "notification_log_id": log.id, "delivered_count": delivered_count}

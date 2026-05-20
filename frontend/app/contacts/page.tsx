@@ -5,9 +5,10 @@ import { ContactPage } from "../../components/contacts/contact-page";
 export const metadata: Metadata = {
   title: "Контакты | AnimeAttire",
   description:
-    "Напишите в поддержку AnimeAttire по заказу, доставке, возврату, подбору размера или партнерству."
+    "Напишите в поддержку AnimeAttire по заказу, доставке, возврату, подбору размера или партнёрству."
 };
 
 export default function ContactsPage() {
   return <ContactPage />;
 }
+

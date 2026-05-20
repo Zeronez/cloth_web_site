@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -14,6 +14,7 @@ import {
   getPaymentStatusTone,
   type PaymentReturnStatus
 } from "../../lib/api";
+import { trackEvent } from "../../lib/analytics";
 import { useUserStore } from "../../stores/user-store";
 import { PaymentReturnSkeleton } from "../loading-states";
 
@@ -61,6 +62,7 @@ export function PaymentReturnPage({
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const paymentSuccessTrackedRef = useRef(false);
 
   const returnStatusQuery = useQuery({
     queryKey: [
@@ -87,6 +89,29 @@ export function PaymentReturnPage({
     }
 
     return getPaymentStatusFollowUp(result.payment.status);
+  }, [result]);
+
+  useEffect(() => {
+    if (paymentSuccessTrackedRef.current) {
+      return;
+    }
+
+    if (!result) {
+      return;
+    }
+
+    if (result.payment.status !== "succeeded") {
+      return;
+    }
+
+    paymentSuccessTrackedRef.current = true;
+    trackEvent("payment_success", {
+      order_id: result.order.id,
+      payment_id: result.payment.id,
+      provider: result.payment.provider,
+      amount: toAmount(result.payment.amount),
+      currency: "RUB"
+    });
   }, [result]);
 
   async function handleRetryPayment() {

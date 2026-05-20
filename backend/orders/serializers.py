@@ -42,6 +42,12 @@ class OrderSerializer(serializers.ModelSerializer):
             "id",
             "status",
             "status_label",
+            "currency",
+            "items_subtotal_amount",
+            "discount_amount",
+            "delivery_amount",
+            "tax_amount",
+            "fiscal_fee_amount",
             "total_amount",
             "track_number",
             "items_count",
@@ -93,4 +99,10 @@ class CheckoutSerializer(serializers.Serializer):
     shipping_line1 = serializers.CharField(max_length=255)
     shipping_line2 = serializers.CharField(
         max_length=255, required=False, allow_blank=True
+    )
+    coupon_code = serializers.SlugField(
+        max_length=48, required=False, allow_blank=True, trim_whitespace=True
+    )
+    gift_card_code = serializers.SlugField(
+        max_length=48, required=False, allow_blank=True, trim_whitespace=True
     )

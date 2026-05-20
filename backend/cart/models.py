@@ -15,6 +15,13 @@ class Cart(models.Model):
         blank=True,
     )
     session_key = models.CharField(max_length=80, blank=True, db_index=True)
+    coupon = models.ForeignKey(
+        "pricing.Coupon",
+        related_name="carts",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -10,6 +10,7 @@ import {
   fetchProduct,
   type ProductVariant
 } from "../../lib/api";
+import { trackEvent } from "../../lib/analytics";
 import { useCartSync } from "../../lib/use-cart-sync";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
@@ -61,6 +62,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     productQuery.error instanceof ApiError && productQuery.error.status === 404;
   const hasLoadError = productQuery.isError && !productQuery.data && !isMissingProduct;
   const product = productQuery.data ?? null;
+  const [trackedProductId, setTrackedProductId] = useState<number | null>(null);
 
   const selectableVariants = useMemo(
     () => (product?.variants ?? []).filter((variant) => variant.is_active),
@@ -87,6 +89,23 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   }, [favoritesQuery.data, setFavorites]);
 
   useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    if (trackedProductId === product.id) {
+      return;
+    }
+
+    setTrackedProductId(product.id);
+    trackEvent("product_view", {
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name
+    });
+  }, [product, trackedProductId]);
+
+  useEffect(() => {
     if (favoritesQuery.error instanceof ApiError && favoritesQuery.error.status === 401) {
       clearSession();
     }
@@ -102,6 +121,14 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       name: product.name,
       price: Number(variant.price),
       size: variant.size
+    });
+    trackEvent("add_to_cart", {
+      product_id: product.id,
+      product_slug: product.slug,
+      variant_id: variant.id,
+      size: variant.size,
+      price: Number(variant.price),
+      currency: "RUB"
     });
   };
 

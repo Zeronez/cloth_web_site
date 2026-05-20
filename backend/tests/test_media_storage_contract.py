@@ -35,6 +35,7 @@ def test_product_images_persist_through_configured_storage_and_product_api(
                 image=make_test_image(),
                 alt_text="Storage contract main shot",
                 is_main=True,
+                is_approved=True,
             )
 
             stored_path = Path(media_root) / product_image.image.name

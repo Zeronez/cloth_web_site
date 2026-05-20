@@ -5,6 +5,9 @@ class NotificationLog(models.Model):
     class Type(models.TextChoices):
         ORDER_CREATED = "order_created", "Заказ создан"
         ORDER_STATUS = "order_status", "Статус заказа"
+        PAYMENT_STATUS = "payment_status", "Статус оплаты"
+        SHIPPING_STATUS = "shipping_status", "Статус доставки"
+        LOW_STOCK = "low_stock", "Низкий остаток"
 
     class Channel(models.TextChoices):
         EMAIL = "email", "Email"
@@ -16,8 +19,13 @@ class NotificationLog(models.Model):
         DEAD_LETTERED = "dead_lettered", "Требует вмешательства"
 
     order = models.ForeignKey(
-        "orders.Order", related_name="notification_logs", on_delete=models.CASCADE
+        "orders.Order",
+        related_name="notification_logs",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
+    dedupe_key = models.CharField(max_length=160, blank=True)
     notification_type = models.CharField(max_length=32, choices=Type.choices)
     channel = models.CharField(
         max_length=16, choices=Channel.choices, default=Channel.EMAIL
@@ -42,6 +50,7 @@ class NotificationLog(models.Model):
                 fields=["order", "notification_type"],
                 name="notifications_order_type_idx",
             ),
+            models.Index(fields=["dedupe_key"], name="notifications_dedupe_key_idx"),
             models.Index(fields=["status"], name="notifications_status_idx"),
             models.Index(
                 fields=["dead_lettered_at"],
@@ -55,12 +64,21 @@ class NotificationLog(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["order", "notification_type", "channel"],
+                condition=~models.Q(order=None),
                 name="unique_notification_per_order_type_channel",
             )
+            ,
+            models.UniqueConstraint(
+                fields=["dedupe_key"],
+                condition=~models.Q(dedupe_key=""),
+                name="unique_notification_dedupe_key",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.notification_type} for order #{self.order_id}: {self.status}"
+        if self.order_id:
+            return f"{self.notification_type} for order #{self.order_id}: {self.status}"
+        return f"{self.notification_type} {self.dedupe_key}: {self.status}"
 
 
 class NotificationAttempt(models.Model):

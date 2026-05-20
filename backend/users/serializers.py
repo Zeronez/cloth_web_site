@@ -1,5 +1,6 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -7,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from users.models import Address
+from users.models import Address, PhoneConfirmation
 from users.security import (
     clear_login_failures,
     clear_password_reset_confirm_failures,
@@ -38,6 +39,7 @@ class BruteForceAwareTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     is_email_verified = serializers.BooleanField(read_only=True)
+    is_phone_verified = serializers.BooleanField(read_only=True)
     has_accepted_privacy_policy = serializers.BooleanField(read_only=True)
     privacy_policy_version = serializers.CharField(read_only=True)
     has_accepted_offer_agreement = serializers.BooleanField(read_only=True)
@@ -56,6 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "avatar",
             "is_email_verified",
+            "is_phone_verified",
             "has_accepted_privacy_policy",
             "privacy_policy_version",
             "has_accepted_offer_agreement",
@@ -251,3 +254,69 @@ class EmailConfirmationConfirmSerializer(serializers.Serializer):
 
         self.context["user"] = user
         return attrs
+
+
+class PhoneConfirmationRequestSerializer(serializers.Serializer):
+    phone = serializers.CharField(required=False, allow_blank=True)
+
+    default_error_messages = {
+        "missing_phone": "Укажите номер телефона в профиле или передайте его в запросе.",
+    }
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        phone = (attrs.get("phone") or "").strip() or (user.phone or "").strip()
+        if not phone:
+            raise serializers.ValidationError(
+                {"phone": self.error_messages["missing_phone"]}
+            )
+        attrs["phone"] = phone
+        return attrs
+
+
+class PhoneConfirmationConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField()
+
+    default_error_messages = {
+        "invalid_code": "Код подтверждения телефона недействителен или устарел.",
+        "already_verified": "Телефон уже подтвержден.",
+    }
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        if user.is_phone_verified:
+            raise serializers.ValidationError(
+                {"code": self.error_messages["already_verified"]}
+            )
+
+        confirmation = (
+            PhoneConfirmation.objects.filter(user=user, consumed_at__isnull=True)
+            .order_by("-created_at", "-id")
+            .first()
+        )
+        if confirmation is None or confirmation.is_expired:
+            raise serializers.ValidationError(
+                {"code": self.error_messages["invalid_code"]}
+            )
+
+        confirmation.attempt_count += 1
+        confirmation.save(update_fields=["attempt_count"])
+
+        if not confirmation.check_code(attrs["code"]):
+            raise serializers.ValidationError(
+                {"code": self.error_messages["invalid_code"]}
+            )
+
+        self.context["confirmation"] = confirmation
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        confirmation = self.context["confirmation"]
+        confirmation.consumed_at = timezone.now()
+        confirmation.save(update_fields=["consumed_at"])
+        if user.phone != confirmation.phone:
+            user.phone = confirmation.phone
+            user.save(update_fields=["phone"])
+        user.mark_phone_verified()
+        return user

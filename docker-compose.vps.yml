@@ -51,6 +51,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     restart: unless-stopped
     command:
       - gunicorn
@@ -158,6 +159,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     restart: unless-stopped
     command: ["celery", "-A", "config", "worker", "--loglevel=info"]
     environment:
@@ -324,6 +326,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: runner
     restart: unless-stopped
     environment:
       NODE_ENV: production

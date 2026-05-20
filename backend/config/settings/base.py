@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "notifications",
     "support",
     "audit",
+    "pricing",
 ]
 
 MIDDLEWARE = [
@@ -316,6 +317,7 @@ DEFAULT_FROM_EMAIL = env_value(
     "DEFAULT_FROM_EMAIL", "AnimeAttire <no-reply@example.com>"
 )
 SERVER_EMAIL = env_value("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+STAFF_NOTIFICATION_EMAIL = env_value("STAFF_NOTIFICATION_EMAIL", "")
 EMAIL_HOST = env_value("EMAIL_HOST", "")
 EMAIL_PORT = env_int("EMAIL_PORT", 587)
 EMAIL_HOST_USER = env_value("EMAIL_HOST_USER", "")

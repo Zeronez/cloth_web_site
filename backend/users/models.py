@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from config.uploads import validate_avatar_upload
+from django.contrib.auth.hashers import check_password, make_password
 
 
 class User(AbstractUser):
@@ -10,6 +11,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatars/", blank=True)
     account_deleted_at = models.DateTimeField(null=True, blank=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
+    phone_verified_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_version = models.CharField(max_length=32, blank=True)
     offer_agreement_accepted_at = models.DateTimeField(null=True, blank=True)
@@ -25,6 +27,10 @@ class User(AbstractUser):
         return self.email_verified_at is not None
 
     @property
+    def is_phone_verified(self):
+        return self.phone_verified_at is not None
+
+    @property
     def is_account_deleted(self):
         return self.account_deleted_at is not None
 
@@ -32,6 +38,11 @@ class User(AbstractUser):
         if self.email_verified_at is None:
             self.email_verified_at = timezone.now()
             self.save(update_fields=["email_verified_at"])
+
+    def mark_phone_verified(self):
+        if self.phone_verified_at is None:
+            self.phone_verified_at = timezone.now()
+            self.save(update_fields=["phone_verified_at"])
 
     @property
     def has_accepted_privacy_policy(self):
@@ -113,3 +124,39 @@ class Address(models.Model):
 
     def __str__(self):
         return f"{self.recipient_name}, {self.city}"
+
+
+class PhoneConfirmation(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name="phone_confirmations",
+        on_delete=models.CASCADE,
+    )
+    phone = models.CharField(max_length=32)
+    code_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    attempt_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "created_at"], name="users_phone_conf_user_idx"),
+            models.Index(fields=["expires_at"], name="users_phone_conf_exp_idx"),
+            models.Index(fields=["consumed_at"], name="users_phone_conf_cons_idx"),
+        ]
+
+    def set_code(self, code: str):
+        self.code_hash = make_password(code)
+
+    def check_code(self, code: str) -> bool:
+        return check_password(code, self.code_hash)
+
+    @property
+    def is_consumed(self):
+        return self.consumed_at is not None
+
+    @property
+    def is_expired(self):
+        return timezone.now() >= self.expires_at

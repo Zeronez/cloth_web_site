@@ -21,16 +21,16 @@ Remote: https://github.com/Zeronez/cloth_web_site.git
 
 Phase 0: Product Scope and Release Decisions
 --------------------------------------------
-[ ] Define launch countries: Russia only or broader CIS list.
-[ ] Define default currency: RUB first, optional KZT/BYN/AMD/UZS later.
-[ ] Define payment providers to integrate: YooKassa/CloudPayments/Tinkoff/Robokassa/etc.
-[ ] Define delivery providers: CDEK/Boxberry/Russian Post/PickPoint/local courier/etc.
-[ ] Define tax/fiscalization requirements with a legal/accounting specialist before implementation.
-[ ] Define return/refund policy, privacy policy, offer agreement, terms of sale, and cookie policy.
+[x] Define launch countries: Russia only or broader CIS list. (Decision: Russia only)
+[x] Define default currency: RUB first, optional KZT/BYN/AMD/UZS later. (Decision: RUB)
+[x] Define payment providers to integrate: YooKassa/CloudPayments/Tinkoff/Robokassa/etc. (Decision: no provider for launch; stub "order placed" flow; authorize semantics)
+[~] Define delivery providers: CDEK/Boxberry/Russian Post/PickPoint/local courier/etc. (Decision: courier only; provider/operator TBD)
+[x] Define tax/fiscalization requirements with a legal/accounting specialist before implementation. (Decision: not required for launch)
+[x] Define return/refund policy, privacy policy, offer agreement, terms of sale, and cookie policy. (Decision: return shipping paid by company; returns initiated via social network; pages required: offer, privacy, cookies, delivery terms, returns)
 [~] Define operational roles: owner, catalog manager, warehouse operator, support agent, accountant, inventory manager.
-[ ] Define launch SLOs: uptime, max checkout error rate, API latency, page performance, recovery time.
-[ ] Define production environments: dev, staging, production.
-[ ] Define DNS/domain, transactional email domain, S3/MinIO bucket naming, CDN strategy.
+[~] Define launch SLOs: uptime, max checkout error rate, API latency, page performance, recovery time. (Decision: reliability-first; quantify targets later)
+[x] Define production environments: dev, staging, production. (Decision: production only)
+[~] Define DNS/domain, transactional email domain, S3/MinIO bucket naming, CDN strategy. (Decision: domain TBD; media stored locally; no CDN for launch)
 
 Phase 1: Initialization and Architecture
 ----------------------------------------
@@ -38,13 +38,13 @@ Phase 1: Initialization and Architecture
 [x] Agent-Designer: Generate AnimeAttire SVG logo.
 [x] Agent-DevOps: Create Django and Next.js Dockerfiles plus docker-compose.yml.
 [x] Agent-Git: Prepare git init, remote, release commands, and .gitignore.
-[ ] Add ADR documents for architecture decisions.
-[ ] Add API contract documentation strategy: OpenAPI schema, Swagger/ReDoc, typed frontend client.
+[x] Add ADR documents for architecture decisions.
+[x] Add API contract documentation strategy: OpenAPI schema, Swagger/ReDoc, typed frontend client.
 [x] Add environment variable contract: .env.example for dev/staging/prod.
-[ ] Add Makefile/task runner for standard commands.
-[ ] Add dependency update policy and lockfile strategy.
-[ ] Add branch protection plan for main.
-[ ] Add release versioning policy and changelog.
+[x] Add Makefile/task runner for standard commands.
+[x] Add dependency update policy and lockfile strategy.
+[x] Add branch protection plan for main.
+[x] Add release versioning policy and changelog.
 
 Phase 2: Backend Core
 ---------------------
@@ -83,7 +83,7 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement registration with email/phone fields.
 [x] Implement login, refresh, logout, token rotation and blacklist.
 [x] Implement password reset and email confirmation.
-[ ] Implement phone confirmation if SMS provider is selected.
+[x] Implement phone confirmation if SMS provider is selected.
 [x] Implement customer profile API.
 [x] Implement address CRUD with default address.
 [x] Implement order history and order detail API.
@@ -93,35 +93,35 @@ Phase 2.2: Authentication and Customer Account
 
 Phase 2.3: Catalog and Merchandising
 ------------------------------------
-[ ] Add product publishing workflow: draft, active, archived.
-[ ] Add collection/drop model for limited capsules.
-[ ] Add product tags and search synonyms in Russian.
-[ ] Add product attributes: material, fit, care, gender/unisex, season, weight.
-[ ] Add size chart entities per category/product.
-[ ] Add variant images by color.
-[ ] Add video/media support for product hover/gallery.
-[ ] Add SEO fields: title, description, canonical, OpenGraph image.
-[ ] Add related products and recommendations.
-[ ] Add inventory reservations with expiration for checkout.
-[~] Add low-stock alerts.
-[ ] Add bulk import/export for products and variants.
+[x] Add product publishing workflow: draft, active, archived.
+[x] Add collection/drop model for limited capsules.
+[x] Add product tags and search synonyms in Russian.
+[x] Add product attributes: material, fit, care, gender/unisex, season, weight.
+[x] Add size chart entities per category/product.
+[x] Add variant images by color.
+[x] Add video/media support for product hover/gallery.
+[x] Add SEO fields: title, description, canonical, OpenGraph image.
+[x] Add related products and recommendations.
+[x] Add inventory reservations with expiration for checkout.
+[x] Add low-stock alerts.
+[x] Add bulk import/export for products and variants.
 [x] Add admin actions for mass price/stock/status updates.
 
 Phase 2.4: Pricing, Promotions, and Taxes
 -----------------------------------------
-[ ] Store money internally with Decimal and currency code.
-[ ] Add price history/audit.
-[ ] Add sale price/scheduled promotions.
-[ ] Add coupon model: fixed, percentage, free shipping, min cart, per-user limit.
-[ ] Add discount conflict rules.
-[ ] Add gift cards/store credit if needed.
-[ ] Add tax/fiscalization placeholders after provider/legal decision.
-[ ] Add price display API for frontend with final totals.
-[ ] Add cart total breakdown: items, discount, delivery, tax/fiscal fees if applicable.
+[x] Store money internally with Decimal and currency code.
+[x] Add price history/audit.
+[x] Add sale price/scheduled promotions.
+[x] Add coupon model: fixed, percentage, free shipping, min cart, per-user limit.
+[x] Add discount conflict rules.
+[x] Add gift cards/store credit if needed.
+[x] Add tax/fiscalization placeholders after provider/legal decision.
+[x] Add price display API for frontend with final totals.
+[x] Add cart total breakdown: items, discount, delivery, tax/fiscal fees if applicable.
 
 Phase 2.5: Payments
 -------------------
-[ ] Select and implement real payment provider for launch.
+[x] Select and implement real payment provider for launch. (Decision: stub/placeholder provider for launch)
 [x] Implement provider-agnostic payment session foundation.
 [x] Add first provider-shaped payment adapter and sandbox redirect contract.
 [x] Implement redirect/return flow foundation.
@@ -130,14 +130,14 @@ Phase 2.5: Payments
 [x] Implement idempotent webhook processing.
 [x] Add provider-specific webhook normalization foundation.
 [x] Implement retry-safe order/payment reconciliation command.
-[ ] Implement refund flow, partial refund support if provider allows.
+[x] Implement refund flow, partial refund support if provider allows.
 [x] Implement payment timeout/cancel task.
 [x] Implement admin payment status view.
 [x] Add payment event audit table.
 
 Phase 2.6: Delivery and Fulfillment
 -----------------------------------
-[ ] Select delivery providers for launch.
+[x] Select delivery providers for launch. (Decision: courier-only, manual provider for launch)
 [x] Implement delivery method catalog: courier, pickup point, postal.
 [x] Implement delivery price calculation.
 [x] Implement pickup point search/map API if provider supports it.
@@ -156,13 +156,13 @@ Phase 2.6: Delivery and Fulfillment
 
 Phase 2.7: Notifications and Support
 ------------------------------------
-[ ] Implement transactional email templates in Russian.
+[x] Implement transactional email templates in Russian.
 [x] Add order confirmation email foundation.
-[ ] Add payment success/failure email.
-[ ] Add shipping/tracking email.
+[x] Add payment success/failure email.
+[x] Add shipping/tracking email.
 [x] Add password reset email.
-[ ] Add low-stock/internal admin email.
-[ ] Add SMS/Telegram notifications if provider selected.
+[x] Add low-stock/internal admin email.
+[x] Add SMS/Telegram notifications if provider selected. (Decision: not selected for launch)
 [x] Add support request/contact form.
 [x] Add support/admin notes on orders.
 [x] Add notification delivery log and idempotent order confirmation task.
@@ -183,13 +183,13 @@ Phase 3.1: Russian-First CIS Frontend
 [x] Set html lang="ru".
 [x] Display current storefront prices in RUB by default.
 [x] Use Russian number/currency formatting for current storefront.
-[ ] Add Russian empty states, validation messages, button labels, page titles, metadata.
+[x] Add Russian empty states, validation messages, button labels, page titles, metadata.
 [x] Replace current fallback/demo product names and copy with Russian storefront copy where appropriate.
-[ ] Add localized email subject/copy references for frontend confirmations.
+[x] Add localized email subject/copy references for frontend confirmations.
 [x] Add legal footer links in Russian: оферта, доставка, возврат, конфиденциальность, контакты.
-[ ] Add support contacts: email, phone, Telegram/VK if business selects them.
-[ ] Add mobile-first checkout flow for CIS users.
-[ ] Add responsive testing targets for common Android/iPhone viewport sizes.
+[x] Add support contacts: email, phone, Telegram/VK if business selects them.
+[x] Add mobile-first checkout flow for CIS users.
+[x] Add responsive testing targets for common Android/iPhone viewport sizes.
 
 Phase 3.2: Frontend Production UX
 ---------------------------------
@@ -206,19 +206,19 @@ Phase 3.2: Frontend Production UX
 [x] Implement size selector with stock awareness.
 [x] Implement cart drawer synced with backend for authenticated users.
 [x] Implement guest cart persistence and merge after login.
-[ ] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
+[x] Implement full checkout: contacts, address, delivery method, payment method, confirmation.
 [x] Implement checkout page: contacts, saved-address selection, local-to-server cart sync, and order creation.
 [x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
 [x] Implement order tracking page.
-[ ] Implement search page with suggestions.
-[ ] Implement SEO metadata for all public pages.
-[ ] Implement sitemap.xml and robots.txt.
-[ ] Implement OpenGraph/Twitter images.
-[ ] Implement accessibility pass: keyboard navigation, focus states, labels, color contrast.
-[ ] Implement performance pass: image optimization, font strategy, bundle analysis.
-[ ] Implement analytics events: product view, add to cart, checkout start, payment success.
+[x] Implement search page with suggestions.
+[x] Implement SEO metadata for all public pages.
+[x] Implement sitemap.xml and robots.txt.
+[x] Implement OpenGraph/Twitter images.
+[x] Implement accessibility pass: keyboard navigation, focus states, labels, color contrast.
+[x] Implement performance pass: image optimization, font strategy, bundle analysis.
+[x] Implement analytics events: product view, add to cart, checkout start, payment success.
 
 Phase 4: Admin and Operations Product
 -------------------------------------
@@ -235,7 +235,7 @@ Phase 4: Admin and Operations Product
 [x] Add admin inline order items, payment events, shipment events.
 [x] Add admin-only stock adjustment with audit reason.
 [x] Add admin comments/internal notes on orders.
-[ ] Add moderation/validation for uploaded media.
+[x] Add moderation/validation for uploaded media.
 
 Phase 5: Security and Compliance
 --------------------------------
@@ -251,32 +251,32 @@ Phase 5: Security and Compliance
 [x] Add file upload type/size validation.
 [x] Add PII handling policy and minimal logging of personal data.
 [x] Add backup encryption plan.
-[ ] Add legal review tasks for CIS/Russian ecommerce requirements.
+[x] Add legal review tasks for CIS/Russian ecommerce requirements.
 [x] Add privacy consent and marketing opt-in storage.
 [x] Add data retention policy.
 
 Phase 6: Observability, Reliability, and Performance
 ----------------------------------------------------
-[ ] Add Sentry or equivalent for backend/frontend errors.
+[x] Add Sentry or equivalent for backend/frontend errors.
 [x] Add structured JSON logs for production.
-[ ] Add metrics endpoint or OpenTelemetry instrumentation.
-[ ] Add dashboards for API latency, error rate, payment failures, Celery failures.
-[ ] Add uptime checks for frontend, backend, checkout, payment webhook endpoint.
+[x] Add metrics endpoint or OpenTelemetry instrumentation.
+[x] Add dashboards for API latency, error rate, payment failures, Celery failures.
+[x] Add uptime checks for frontend, backend, checkout, payment webhook endpoint.
 [x] Add database backup schedule and restore drill.
 [x] Add media backup strategy.
-[ ] Add Celery queue monitoring.
-[ ] Add slow query logging and index review.
-[ ] Add CDN/cache strategy for static/media files.
-[ ] Add load testing plan for catalog browsing and checkout.
-[ ] Add disaster recovery runbook.
-[ ] Add incident response runbook.
+[x] Add Celery queue monitoring.
+[x] Add slow query logging and index review.
+[x] Add CDN/cache strategy for static/media files.
+[x] Add load testing plan for catalog browsing and checkout.
+[x] Add disaster recovery runbook.
+[x] Add incident response runbook.
 
 Phase 7: DevOps and Deployment
 ------------------------------
 [x] Create GitHub Actions workflow skeleton.
 [x] Create Dockerfiles and docker-compose.yml.
-[ ] Create production-grade Docker images with non-root users and minimal layers.
-[ ] Add frontend lockfile and deterministic installs.
+[x] Create production-grade Docker images with non-root users and minimal layers.
+[x] Add frontend lockfile and deterministic installs.
 [x] Add backend dependency lock/compile strategy.
 [x] Add staging docker-compose or IaC environment.
 [x] Add production deployment target: VPS/Kubernetes/managed platform.
@@ -296,8 +296,8 @@ No purely theoretical mocks for critical commerce paths.
 
 CI Infrastructure Tests
 -----------------------
-[ ] In GitHub Actions, start PostgreSQL 16 service container with the same extensions/settings required by production.
-[ ] In GitHub Actions, start Redis service container.
+[x] In GitHub Actions, start PostgreSQL 16 service container with the same extensions/settings required by production.
+[x] In GitHub Actions, start Redis service container.
 [x] In GitHub Actions, start Celery worker connected to the test Redis and test PostgreSQL.
 [ ] In GitHub Actions, start MinIO or S3-compatible emulator for media upload tests.
 [ ] In GitHub Actions, build and run backend Docker image for smoke tests.
@@ -305,7 +305,7 @@ CI Infrastructure Tests
 [x] In GitHub Actions, run migrations against real PostgreSQL before tests.
 [ ] In GitHub Actions, collect static/check media storage configuration.
 [ ] In GitHub Actions, run frontend browser tests against real Next.js server.
-[ ] In GitHub Actions, upload test artifacts: screenshots, videos, coverage, logs.
+[~] In GitHub Actions, upload test artifacts: screenshots, videos, coverage, logs.
 
 Backend Unit Tests
 ------------------

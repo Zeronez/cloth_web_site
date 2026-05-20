@@ -16,6 +16,8 @@ from delivery.services import (
 )
 from orders.models import Order, OrderItem
 from notifications.tasks import send_order_confirmation_email
+from pricing.models import Coupon, GiftCard
+from pricing.services import compute_totals, redeem_coupon
 
 
 def _cart_error(code, message):
@@ -121,6 +123,8 @@ def checkout_cart(user, shipping_data):
 
     shipping_data = dict(shipping_data)
     idempotency_key = shipping_data.pop("idempotency_key", "")
+    coupon_code = (shipping_data.pop("coupon_code", "") or "").strip()
+    gift_card_code = (shipping_data.pop("gift_card_code", "") or "").strip()
     if idempotency_key:
         existing_order = (
             Order.objects.select_for_update()
@@ -164,8 +168,11 @@ def checkout_cart(user, shipping_data):
     }
 
     total = Decimal("0.00")
+    items_subtotal = Decimal("0.00")
+    currency = delivery_method.currency if delivery_method is not None else "RUB"
     order = Order.objects.create(
         user=user,
+        currency=currency,
         total_amount=0,
         idempotency_key=idempotency_key,
         **shipping_data,
@@ -186,7 +193,9 @@ def checkout_cart(user, shipping_data):
             )
 
         price = variant.price
-        total += price * item.quantity
+        line_total = price * item.quantity
+        items_subtotal += line_total
+        total += line_total
         variant.stock_quantity -= item.quantity
         variant.stock_version += 1
         variant.save(update_fields=["stock_quantity", "stock_version", "updated_at"])
@@ -206,13 +215,90 @@ def checkout_cart(user, shipping_data):
 
     OrderItem.objects.bulk_create(order_items)
     create_order_delivery_snapshot(order, delivery_method, shipping_data)
-    order.total_amount = total + delivery_price_for(
-        delivery_method,
-        country=shipping_data.get("shipping_country", ""),
-        city=shipping_data.get("shipping_city", ""),
-        postal_code=shipping_data.get("shipping_postal_code", ""),
+    delivery_amount = (
+        delivery_price_for(
+            delivery_method,
+            country=shipping_data.get("shipping_country", ""),
+            city=shipping_data.get("shipping_city", ""),
+            postal_code=shipping_data.get("shipping_postal_code", ""),
+        )
+        if delivery_method is not None
+        else Decimal("0.00")
     )
-    order.save(update_fields=["total_amount", "updated_at"])
+
+    coupon = None
+    if coupon_code:
+        coupon = Coupon.objects.filter(code__iexact=coupon_code).first()
+        if coupon is None:
+            raise ValidationError(
+                {"coupon": {"code": "coupon_not_found", "message": "Купон не найден."}}
+            )
+
+    totals = compute_totals(
+        currency=currency,
+        items_subtotal=items_subtotal,
+        delivery=delivery_amount,
+        coupon=coupon,
+        user=user,
+    )
+    order.items_subtotal_amount = totals.items_subtotal
+    order.discount_amount = totals.discount
+    order.delivery_amount = totals.delivery
+    order.tax_amount = totals.tax
+    order.fiscal_fee_amount = Decimal("0.00")
+    order.total_amount = totals.total
+    if coupon is not None:
+        order.coupon = coupon
+    order.save(
+        update_fields=[
+            "currency",
+            "items_subtotal_amount",
+            "discount_amount",
+            "delivery_amount",
+            "tax_amount",
+            "fiscal_fee_amount",
+            "coupon",
+            "total_amount",
+            "updated_at",
+        ]
+    )
+    if coupon is not None:
+        redeem_coupon(coupon=coupon, user=user, order=order)
+
+    if gift_card_code:
+        gift_card = GiftCard.objects.filter(code__iexact=gift_card_code).first()
+        if gift_card is None or not gift_card.is_valid():
+            raise ValidationError(
+                {
+                    "gift_card": {
+                        "code": "gift_card_invalid",
+                        "message": "Подарочная карта недоступна.",
+                    }
+                }
+            )
+        if gift_card.currency != order.currency:
+            raise ValidationError(
+                {
+                    "gift_card": {
+                        "code": "currency_mismatch",
+                        "message": "Подарочная карта в другой валюте.",
+                    }
+                }
+            )
+        apply_amount = min(gift_card.balance_amount, order.total_amount)
+        gift_card.balance_amount -= apply_amount
+        gift_card.save(update_fields=["balance_amount", "updated_at"])
+        from pricing.models import GiftCardRedemption
+
+        GiftCardRedemption.objects.create(
+            gift_card=gift_card,
+            order=order,
+            amount=apply_amount,
+        )
+        order.discount_amount = (order.discount_amount or Decimal("0.00")) + apply_amount
+        order.total_amount = max(Decimal("0.00"), order.total_amount - apply_amount)
+        order.save(update_fields=["discount_amount", "total_amount", "updated_at"])
+
     CartItem.objects.filter(cart=cart).delete()
     transaction.on_commit(lambda: send_order_confirmation_email.delay(order.id))
     return order, True

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from orders.serializers import OrderSerializer
-from payments.models import Payment, PaymentEvent, PaymentMethod
+from payments.models import Payment, PaymentEvent, PaymentMethod, PaymentRefund
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
@@ -46,6 +46,7 @@ class PaymentEventSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     events = PaymentEventSerializer(many=True, read_only=True)
+    refunded_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Payment
@@ -57,6 +58,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "status",
             "status_label",
             "amount",
+            "refunded_amount",
             "currency",
             "external_payment_id",
             "session_expires_at",
@@ -64,6 +66,30 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+
+class PaymentRefundSerializer(serializers.ModelSerializer):
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = PaymentRefund
+        fields = (
+            "id",
+            "amount",
+            "currency",
+            "status",
+            "status_label",
+            "external_refund_id",
+            "message",
+            "created_at",
+            "updated_at",
+        )
+
+
+class PaymentRefundRequestSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False
+    )
 
 
 class PaymentSessionCreateSerializer(serializers.Serializer):

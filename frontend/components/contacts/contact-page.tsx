@@ -35,7 +35,7 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Не удалось отправить обращение. Попробуйте еще раз.";
+  return "Не удалось отправить обращение. Попробуйте ещё раз.";
 }
 
 export function ContactPage() {
@@ -44,37 +44,41 @@ export function ContactPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "";
+  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "";
+  const supportTelegram = process.env.NEXT_PUBLIC_SUPPORT_TELEGRAM ?? "";
+
   const topicOptions = useMemo<TopicOption[]>(
     () => [
       {
         value: "order",
         label: "Вопрос по заказу",
-        description: "Подойдет для статуса заказа, оплаты и общих уточнений."
+        description: "Статус заказа, оплата, изменение данных или уточнения."
       },
       {
         value: "delivery",
         label: "Доставка",
-        description: "Для сроков, адреса, курьера и пункта выдачи."
+        description: "Сроки, адрес, курьер и изменения по доставке."
       },
       {
         value: "return",
         label: "Возврат или обмен",
-        description: "Если нужен возврат, обмен размера или проверка брака."
+        description: "Возврат, обмен размера или проверка брака."
       },
       {
         value: "product",
         label: "Товар или размер",
-        description: "Для консультации по модели, посадке и наличию."
+        description: "Вопросы по посадке, материалам, наличию и подбору размера."
       },
       {
         value: "partnership",
-        label: "Партнерство",
-        description: "Для коммерческих предложений и коллабораций."
+        label: "Партнёрство",
+        description: "Коммерческие предложения, коллаборации и опт."
       },
       {
         value: "other",
         label: "Другое",
-        description: "Если вопрос не подходит под другие категории."
+        description: "Если вопрос не подходит под другие темы."
       }
     ],
     []
@@ -106,7 +110,9 @@ export function ContactPage() {
         message: form.message.trim()
       });
 
-      setSuccess("Спасибо. Сообщение отправлено, мы ответим по указанным контактам.");
+      setSuccess(
+        "Спасибо. Сообщение отправлено, мы ответим по указанным контактам."
+      );
       setForm(initialFormState);
     } catch (submittedError) {
       setError(getErrorMessage(submittedError));
@@ -128,19 +134,14 @@ export function ContactPage() {
             Напишите нам по заказу, доставке или возврату.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-            Заполните форму ниже, и обращение уйдет в систему поддержки. Если вопрос
-            связан с заказом, номер поможет нам ответить быстрее.
+            Заполните форму — обращение попадёт в поддержку. Обычно отвечаем в
+            течение дня.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <form
-            className="space-y-6 border border-white/10 bg-white/[0.04] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.28)] sm:p-8"
-            onSubmit={handleSubmit}
-            aria-describedby={statusId}
-            aria-busy={isSubmitting}
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
+        <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <form className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-200">
                   Имя
@@ -165,22 +166,22 @@ export function ContactPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  inputMode="email"
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
                 />
               </label>
+            </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-slate-200">
-                  Телефон <span className="text-slate-500">(необязательно)</span>
+                  Телефон
                 </span>
                 <input
                   name="phone"
                   type="tel"
                   autoComplete="tel"
-                  inputMode="tel"
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
@@ -192,7 +193,6 @@ export function ContactPage() {
                   Тема
                 </span>
                 <select
-                  required
                   name="topic"
                   value={form.topic}
                   onChange={(event) =>
@@ -211,7 +211,7 @@ export function ContactPage() {
 
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-slate-200">
-                Номер заказа <span className="text-slate-500">(необязательно)</span>
+                Номер заказа (если есть)
               </span>
               <input
                 name="order_number"
@@ -239,11 +239,6 @@ export function ContactPage() {
                 className="w-full border border-white/10 bg-ink-900/80 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
               />
             </label>
-
-            <p className="text-sm leading-6 text-slate-400">
-              Выберите тему, которая ближе всего к вашему вопросу. Это помогает
-              быстрее передать обращение в нужный поток.
-            </p>
 
             <div className="space-y-3" id={statusId} aria-live="polite">
               {error ? (
@@ -276,10 +271,26 @@ export function ContactPage() {
 
           <aside className="space-y-6 border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
             <div>
+              <h2 className="text-2xl font-black text-white">Контакты</h2>
+              {supportEmail || supportPhone || supportTelegram ? (
+                <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-300">
+                  {supportEmail ? <li>Email: {supportEmail}</li> : null}
+                  {supportPhone ? <li>Телефон: {supportPhone}</li> : null}
+                  {supportTelegram ? <li>Telegram: {supportTelegram}</li> : null}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  Контакты поддержки пока не настроены. Используйте форму выше —
+                  она работает всегда.
+                </p>
+              )}
+            </div>
+
+            <div>
               <h2 className="text-2xl font-black text-white">Что можно написать</h2>
               <p className="mt-3 text-sm leading-7 text-slate-300">
                 Поддержка принимает обращения по заказам, доставке, возвратам,
-                подбору размера и партнерским предложениям.
+                подбору размера и партнёрским предложениям.
               </p>
             </div>
 
@@ -296,19 +307,10 @@ export function ContactPage() {
                 </div>
               ))}
             </dl>
-
-            <div className="border border-white/10 bg-white/[0.04] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                Совет
-              </p>
-              <p className="mt-2 text-sm leading-7 text-slate-300">
-                Если обращение связано с заказом, укажите номер в теме или в самом
-                сообщении. Так мы быстрее найдем нужную карточку.
-              </p>
-            </div>
           </aside>
         </div>
       </section>
     </main>
   );
 }
+

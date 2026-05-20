@@ -60,6 +60,23 @@ class Order(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, related_name="orders", on_delete=models.PROTECT
     )
+    currency = models.CharField(max_length=3, default="RUB")
+    items_subtotal_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    delivery_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    fiscal_fee_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0
+    )
+    coupon = models.ForeignKey(
+        "pricing.Coupon",
+        related_name="orders",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(
         max_length=24, choices=Status.choices, default=Status.PENDING
@@ -142,11 +159,26 @@ class Order(models.Model):
         return True
 
     def recalculate_total(self, save=True):
-        total = sum((item.line_total for item in self.items.all()), Decimal("0.00"))
-        self.total_amount = total
+        items_subtotal = sum(
+            (item.line_total for item in self.items.all()), Decimal("0.00")
+        )
+        self.items_subtotal_amount = items_subtotal
+        self.total_amount = (
+            items_subtotal
+            - (self.discount_amount or Decimal("0.00"))
+            + (self.delivery_amount or Decimal("0.00"))
+            + (self.tax_amount or Decimal("0.00"))
+            + (self.fiscal_fee_amount or Decimal("0.00"))
+        )
         if save:
-            self.save(update_fields=["total_amount", "updated_at"])
-        return total
+            self.save(
+                update_fields=[
+                    "items_subtotal_amount",
+                    "total_amount",
+                    "updated_at",
+                ]
+            )
+        return self.total_amount
 
     def __str__(self):
         return f"Order #{self.pk} {self.status}"

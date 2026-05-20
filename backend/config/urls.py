@@ -26,6 +26,8 @@ from users.views import (
     EmailConfirmationRequestView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
+    PhoneConfirmationConfirmView,
+    PhoneConfirmationRequestView,
     RegisterView,
     ScopedTokenObtainPairView,
     ScopedTokenRefreshView,
@@ -96,6 +98,16 @@ def build_api_urlpatterns(*, schema_url_name):
             "auth/email-confirmation/confirm/",
             EmailConfirmationConfirmView.as_view(),
             name="email_confirmation_confirm",
+        ),
+        path(
+            "auth/phone-confirmation/request/",
+            PhoneConfirmationRequestView.as_view(),
+            name="phone_confirmation_request",
+        ),
+        path(
+            "auth/phone-confirmation/confirm/",
+            PhoneConfirmationConfirmView.as_view(),
+            name="phone_confirmation_confirm",
         ),
         path(
             "payments/webhooks/<slug:provider_code>/",

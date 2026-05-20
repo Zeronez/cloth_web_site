@@ -3,7 +3,7 @@ from django.db.models import F
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from catalog.models import InventoryAdjustment, ProductVariant
+from catalog.models import InventoryAdjustment, LowStockAlert, ProductVariant
 
 
 LOW_STOCK_THRESHOLD = 3
@@ -51,6 +51,15 @@ def adjust_variant_stock(
         new_quantity=new_quantity,
         note=note,
     )
+    if getattr(settings, "LOW_STOCK_ALERTS_ENABLED", True) and is_low_stock(variant):
+        alert = LowStockAlert.objects.create(
+            variant=variant,
+            threshold=LOW_STOCK_THRESHOLD,
+            stock_quantity=variant.stock_quantity,
+        )
+        from notifications.tasks import send_low_stock_admin_email
+
+        transaction.on_commit(lambda: send_low_stock_admin_email.delay(alert.id))
     return variant, adjustment
 
 
@@ -101,4 +110,14 @@ def adjust_variant_stock_optimistic(
         new_quantity=new_quantity,
         note=note,
     )
+    if getattr(settings, "LOW_STOCK_ALERTS_ENABLED", True) and is_low_stock(variant):
+        alert = LowStockAlert.objects.create(
+            variant=variant,
+            threshold=LOW_STOCK_THRESHOLD,
+            stock_quantity=variant.stock_quantity,
+        )
+        from notifications.tasks import send_low_stock_admin_email
+
+        transaction.on_commit(lambda: send_low_stock_admin_email.delay(alert.id))
     return variant, adjustment
+from django.conf import settings

@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,6 +11,8 @@ from payments.serializers import (
     PaymentMethodSerializer,
     PaymentReturnStatusQuerySerializer,
     PaymentReturnStatusSerializer,
+    PaymentRefundRequestSerializer,
+    PaymentRefundSerializer,
     PaymentSerializer,
     PaymentSessionCreateSerializer,
     PaymentWebhookResponseSerializer,
@@ -22,6 +24,7 @@ from payments.services import (
     create_payment_session,
     get_payment_return_status,
     process_payment_webhook,
+    request_payment_refund,
 )
 
 
@@ -51,10 +54,16 @@ class PaymentViewSet(
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Payment.objects.none()
+        if getattr(self.request.user, "is_superuser", False):
+            return (
+                Payment.objects.select_related("order", "method", "user")
+                .prefetch_related("events", "refunds")
+                .order_by("-created_at")
+            )
         return (
             Payment.objects.filter(user=self.request.user)
             .select_related("order", "method")
-            .prefetch_related("events")
+            .prefetch_related("events", "refunds")
             .order_by("-created_at")
         )
 
@@ -98,6 +107,31 @@ class PaymentViewSet(
         )
         serializer = PaymentReturnStatusSerializer(result)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="refund",
+        permission_classes=(IsAdminUser,),
+        throttle_scope="payment",
+    )
+    def refund(self, request, pk=None):
+        serializer = PaymentRefundRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refund = request_payment_refund(
+            payment_id=int(pk),
+            amount=serializer.validated_data.get("amount"),
+            performed_by=request.user,
+        )
+        return Response(
+            {
+                "payment": PaymentSerializer(
+                    refund.payment, context=self.get_serializer_context()
+                ).data,
+                "refund": PaymentRefundSerializer(refund).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class PaymentWebhookView(APIView):

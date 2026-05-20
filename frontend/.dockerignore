@@ -1,0 +1,11 @@
+node_modules
+.next
+.turbo
+coverage
+.cache
+.git
+.github
+**/*.log
+**/*.md
+**/*.test.*
+**/__tests__/

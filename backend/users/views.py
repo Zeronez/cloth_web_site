@@ -1,6 +1,10 @@
+import secrets
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -21,6 +25,8 @@ from users.serializers import (
     EmailConfirmationConfirmSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    PhoneConfirmationConfirmSerializer,
+    PhoneConfirmationRequestSerializer,
     RegisterSerializer,
     UserSerializer,
 )
@@ -29,7 +35,12 @@ from users.security import (
     should_suppress_password_reset_request,
 )
 from users.services import build_account_export_payload, delete_customer_account
-from users.tasks import send_email_confirmation_email, send_password_reset_email
+from users.tasks import (
+    send_email_confirmation_email,
+    send_password_reset_email,
+    send_phone_confirmation_sms,
+)
+from users.models import PhoneConfirmation
 
 
 User = get_user_model()
@@ -230,6 +241,55 @@ class EmailConfirmationConfirmView(APIView):
     )
     def post(self, request):
         serializer = EmailConfirmationConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+
+class PhoneConfirmationRequestView(APIView):
+    permission_classes = (IsAuthenticated,)
+    throttle_scope = "auth"
+
+    @extend_schema(request=PhoneConfirmationRequestSerializer, responses={202: None})
+    def post(self, request):
+        serializer = PhoneConfirmationRequestSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data["phone"]
+
+        code = getattr(settings, "AUTH_PHONE_CONFIRMATION_TEST_CODE", None)
+        if not code:
+            code = f"{secrets.randbelow(1_000_000):06d}"
+
+        confirmation = PhoneConfirmation(
+            user=request.user,
+            phone=phone,
+            expires_at=timezone.now()
+            + timedelta(
+                minutes=getattr(settings, "AUTH_PHONE_CONFIRMATION_TTL_MINUTES", 10)
+            ),
+        )
+        confirmation.set_code(code)
+        confirmation.save()
+
+        transaction.on_commit(
+            lambda: send_phone_confirmation_sms.delay(
+                user_id=request.user.id, phone=phone, code=code
+            )
+        )
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class PhoneConfirmationConfirmView(APIView):
+    permission_classes = (IsAuthenticated,)
+    throttle_scope = "auth"
+
+    @extend_schema(request=PhoneConfirmationConfirmSerializer, responses={200: UserSerializer})
+    def post(self, request):
+        serializer = PhoneConfirmationConfirmSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(UserSerializer(user, context={"request": request}).data)

@@ -423,6 +423,12 @@ def sync_order_tracking_status(
         external_event_id=external_event_id,
         happened_at=happened_at,
     )
+    if previous_status != tracking_status and getattr(order.user, "email", ""):
+        from notifications.tasks import send_shipping_status_email
+
+        transaction.on_commit(
+            lambda: send_shipping_status_email.delay(order.id, tracking_status)
+        )
     snapshot.refresh_from_db()
     return event, True
 

@@ -9,7 +9,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 from delivery.services import ensure_shipment_for_paid_order
 from orders.models import Order
 from orders.services import restore_order_stock, transition_order_status
-from payments.models import Payment, PaymentEvent, PaymentMethod
+from payments.models import Payment, PaymentEvent, PaymentMethod, PaymentRefund
 from payments.providers import fetch_provider_payment_status, get_payment_provider
 
 
@@ -368,6 +368,9 @@ def process_payment_webhook(
         external_event_id=event_id,
     )
     _sync_order_after_payment_status(payment, status)
+    from notifications.tasks import send_payment_status_email
+
+    transaction.on_commit(lambda: send_payment_status_email.delay(payment.id))
 
     return {
         "payment": payment,
@@ -472,3 +475,96 @@ def get_payment_return_status(
         "confirmation_url": confirmation_url,
         "can_retry": can_retry,
     }
+
+
+@transaction.atomic
+def request_payment_refund(*, payment_id, amount=None, performed_by=None):
+    payment = (
+        Payment.objects.select_for_update()
+        .select_related("order", "user")
+        .filter(pk=payment_id)
+        .first()
+    )
+    if payment is None:
+        raise NotFound(
+            {"payment": {"code": "payment_not_found", "message": "Платеж не найден."}}
+        )
+
+    if payment.status not in {
+        Payment.Status.AUTHORIZED,
+        Payment.Status.SUCCEEDED,
+        Payment.Status.REFUNDED,
+    }:
+        raise ValidationError(
+            {
+                "refund": {
+                    "code": "refund_not_allowed",
+                    "message": "Возврат для этого статуса платежа недоступен.",
+                }
+            }
+        )
+
+    refundable = payment.amount - (payment.refunded_amount or 0)
+    if refundable <= 0:
+        raise ValidationError(
+            {"refund": {"code": "nothing_to_refund", "message": "Возвращать нечего."}}
+        )
+
+    refund_amount = amount if amount is not None else refundable
+    if refund_amount <= 0:
+        raise ValidationError(
+            {
+                "amount": {
+                    "code": "invalid_amount",
+                    "message": "Сумма возврата должна быть больше 0.",
+                }
+            }
+        )
+    if refund_amount > refundable:
+        raise ValidationError(
+            {
+                "amount": {
+                    "code": "amount_exceeds_refundable",
+                    "message": "Сумма возврата превышает доступный остаток.",
+                }
+            }
+        )
+
+    refund = PaymentRefund.objects.create(
+        payment=payment,
+        amount=refund_amount,
+        currency=payment.currency,
+        status=PaymentRefund.Status.SUCCEEDED,
+        message="Manual refund processed.",
+    )
+    PaymentEvent.objects.create(
+        payment=payment,
+        event_type="manual_refund",
+        previous_status=payment.status,
+        new_status=payment.status,
+        message=f"Processed manual refund for {refund_amount} {payment.currency}.",
+        payload={
+            "refund_id": refund.id,
+            "amount": str(refund_amount),
+            "performed_by": getattr(performed_by, "id", None),
+        },
+    )
+
+    payment.refunded_amount = (payment.refunded_amount or 0) + refund_amount
+    payment.save(update_fields=["refunded_amount", "updated_at"])
+
+    if payment.refunded_amount >= payment.amount and payment.can_transition_to(
+        Payment.Status.REFUNDED
+    ):
+        payment.transition_to(
+            Payment.Status.REFUNDED,
+            event_type="manual_refund_completed",
+            message="Payment fully refunded.",
+            payload={"refund_id": refund.id},
+        )
+        _sync_order_after_payment_status(payment, Payment.Status.REFUNDED)
+
+    from notifications.tasks import send_payment_status_email
+
+    transaction.on_commit(lambda: send_payment_status_email.delay(payment.id))
+    return refund

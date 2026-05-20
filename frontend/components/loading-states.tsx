@@ -41,7 +41,7 @@ export function CheckoutMethodListSkeleton() {
   return (
     <div
       className="mt-4 grid gap-3 sm:grid-cols-2"
-      aria-label="Р—Р°РіСЂСѓР·РєР° СЃРїРѕСЃРѕР±РѕРІ"
+      aria-label="Загрузка способов"
     >
       {Array.from({ length: 4 }).map((_, index) => (
         <div
@@ -61,7 +61,7 @@ export function CheckoutPageSkeleton() {
   return (
     <main
       className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
-      aria-label="Р—Р°РіСЂСѓР·РєР° РѕС„РѕСЂРјР»РµРЅРёСЏ Р·Р°РєР°Р·Р°"
+      aria-label="Загрузка оформления заказа"
     >
       <section className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_420px]">
         <div className="border border-white/10 bg-white/[0.04] p-5 sm:p-6">
@@ -97,7 +97,7 @@ export function OrderTrackingSkeleton() {
   return (
     <main
       className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
-      aria-label="Р—Р°РіСЂСѓР·РєР° РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ Р·Р°РєР°Р·Р°"
+      aria-label="Загрузка отслеживания заказа"
     >
       <section className="mx-auto max-w-5xl space-y-6">
         <div className="border border-white/10 bg-white/[0.04] p-6 sm:p-8">
@@ -148,7 +148,7 @@ export function PaymentReturnSkeleton() {
   return (
     <main
       className="min-h-screen bg-ink-950 px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8"
-      aria-label="Р—Р°РіСЂСѓР·РєР° СЃС‚Р°С‚СѓСЃР° РѕРїР»Р°С‚С‹"
+      aria-label="Загрузка статуса оплаты"
     >
       <section className="mx-auto max-w-4xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
         <div className="animate-pulse space-y-4">

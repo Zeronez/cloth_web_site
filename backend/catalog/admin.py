@@ -9,9 +9,14 @@ from catalog.models import (
     AnimeFranchise,
     Category,
     InventoryAdjustment,
+    LowStockAlert,
     Product,
+    ProductCollection,
     ProductImage,
+    ProductTag,
     ProductVariant,
+    ProductVideo,
+    SizeChart,
 )
 from catalog.stock import LOW_STOCK_THRESHOLD, adjust_variant_stock, is_low_stock
 from config.admin_exports import export_as_csv
@@ -32,7 +37,13 @@ class ProductVariantInline(admin.TabularInline):
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 0
-    fields = ("image", "alt_text", "is_main", "sort_order")
+    fields = ("variant", "image", "alt_text", "is_main", "is_approved", "sort_order")
+
+
+class ProductVideoInline(admin.TabularInline):
+    model = ProductVideo
+    extra = 0
+    fields = ("variant", "url", "alt_text", "sort_order")
 
 
 class LowStockListFilter(admin.SimpleListFilter):
@@ -127,11 +138,13 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         "category",
         "franchise",
         "base_price",
+        "status",
         "is_active",
         "is_featured",
         "archived_at",
     )
     list_filter = (
+        "status",
         "is_active",
         "is_featured",
         "archived_at",
@@ -144,7 +157,7 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_select_related = ("category", "franchise")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "description", "variants__sku")
-    inlines = [ProductVariantInline, ProductImageInline]
+    inlines = [ProductVariantInline, ProductImageInline, ProductVideoInline]
     actions = (
         "archive_selected_products",
         "restore_selected_products",
@@ -741,8 +754,8 @@ class InventoryAdjustmentAdmin(admin.ModelAdmin):
 
 @admin.register(ProductImage)
 class ProductImageAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
-    list_display = ("alt_text", "product", "is_main", "sort_order")
-    list_filter = ("is_main",)
+    list_display = ("alt_text", "product", "is_main", "is_approved", "sort_order")
+    list_filter = ("is_main", "is_approved")
     list_select_related = ("product",)
     search_fields = ("alt_text", "product__name")
 
@@ -759,3 +772,38 @@ class ProductImageAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+@admin.register(ProductTag)
+class ProductTagAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
+    list_display = ("name", "slug", "created_at")
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(ProductCollection)
+class ProductCollectionAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
+    list_display = ("name", "slug", "is_active", "starts_at", "ends_at")
+    list_filter = ("is_active", "starts_at", "ends_at")
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(SizeChart)
+class SizeChartAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
+    list_display = ("id", "title", "category", "product", "created_at")
+    list_filter = ("category", "product")
+    search_fields = ("title",)
+
+
+@admin.register(LowStockAlert)
+class LowStockAlertAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
+    list_display = (
+        "variant",
+        "stock_quantity",
+        "threshold",
+        "acknowledged_at",
+        "created_at",
+    )
+    list_filter = ("acknowledged_at", "created_at")
+    search_fields = ("variant__sku", "variant__product__name")
