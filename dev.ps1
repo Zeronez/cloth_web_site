@@ -99,7 +99,7 @@ function Get-ListeningPids([int]$Port) {
     catch {
         return @()
     }
-    return @($pids.ToArray() | Sort-Object)
+    return @($pids | Sort-Object)
 }
 
 function Start-Backend {
