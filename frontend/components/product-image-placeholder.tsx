@@ -1,4 +1,5 @@
 type ProductImagePlaceholderProps = {
+  alt?: string;
   label?: string;
   variant?: "jacket" | "hoodie" | "pants" | "cart";
   className?: string;
@@ -12,6 +13,7 @@ const variantAccent = {
 };
 
 export function ProductImagePlaceholder({
+  alt,
   label = "AnimeAttire",
   variant = "jacket",
   className = ""
@@ -23,7 +25,7 @@ export function ProductImagePlaceholder({
     <div
       className={`relative isolate overflow-hidden bg-ink-900 ${className}`}
       role="img"
-      aria-label={`Плейсхолдер изображения товара ${label}`}
+      aria-label={alt ?? `Плейсхолдер изображения товара ${label}`}
     >
       <div
         className={`absolute inset-0 bg-gradient-to-br ${variantAccent[variant]}`}

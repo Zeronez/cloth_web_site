@@ -108,7 +108,7 @@ export function PaymentReturnPage({
     trackEvent("payment_success", {
       order_id: result.order.id,
       payment_id: result.payment.id,
-      provider: result.payment.provider,
+      provider: result.provider,
       amount: toAmount(result.payment.amount),
       currency: "RUB"
     });
