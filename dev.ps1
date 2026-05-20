@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $RepoRoot ".dev"
 $PidFile = Join-Path $StateDir "pids.json"
+$BackendLog = Join-Path $StateDir "backend.log"
+$FrontendLog = Join-Path $StateDir "frontend.log"
 
 function Ensure-StateDir {
     if (-not (Test-Path $StateDir)) {
@@ -33,6 +35,8 @@ function Write-Pids([int]$BackendPid, [int]$FrontendPid) {
     $obj = [pscustomobject]@{
         backend_pid  = $BackendPid
         frontend_pid = $FrontendPid
+        backend_log  = $BackendLog
+        frontend_log = $FrontendLog
         started_at   = (Get-Date).ToString("o")
     }
     $obj | ConvertTo-Json | Set-Content -Encoding UTF8 $PidFile
@@ -53,6 +57,17 @@ function Stop-IfRunning([int]$ProcessId, [string]$Name) {
     if (-not $ProcessId) { return }
     if (-not (Is-Running $ProcessId)) { return }
     try {
+        $proc = Get-Process -Id $ProcessId -ErrorAction Stop
+        # Guard against PID reuse (don't kill unrelated processes like notepad).
+        if ($Name -eq "backend" -and $proc.ProcessName -notin @("python", "python3", "pythonw")) {
+            Write-Warning "Refusing to stop PID $ProcessId for backend; found process '$($proc.ProcessName)'. PID reuse likely."
+            return
+        }
+        if ($Name -eq "frontend" -and $proc.ProcessName -notin @("cmd", "node", "npm")) {
+            Write-Warning "Refusing to stop PID $ProcessId for frontend; found process '$($proc.ProcessName)'. PID reuse likely."
+            return
+        }
+
         Stop-Process -Id $ProcessId -Force -ErrorAction Stop
         Write-Host "Stopped $Name (PID $ProcessId)"
     }
@@ -73,7 +88,8 @@ function Start-Backend {
     $env:DJANGO_SETTINGS_MODULE = "config.settings.development"
 
     $args = @("manage.py", "runserver", "127.0.0.1:8000")
-    $proc = Start-Process -FilePath $python -ArgumentList $args -WorkingDirectory $backendDir -WindowStyle Hidden -PassThru
+    Ensure-StateDir
+    $proc = Start-Process -FilePath $python -ArgumentList $args -WorkingDirectory $backendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $BackendLog -RedirectStandardError $BackendLog
     Write-Host "Started backend (PID $($proc.Id)) at http://127.0.0.1:8000"
     return $proc.Id
 }
@@ -86,9 +102,25 @@ function Start-Frontend {
         throw "npm not found. Install Node.js first."
     }
 
-    $proc = Start-Process -FilePath $npm.Source -ArgumentList @("run", "dev") -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru
+    Ensure-StateDir
+    # Use cmd.exe to run npm.cmd reliably on Windows and keep a single parent PID to stop.
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", "npm", "run", "dev") -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru -RedirectStandardOutput $FrontendLog -RedirectStandardError $FrontendLog
     Write-Host "Started frontend (PID $($proc.Id)) at http://127.0.0.1:3000"
     return $proc.Id
+}
+
+function Wait-ForHttp([string]$Url, [int]$TimeoutSeconds) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $null = Invoke-WebRequest -Uri $Url -Method Get -TimeoutSec 3 -UseBasicParsing
+            return $true
+        }
+        catch {
+            Start-Sleep -Milliseconds 300
+        }
+    }
+    return $false
 }
 
 function Up {
@@ -99,9 +131,20 @@ function Up {
     }
 
     $backendPid = Start-Backend
-    Start-Sleep -Milliseconds 300
     $frontendPid = Start-Frontend
     Write-Pids -BackendPid $backendPid -FrontendPid $frontendPid
+
+    if (-not (Wait-ForHttp -Url "http://127.0.0.1:8000/api/v1/health/live/" -TimeoutSeconds 20)) {
+        Write-Warning "Backend didn't become ready. Check log: $BackendLog"
+        Down
+        throw "Backend failed to start."
+    }
+
+    if (-not (Wait-ForHttp -Url "http://127.0.0.1:3000/healthz" -TimeoutSeconds 40)) {
+        Write-Warning "Frontend didn't become ready. Check log: $FrontendLog"
+        Down
+        throw "Frontend failed to start."
+    }
 }
 
 function Down {
