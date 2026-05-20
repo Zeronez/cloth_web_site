@@ -90,8 +90,8 @@ function Get-ListeningPids([int]$Port) {
     $pids = New-Object System.Collections.Generic.HashSet[int]
     try {
         $pattern = "^\\s*TCP\\s+\\S+:$Port\\s+\\S+\\s+LISTENING\\s+(\\d+)\\s*$"
-        $matches = netstat -ano -p TCP 2>$null | Select-String -Pattern $pattern
-        foreach ($m in $matches) {
+        $matchInfos = netstat -ano -p TCP 2>$null | Select-String -Pattern $pattern
+        foreach ($m in $matchInfos) {
             if ($m.Line -match $pattern) {
                 [void]$pids.Add([int]$Matches[1])
             }
