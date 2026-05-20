@@ -89,7 +89,8 @@ function Get-BackendPython {
 function Get-ListeningPids([int]$Port) {
     $pids = New-Object System.Collections.Generic.HashSet[int]
     try {
-        $lines = netstat -ano -p TCP 2>$null
+        $text = (netstat -ano -p TCP 2>$null | Out-String)
+        $lines = $text -split "`r?`n"
         foreach ($line in $lines) {
             if ($line -match "^\\s*TCP\\s+\\S+:$Port\\s+\\S+\\s+LISTENING\\s+(\\d+)\\s*$") {
                 [void]$pids.Add([int]$Matches[1])
