@@ -63,7 +63,7 @@ function Stop-IfRunning([int]$ProcessId, [string]$Name) {
     try {
         $proc = Get-Process -Id $ProcessId -ErrorAction Stop
         # Guard against PID reuse (don't kill unrelated processes like notepad).
-        if ($Name -eq "backend" -and $proc.ProcessName -notin @("python", "python3", "pythonw")) {
+        if ($Name -eq "backend" -and $proc.ProcessName -notlike "python*") {
             Write-Warning "Refusing to stop PID $ProcessId for backend; found process '$($proc.ProcessName)'. PID reuse likely."
             return
         }
