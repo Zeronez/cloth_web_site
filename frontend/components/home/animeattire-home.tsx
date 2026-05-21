@@ -60,7 +60,7 @@ export function AnimeAttireHome() {
           >
             <motion.div variants={motionUp} className="mb-6 w-full max-w-xl">
               <Image
-                src="/brand/animeattire-logo.png"
+                src="/brand/animeattire-logo.v2.png"
                 alt="AnimeAttire"
                 width={2172}
                 height={724}
