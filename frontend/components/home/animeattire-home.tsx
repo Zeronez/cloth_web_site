@@ -52,10 +52,10 @@ export function AnimeAttireHome() {
           >
             <motion.div variants={motionUp} className="mb-6 w-full max-w-xl">
               <Image
-                src="/brand/animeattire-logo.svg"
+                src="/brand/animeattire-logo.png"
                 alt="AnimeAttire"
-                width={960}
-                height={240}
+                width={2172}
+                height={724}
                 priority
                 className="h-auto w-full opacity-95"
               />
@@ -202,4 +202,3 @@ export function AnimeAttireHome() {
     </main>
   );
 }
-

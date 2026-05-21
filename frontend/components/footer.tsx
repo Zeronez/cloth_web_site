@@ -19,10 +19,10 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] lg:px-8">
         <div>
           <Image
-            src="/brand/animeattire-logo.svg"
+            src="/brand/animeattire-logo.png"
             alt="AnimeAttire"
-            width={960}
-            height={240}
+            width={2172}
+            height={724}
             className="h-auto w-44"
           />
           <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
@@ -83,4 +83,3 @@ export function Footer() {
     </footer>
   );
 }
-
