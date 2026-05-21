@@ -40,7 +40,7 @@ export function AnimeAttireHome() {
   return (
     <main className="bg-ink-950 text-white">
       <section className="relative isolate min-h-[92vh] overflow-hidden border-b border-white/10 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 -z-20 bg-[linear-gradient(115deg,#070910_0%,#0b1020_60%,#070910_100%)]" />
+        <div className="absolute inset-0 -z-20 bg-[linear-gradient(115deg,#002A32_0%,#00333D_60%,#002A32_100%)]" />
         <div className="absolute inset-0 -z-10 opacity-[0.25] [background-image:radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_55%)]" />
 
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(390px,0.82fr)]">

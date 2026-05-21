@@ -41,16 +41,16 @@ export function ProductImagePlaceholder({
         </div>
       ) : isPants ? (
         <>
-          <div className="absolute bottom-[10%] left-[28%] h-[72%] w-[18%] -skew-x-6 bg-[linear-gradient(180deg,#1f2937,#070910)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]" />
-          <div className="absolute bottom-[10%] right-[28%] h-[72%] w-[18%] skew-x-6 bg-[linear-gradient(180deg,#1f2937,#070910)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]" />
+          <div className="absolute bottom-[10%] left-[28%] h-[72%] w-[18%] -skew-x-6 bg-[linear-gradient(180deg,#00414D,#002A32)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]" />
+          <div className="absolute bottom-[10%] right-[28%] h-[72%] w-[18%] skew-x-6 bg-[linear-gradient(180deg,#00414D,#002A32)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]" />
           <div className="absolute left-[29%] right-[29%] top-[20%] h-8 border border-neon-teal/50 bg-neon-teal/10 shadow-neon-teal" />
           <div className="absolute left-[36%] top-[38%] h-[40%] w-1 bg-neon-crimson shadow-neon-crimson" />
         </>
       ) : (
         <>
-          <div className="absolute bottom-[9%] left-1/2 h-[72%] w-[52%] -translate-x-1/2 bg-[linear-gradient(150deg,#1f2937,#070910_58%,#111827)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_22px_70px_rgba(0,0,0,0.42)]" />
-          <div className="absolute bottom-[12%] left-[13%] h-[52%] w-[22%] -skew-y-6 bg-[linear-gradient(155deg,#111827,#0b1020)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]" />
-          <div className="absolute bottom-[12%] right-[13%] h-[52%] w-[22%] skew-y-6 bg-[linear-gradient(205deg,#111827,#0b1020)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]" />
+          <div className="absolute bottom-[9%] left-1/2 h-[72%] w-[52%] -translate-x-1/2 bg-[linear-gradient(150deg,#00414D,#002A32_58%,#00333D)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_22px_70px_rgba(0,0,0,0.42)]" />
+          <div className="absolute bottom-[12%] left-[13%] h-[52%] w-[22%] -skew-y-6 bg-[linear-gradient(155deg,#00333D,#002A32)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]" />
+          <div className="absolute bottom-[12%] right-[13%] h-[52%] w-[22%] skew-y-6 bg-[linear-gradient(205deg,#00333D,#002A32)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]" />
           <div className="absolute left-1/2 top-[28%] h-[54%] w-1 -translate-x-1/2 bg-neon-crimson shadow-neon-crimson" />
           <div className="absolute left-[29%] top-[45%] h-1 w-[42%] bg-neon-teal shadow-neon-teal" />
           <div className="absolute left-[34%] top-[55%] h-14 w-[32%] border border-neon-crimson/70 bg-neon-crimson/10" />

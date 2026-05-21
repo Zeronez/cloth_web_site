@@ -162,7 +162,7 @@ export function CatalogPage() {
                   type="checkbox"
                   checked={inStock}
                   onChange={(event) => setInStock(event.target.checked)}
-                  className="h-5 w-5 accent-[#ff385c]"
+                  className="h-5 w-5 accent-[#ED254E]"
                 />
               </label>
             </div>

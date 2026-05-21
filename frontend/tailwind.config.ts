@@ -11,20 +11,24 @@ const config: Config = {
     extend: {
       colors: {
         ink: {
-          950: "#070910",
-          900: "#0b1020",
-          800: "#111827"
+          950: "#002A32",
+          900: "#00333D",
+          800: "#00414D"
         },
         neon: {
-          crimson: "#ff385c",
-          teal: "#14b8a6",
-          amber: "#f97316",
+          crimson: "#ED254E",
+          teal: "#ED254E",
+          amber: "#ED254E",
           ice: "#d8dee9"
+        },
+        brand: {
+          base: "#002A32",
+          accent: "#ED254E"
         }
       },
       boxShadow: {
-        "neon-crimson": "0 0 32px rgba(255, 56, 92, 0.34)",
-        "neon-teal": "0 0 32px rgba(20, 184, 166, 0.28)"
+        "neon-crimson": "0 0 32px rgba(237, 37, 78, 0.34)",
+        "neon-teal": "0 0 32px rgba(237, 37, 78, 0.28)"
       }
     }
   },
