@@ -34,6 +34,14 @@ const motionUp = {
   visible: { opacity: 1, y: 0 }
 };
 
+const support = {
+  telegram: "https://t.me/animeattire",
+  vk: "https://vk.com/animeattre",
+  phoneDisplay: "+7 982 402-26-46",
+  phoneHref: "tel:+79824022646",
+  address: "Лиговский проспект, 76, Санкт-Петербург, 191040"
+};
+
 export function AnimeAttireHome() {
   const { addItem } = useCartSync();
 
@@ -144,8 +152,8 @@ export function AnimeAttireHome() {
               </h2>
             </div>
             <p className="max-w-md text-sm leading-6 text-slate-400">
-              Минимум шума — максимум формы. Собрали три позиции, которые проще всего
-              стилизовать под город.
+              Минимум шума — максимум формы. Собрали три позиции, которые проще
+              всего стилизовать под город.
             </p>
           </div>
 
@@ -171,32 +179,51 @@ export function AnimeAttireHome() {
         </div>
       </section>
 
-      <section
-        id="lookbook"
-        className="border-y border-white/10 bg-white/[0.03] px-4 py-12 sm:px-6 lg:px-8"
-      >
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-2xl font-black sm:text-3xl">
-            Следующий дроп — скоро. Мы соберём детали и обновим витрину.
-          </h2>
-          <a
-            href="#craft"
-            className="grid h-11 w-full place-items-center rounded-full border border-white/15 bg-white/5 px-5 text-sm font-black uppercase text-white transition hover:border-white/30 hover:bg-white/10 sm:w-auto"
-          >
-            Детали кроя
-          </a>
-        </div>
-      </section>
+      <section className="border-t border-white/10 bg-white/[0.03] px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-neon-teal">
+              Соцсети и поддержка
+            </p>
+            <h2 className="mt-4 text-3xl font-black leading-tight sm:text-4xl">
+              Мы на связи — напишите в Telegram или VK.
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">
+              По вопросам заказа, доставки и возврата.
+            </p>
+          </div>
 
-      <section id="craft" className="px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[0.8fr_1fr]">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-            Материалы
-          </p>
-          <p className="text-2xl font-bold leading-10 text-slate-100">
-            Мы делаем вещи так, чтобы они выглядели спокойно и дорого: плотный хлопок,
-            аккуратная отделка и понятная геометрия.
-          </p>
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-ink-900/40 p-6 text-sm text-slate-200">
+            <a
+              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition hover:border-white/20 hover:bg-white/[0.06]"
+              href={support.telegram}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <span className="font-bold">Telegram</span>
+              <span className="text-slate-300">t.me/animeattire</span>
+            </a>
+            <a
+              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition hover:border-white/20 hover:bg-white/[0.06]"
+              href={support.vk}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <span className="font-bold">VK</span>
+              <span className="text-slate-300">vk.com/animeattre</span>
+            </a>
+            <a
+              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition hover:border-white/20 hover:bg-white/[0.06]"
+              href={support.phoneHref}
+            >
+              <span className="font-bold">Телефон</span>
+              <span className="text-slate-300">{support.phoneDisplay}</span>
+            </a>
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="font-bold">Адрес</div>
+              <div className="mt-1 text-slate-300">{support.address}</div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

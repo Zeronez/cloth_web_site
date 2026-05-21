@@ -20,6 +20,14 @@ const initialFormState: ContactFormState = {
   message: ""
 };
 
+const supportDefaults = {
+  telegram: "https://t.me/animeattire",
+  vk: "https://vk.com/animeattre",
+  phone: "+7 982 402-26-46",
+  phoneHref: "tel:+79824022646",
+  address: "Лиговский проспект, 76, Санкт-Петербург, 191040"
+};
+
 type TopicOption = {
   value: ContactRequestTopic;
   label: string;
@@ -45,8 +53,12 @@ export function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "";
-  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "";
-  const supportTelegram = process.env.NEXT_PUBLIC_SUPPORT_TELEGRAM ?? "";
+  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? supportDefaults.phone;
+  const supportTelegram =
+    process.env.NEXT_PUBLIC_SUPPORT_TELEGRAM ?? supportDefaults.telegram;
+  const supportVk = process.env.NEXT_PUBLIC_SUPPORT_VK ?? supportDefaults.vk;
+  const supportAddress =
+    process.env.NEXT_PUBLIC_SUPPORT_ADDRESS ?? supportDefaults.address;
 
   const topicOptions = useMemo<TopicOption[]>(
     () => [
@@ -277,6 +289,8 @@ export function ContactPage() {
                   {supportEmail ? <li>Email: {supportEmail}</li> : null}
                   {supportPhone ? <li>Телефон: {supportPhone}</li> : null}
                   {supportTelegram ? <li>Telegram: {supportTelegram}</li> : null}
+                  {supportVk ? <li>VK: {supportVk}</li> : null}
+                  {supportAddress ? <li>Адрес: {supportAddress}</li> : null}
                 </ul>
               ) : (
                 <p className="mt-3 text-sm leading-7 text-slate-300">
@@ -313,4 +327,3 @@ export function ContactPage() {
     </main>
   );
 }
-

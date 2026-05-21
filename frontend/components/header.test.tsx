@@ -37,12 +37,12 @@ describe("Header", () => {
     sessionStorage.clear();
     useCartStore.setState({
       items: [],
-      isOpen: false,
+      isOpen: false
     });
     useUserStore.setState({
       accessToken: null,
       refreshToken: null,
-      profile: null,
+      profile: null
     });
   });
 
@@ -56,13 +56,9 @@ describe("Header", () => {
       "href",
       "/catalog"
     );
-    expect(screen.getByRole("link", { name: "Лукбук" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Контакты" })).toHaveAttribute(
       "href",
-      "/#lookbook"
-    );
-    expect(screen.getByRole("link", { name: "Крой" })).toHaveAttribute(
-      "href",
-      "/#craft"
+      "/contacts"
     );
     expect(screen.getByRole("link", { name: "Войти" })).toHaveAttribute(
       "href",
@@ -83,8 +79,8 @@ describe("Header", () => {
         username: "akira",
         email: "akira@example.com",
         first_name: "Акира",
-        last_name: "Танака",
-      },
+        last_name: "Танака"
+      }
     });
     useCartStore.setState({
       items: [
@@ -93,20 +89,19 @@ describe("Header", () => {
           name: "Neo Tokyo Hoodie",
           price: 8900,
           size: "L",
-          quantity: 2,
-        },
+          quantity: 2
+        }
       ],
-      isOpen: false,
+      isOpen: false
     });
 
     render(<Header />);
 
-    expect(screen.getByRole("link", { name: "Открыть аккаунт" })).toHaveAttribute(
-      "href",
-      "/account"
-    );
+    expect(
+      screen.getByRole("link", { name: "Открыть аккаунт" })
+    ).toHaveAttribute("href", "/account");
     const cartButton = screen.getByRole("button", {
-      name: "Открыть корзину, товаров: 2",
+      name: "Открыть корзину, товаров: 2"
     });
     expect(cartButton).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
@@ -116,3 +111,4 @@ describe("Header", () => {
     expect(useCartStore.getState().isOpen).toBe(true);
   });
 });
+
