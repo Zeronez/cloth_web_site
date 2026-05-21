@@ -1,46 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="animeattire-logo-title animeattire-logo-desc">
-  <title id="animeattire-logo-title">AnimeAttire logo</title>
-  <desc id="animeattire-logo-desc">A sharp AnimeAttire wordmark with a katana stroke, stitched clothing threads, and anime streetwear styling.</desc>
-  <defs>
-    <linearGradient id="aa-ink" x1="72" y1="52" x2="862" y2="190" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1f2937"/>
-      <stop offset="0.47" stop-color="#111827"/>
-      <stop offset="1" stop-color="#0b1020"/>
-    </linearGradient>
-    <linearGradient id="aa-crimson" x1="104" y1="64" x2="356" y2="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ff385c"/>
-      <stop offset="1" stop-color="#d91136"/>
-    </linearGradient>
-    <linearGradient id="aa-thread" x1="80" y1="124" x2="888" y2="124" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ff385c"/>
-      <stop offset="0.55" stop-color="#f97316"/>
-      <stop offset="1" stop-color="#14b8a6"/>
-    </linearGradient>
-    <filter id="aa-soft-shadow" x="-6%" y="-16%" width="112%" height="132%">
-      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0b1020" flood-opacity="0.22"/>
-    </filter>
-  </defs>
-  <g fill="none" fill-rule="evenodd" filter="url(#aa-soft-shadow)">
-    <path d="M83 171 141 47h31l58 124h-34l-11-25h-59l-11 25H83Zm54-51h37l-18-44-19 44Z" fill="url(#aa-crimson)"/>
-    <path d="M191 62h35l23 61 24-61h33l-43 109h-30L191 62Z" fill="url(#aa-ink)" opacity="0.96"/>
-    <path d="M320 171V62h31v109h-31Zm-1-126V20h33v25h-33Z" fill="url(#aa-ink)"/>
-    <path d="M382 171V62h30l2 14c8-11 20-17 36-17 13 0 24 4 32 13 8 8 12 20 12 36v63h-31v-58c0-18-8-27-23-27-8 0-15 3-20 8-5 6-7 14-7 24v53h-31Z" fill="url(#aa-ink)"/>
-    <path d="M574 174c-18 0-33-5-44-16-11-10-16-24-16-41 0-16 5-30 16-41 11-11 25-17 42-17 16 0 29 5 39 15 10 10 15 24 15 41 0 4 0 8-1 12h-80c2 8 6 14 12 18 6 4 13 6 22 6 13 0 24-4 34-13l13 20c-14 11-31 16-52 16Zm-28-67h51c-2-16-10-24-25-24-14 0-23 8-26 24Z" fill="url(#aa-ink)"/>
-    <path d="M640 171 698 47h31l58 124h-34l-11-25h-59l-11 25h-32Zm54-51h37l-18-44-19 44Z" fill="url(#aa-ink)"/>
-    <path d="M821 173c-24 0-36-12-36-37V88h-18V62h18V32h31v30h31v26h-31v43c0 10 5 15 15 15 6 0 12-1 18-4v25c-8 4-17 6-28 6Z" fill="url(#aa-ink)"/>
-    <path d="M863 171V62h31v109h-31Zm-1-126V20h33v25h-33Z" fill="url(#aa-ink)"/>
-  </g>
-  <g aria-hidden="true">
-    <path d="M63 190c145-28 300-41 466-39 145 1 268 15 368 42" stroke="url(#aa-thread)" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 16"/>
-    <path d="M77 154 888 86" stroke="#d8dee9" stroke-width="7" stroke-linecap="round"/>
-    <path d="M77 154 888 86" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.82"/>
-    <path d="M872 78 918 82 879 101Z" fill="#111827"/>
-    <path d="M61 150h41v15H61z" fill="#111827" transform="rotate(-5 81.5 157.5)"/>
-    <path d="M51 145h14v26H51z" fill="#ff385c" transform="rotate(-5 58 158)"/>
-    <path d="M105 146c23 13 44 15 63 5" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
-    <path d="M113 137c16 11 33 12 50 3" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
-    <path d="M164 44c9 26 9 50 0 72" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
-    <path d="M127 145h58" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 9" opacity="0.72"/>
-    <path d="M676 145h72" stroke="#ff385c" stroke-width="3" stroke-linecap="round" stroke-dasharray="9 8" opacity="0.72"/>
-  </g>
+﻿<svg xmlns='http://www.w3.org/2000/svg' width='2172' height='724' viewBox='0 0 2172 724' role='img' aria-label='AnimeAttire logo'>
+  <image width='2172' height='724' href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMYAAAAwCAYAAABKUAVZAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAADdVJREFUeAHtXV1yE0kSzqyWxOwGM8jYQ8Q8Iccgdt4wJ0B+m5jAP+wFLE6AOYHNCbBPgLjA2saOjXlDPsGYt4mxCZqniWDGWGN2I1iru3IzqyXR6q5u/SCMjPqLkNvqrq6qrqqsyvoyOwWQIUOGDBkyZMiQIUOGDBkyZMiQIcN5A+GC4+SH5RL59ASA5uQ7AdSmD589hAxjjeN/LKyixjXuryIC1bHp3J9yt10YE/QUjJPScsnLeaW0NDnvPwdTbr0BnwFvby6+IoJS5PTGJAkH91GR+2guLc3n7KMojm8urvMMthY+xwPRxebp7XGpY65XAiro54pUKS2Nl7s8z4c6nDNOystzmnTJcqnKn4kRDJ2nxwpUNTVN7vI6Hx7BGAAJlihyjr+XtPP1Hf53B8YAqYKRMvC6oMhZgc8gGOBAA3zrlbGYdc4PtNwrBSJWoA/B+OPG4rpCvB4rQfs7My/3tkdzDzaMKETg4Pj0W6pgaNAr0A8ULZ+UKg/Pexmc+nXb/fPm3adIKlJPvQETgj+/vytCUeyVjgArJ7P/vD716l+v09I5iHcIqBI9j6hcPmyP4h6t/U1Uqis9EdWnjnb3YUyg0i4iQs+ZqAXWcS/PwWfAzG97VR/oPhHWSWNNEVWmD/c2YUKAylnqN612zqowBpBVxAfvNvfZtnx4aVl/5727B2OExBWjXzWqDQUoHVSHz4Brh7s1PtRgIkH9Tl59q1PngWuH/z7gw1gJQxiJgsFq1B0YBIhV6LHhPb6xuGY7P330zHSWsCt+3l9GUJ2ylaY6+GrfRuUJVas9u7rXzlPwZ3mhihTXgZV3uinqn5QLeb2iAYNVj6jBz7/z7dFevas8qZ8DFVS01E/9bPjjxnJFSdsiljoniVwubz9aXi/0q0Z1iklRpzp9g1SyqP9cXapwGvN/u67D3GPKKi8+4PSxevvo7bQEhtvpLreTio1BIv1CVhzpC13Qq9DqVx+am+17w5D2zqG+1enbIJMG57OftGcSJAoG02dVAuvDyvJnm6WK8jCpnYuwnnDlkaxQhHqLB3ApvDHTCqqotMuD4GH0QTwPSiolz/Y/3MArhHEdGPBqjYWrSFo/DyhfatdT7lk9Li/VVPMvs3f6UL9uarhdvzfln+7ZOqYNGcTKUY+pswqHWjcoD96WF13UsD718tlT6AOBGhXvJdHXeXWQgRAbfC11Kr5qtNqRbJ0OgVBxmor8zyylpK0PdU9Q1ir/LUXTK51z+WDa0AiFpW+RHOmzA+kzCPUZ31tv3ysQgXCQ2E6iK7pVm9Czyv5nVdqb+/Tp9G97sXKsewxjNAOw7hm44zYQsG671lKnBkZQXntwxiFUHm/WtkTwYITwHD37QSisJVd1/ps1Uz8WirT6OZB7LjYf23WeITek/snlfMiHBa3G6R9DX0hQowhrkKBattSpCw3t84BPaUuxkyjkfrUQAmFIewOptbc3FraYPOqaRJS9YJ00wF1hDmRGsl4N1KmBYR60D5XAQfUERghH0YNeg5WxSpoe95GuSHk/Vj9jzAJ4AINh9fjm3fW0BGlqVNM/29ekrPaAtjoFFxSozCpRTbouFvWo8bAXCHFZ57/umoysgoGBgcyWRd3clFNJS31xuFk9+UG7UrGEj3LVYAHva+PadzoZdKGZR1aalE5qCJMGoeW/OzO1lrQCCVLYqIPv3J/dnGfytdLnOuf1vWEfN6StAtLe4maScDm9vQGr4bGlbJknqVGkA05a7AcsPa4tzbDqVGsVWjWfhLw/Jv+Ukmu8T6nKsUfCgyCdqWOivaaZ/3up/b+shEllnjZPZ2eOduanD5/d9omspIXO+SkrTZIaFUxeTAY0kOwqL1ruVV6uJB9MFFTaaKc5ZdJi2HtGiIbQ8+ZjnpMJk2TN4yDc3ryaiqdGrA/ZHtPpr9jmO0WNAsd/98EAQ0ZIVmOJ+mCnYiA4mDnanW9//f2HH3cKfuEXsD0kqb5ZmJ7F8iDicu+3vj49Li9wY+GqJWnjrHl2T2Zi+cIbuxeiw9ryzJNzJVSCbfA2pg87ZRpcO9rdeFteWorNhgltKRtL7ilrO/jod1ZzjXqH94OxOrRXtrBBts1UcT2sVmmxVkfZrGHuGRFkoM/PRgzKvJlet9VC+i6c9tuj7Trv42oQGb/hdokJRhIbZSyTocxFh+XBYRtEvdmpeKG18Nfvfv3ZZUZou18Va1hESQTeS+yjigsGP/tBWygEoqboPKTC2IESBu/b8oJFqJjyjKNoo1cVkpWiZrhhZsxpOts6r637MiYVJI8LaQiNDnSBoW9BWzWdS/n8E27z6OmSbZy3VvyDLsEwdgHfnrkMot9DOi9TpW4hb5ajWOcPauxjFa0BYwDCXANB90wnagrPOKlpPObpld13uWhozD7RzL2f4kOXYIh9wEaRIgtwuI/e8+cSd7JNNW6pUxdRMNzwJNVBPpkcGaS9mfa9BaI2h0+mqVHCKRfy+lX4A0lM0pDs1JcERL8EI0C3ahaoUYm0MbMr0T5K3C9GiIKLDo9gpM/StWIkqVFDYHB16gsDkeMi6oRr9k2xFUp3raYpatTAuMjqVBS5HLja7mk9UHs30Terc0cw0tSoYfA5fafGASkd5Qo7AkMiSY0aKq+Lq07F8Z7V8YR9n+P9dW9Qz++OYKSqUcNgGHbqC4JQ2rwPse3BSrbV1BimtLoVzaftkiL/B2pU/46dvWBjp1JSD6Gq0LmparLvY3asbrNz+M5lObcdPmf85yy+WG2fq45gCK1HVsqNbQqU7LnKLM5cggFs4tUpbrcNm7+PWPBPvl9cf+8rQ38XCrrKe/41C+XphgdtqhpFiT5j0rkyQG0MYlydIp55baQBT3TGIRCxGBbWVAT3NMRhcvpw5z58YvD4lcFfiZ5HZdr7Sri9keABWQTXb2rjR2YEo6VGVRKKq08f7Sa6KreCEViNTZOuTilPbTJdKgOyqwPEgk8KagWlOyesIF0Lf01So1r2mFR3cl69qmAhS6LqFCG5CVkUA+c/EkpT0ndoYQJIu2ddUrwp/7SZ5mQ5Cqimehp43MbIiaKOtLe9yanWZrwMK+X7fgUS0LZ2JyHNCj7p7JQs7zwrDatOutNHe53BnsZGIeI29IQ9TZSdSvKxCsOBXJcKogl7egO3aNBPCmlvn5S84zEM/e+eNZshj2wI3LKTUs+83O39cjolCk9x1B6xFw0zh7s10vpemptLFLICsGX3dvhcmhrlg7cPvfIEnZimpU4ZiFVYXLEhDRq7SJp+7uHVbmTEThquHW4f+KDmB2lvxgEbDefD9hEV+EbZHbPYYNTHTJQ+y4zet+niQd4jOVNn88YfK6XDRCDk1Vxxj4ladhETnefcflQUsYInXYv6TsnrwmbPklBXFoKYStbrntY+51wgwhG0d7rfnbQ3a0RV8Z+KGg0RMpw73pSX5/KEV4A8M1iaynn932bDnR2TmEphdOoKwvHTX/3Uc5h7PiV+/+HH0lfe364P0t4iGCNixTNk+CKQLRYZMmTIkGEATNSycVxe6rhgS5Q8QmgodCJsDx3wZmxi4lJlsKNn7Now2Hq4olUPF16ihvJOH406KiGb+5/75D+yWdKj4W+SQ9rQsiJnWYN3G1HdYtrttQR2UZSrmcuOV/R9YyHOBGPCMZBgNJX3Io85icHi2q77qnmfubxSWyhkwFLe30rKTyKOTFnsJPKuc3hQtyzzJZtQSFAAcvRjthXU2NBVYiPYAVs551D5Vba2PoxQmY2po619NpahasfNInTlnLzHkJOXGxOC4WaYLAwkGK1B1hloMii10oZHlzfWkNSdM++sy3MUKbeelF/DP3kRPdd6823r+MbC5vTR7oacM+9OR9wjBGINRtSP/3cWGGd4VZFgZttTh7v7QtEV/MJztuqGQ8uX5GcDZJVg/rorv0LOWyFySiwp2WqRYTDBiEIiVSit6jxAi2z0eeKTdy9sKBETPR96WmXDmGLjDA/q+Ut+YYv3BLcCdwNdOfO8mKu2o/QT1FRtl8mGyjn03hlhM6/H3lisRZzk3Ku/PZvtRAOE7mh5aPyEjIdrX4bNDF8uFHwE0ESTowahX/JYKEblJCaD+ipbIyV0ZSvowEbUMmnUNBLVKIiQLSsNRLxRSfYQEfeFONg2r2hOgVOXD/QfyDrDF4yPEgzxt9fKfy1BlT+J56TSsxjEslpvBRj7gK+6XQxYOXoAkUBwCHglkmPxuLz4ioWts+8JwvZwM3gnL3z0ZoWVggwTj6EFoxV/qvipXImPb96tAalbVw9358UprOVT/4FafR8EYhDPUBNoi1WiM6/ZtT9gwahSK0hcsMIYKnZWBx6YHXikdyQUp0JcC3tYZphcDLXHMEIhMV918ssx7TQ9sgL0aTXMTAXvd0icWDKxg+ScOIW9KS/Pg6MlxuiOqEtBpI6Fbcp/8wv4WqJXd3zpTSiVvF6XF69mWgGSvRzMKTI/ZBKDrHhvy4u/cJnb1ggUGSYOAwuGoUd9/YQH4sbMy71kV2Oe0THnVHvlF2am5HVDFiaJUL0R/fEXEQ4+zIbPTR/uPnxTXniR13By9eXeTsBEXZL7l1lHqp167zobdlafbvGepG6rg8SXFUFkMa3I86WFh88wGRjY8h14Kuavf4qfhZK8JRjSx8zaJzfu3WnwfiHqOSm/5cBU8tOvcoUVUlDVPq92injfrZZYkFymhh8awdKF5+psfH49NEOGDBkyZMgwzvg/YbqqNbu3WG0AAAAASUVORK5CYII=' />
 </svg>
+

@@ -41,7 +41,7 @@ export function Header() {
           className="flex h-12 w-44 items-center"
         >
           <Image
-            src="/brand/animeattire-logo.v2.png"
+            src="/brand/animeattire-logo.svg"
             alt="AnimeAttire"
             width={2172}
             height={724}
