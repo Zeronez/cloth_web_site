@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from cart.models import Cart, CartItem
-from catalog.serializers import ProductVariantSerializer
+from catalog.serializers import ProductImageSerializer, ProductVariantSerializer
 from pricing.services import compute_totals
 
 
@@ -36,7 +36,16 @@ class CartItemSerializer(serializers.ModelSerializer):
             "slug": product.slug,
             "base_price": str(product.base_price),
             "is_active": product.is_active,
+            "main_image": self._get_main_image(product),
         }
+
+    def _get_main_image(self, product):
+        image = next((item for item in product.images.all() if item.is_main), None)
+        if image is None:
+            image = next(iter(product.images.all()), None)
+        return (
+            ProductImageSerializer(image, context=self.context).data if image else None
+        )
 
 
 class CartSerializer(serializers.ModelSerializer):

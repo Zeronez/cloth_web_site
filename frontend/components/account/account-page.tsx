@@ -231,7 +231,12 @@ function OrderCard({ order }: { order: Order }) {
             {order.items.slice(0, 3).map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">{item.product_name}</p>
+                  <Link
+                    href={`/products/${item.product.slug}`}
+                    className="text-sm font-semibold text-white transition hover:text-neon-teal"
+                  >
+                    {item.product_name}
+                  </Link>
                   <p className="text-xs uppercase text-slate-500">
                     Размер {item.size} · {item.quantity} шт.
                   </p>

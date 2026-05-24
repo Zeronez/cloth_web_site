@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from cart.models import Cart, CartItem
-from catalog.models import AnimeFranchise, Category, Product, ProductVariant
+from catalog.models import AnimeFranchise, Category, Product, ProductTag, ProductVariant
 from favorites.models import FavoriteProduct
 from orders.models import Order, OrderItem
 from users.models import Address
@@ -102,6 +102,37 @@ def test_user_can_register_login_and_refresh_jwt(api_client):
 
     assert refresh_response.status_code == 200
     assert refresh_response.data["access"]
+
+
+def test_registration_rejects_duplicate_username_email_and_phone(api_client):
+    user_model = get_user_model()
+    user_model.objects.create_user(
+        username="senko",
+        email="senko@example.com",
+        phone="+79824022646",
+        password="StrongPass!2026",
+    )
+
+    response = api_client.post(
+        "/api/auth/register/",
+        {
+            "username": "Senko",
+            "email": "SENKO@example.com",
+            "password": "StrongPass!2026",
+            "first_name": "Senko",
+            "last_name": "Fox",
+            "phone": "8 (982) 402-26-46",
+            "privacy_policy_accepted": True,
+            "offer_agreement_accepted": True,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    error_details = response.data["error"]["details"]
+    assert error_details["username"][0]["message"] == "Этот логин уже используется."
+    assert error_details["email"][0]["message"] == "Этот email уже используется."
+    assert error_details["phone"][0]["message"] == "Этот телефон уже используется."
 
 
 def test_address_crud_is_scoped_to_authenticated_user(
@@ -228,6 +259,7 @@ def test_catalog_filters_and_product_detail_return_active_merchandise(
     assert items[0]["category"]["slug"] == tees.slug
     assert items[0]["franchise"]["slug"] == naruto.slug
     assert items[0]["total_stock"] == 8
+    assert "tags" in items[0]
 
     detail_response = api_client.get(f"/api/products/{matching_product.slug}/")
 
@@ -235,10 +267,35 @@ def test_catalog_filters_and_product_detail_return_active_merchandise(
     assert detail_response.data["name"] == "Naruto Black Tee"
     assert detail_response.data["description"]
     assert detail_response.data["variants"][0]["sku"] == "NARUTO-TEE-BLK-M"
+    assert "collections" not in detail_response.data
+    assert "videos" not in detail_response.data
+    assert "search_synonyms" not in detail_response.data
+    assert "material" not in detail_response.data
+    assert "fit" not in detail_response.data
+    assert "care" not in detail_response.data
+    assert "gender" not in detail_response.data
+    assert "season" not in detail_response.data
+    assert "weight_grams" not in detail_response.data
+    assert "seo_title" not in detail_response.data
+    assert "seo_description" not in detail_response.data
 
     inactive_response = api_client.get("/api/products/archived-naruto-tee/")
 
     assert inactive_response.status_code == 404
+
+
+def test_catalog_search_matches_translated_tag_labels(api_client, product_factory):
+    product = product_factory(name="Featured Search Tee")
+    bestseller_tag = ProductTag.objects.create(name="Bestseller", slug="bestseller")
+    product.tags.add(bestseller_tag)
+
+    response = api_client.get("/api/products/", {"search": "Бестселлер"})
+
+    assert response.status_code == 200
+    items = paginated_items(response)
+    assert [item["slug"] for item in items] == [product.slug]
+    assert items[0]["tags"][0]["slug"] == "bestseller"
+    assert items[0]["tags"][0]["label"] == "Бестселлер"
 
 
 def test_archived_product_is_hidden_from_storefront_but_preserved_in_order_history(
@@ -322,6 +379,7 @@ def test_cart_add_update_and_remove_item(authenticated_client, user, product_fac
     assert add_response.data["items"][0]["line_total"] == "69.00"
     assert add_response.data["items"][0]["product"]["id"] == product.id
     assert add_response.data["items"][0]["product"]["slug"] == product.slug
+    assert "main_image" in add_response.data["items"][0]["product"]
     assert add_response.data["items"][0]["variant"]["sku"] == "GOJO-TEE-WHT-M"
     assert CartItem.objects.get(cart__user=user).quantity == 2
 
@@ -456,6 +514,7 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
     assert detail_response.data["items_count"] == 3
     returned_items = {item["sku"]: item for item in detail_response.data["items"]}
     assert returned_items["SPY-TEE-GRN-M"]["product_name"] == "Spy Family Tee"
+    assert returned_items["SPY-TEE-GRN-M"]["product"]["slug"] == tee.slug
     assert returned_items["SPY-TEE-GRN-M"]["price_at_purchase"] == "25.00"
     assert returned_items["SPY-TEE-GRN-M"]["line_total"] == "50.00"
     assert returned_items["CHAINSAW-HOOD-BLK-L"]["line_total"] == "75.00"
@@ -587,6 +646,7 @@ def test_orders_list_and_detail_are_scoped_to_authenticated_user(
     assert own_detail_response.data["shipping_name"] == "QA Shopper"
     assert own_detail_response.data["items_count"] == 2
     assert own_detail_response.data["items"][0]["product_name"] == "Scoped Order Tee"
+    assert own_detail_response.data["items"][0]["product"]["slug"] == product.slug
     assert own_detail_response.data["items"][0]["sku"] == "SCOPED-TEE-BLK-M"
     assert own_detail_response.data["items"][0]["line_total"] == "42.00"
 

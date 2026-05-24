@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from catalog.serializers import ProductImageSerializer
 from delivery.serializers import OrderDeliverySnapshotSerializer
 from orders.models import Order, OrderItem
 
@@ -7,6 +8,7 @@ from orders.models import Order, OrderItem
 class OrderItemSerializer(serializers.ModelSerializer):
     variant = serializers.PrimaryKeyRelatedField(read_only=True)
     variant_id = serializers.IntegerField(read_only=True)
+    product = serializers.SerializerMethodField()
     line_total = serializers.DecimalField(
         max_digits=12, decimal_places=2, read_only=True
     )
@@ -17,6 +19,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "id",
             "variant",
             "variant_id",
+            "product",
             "product_name",
             "sku",
             "size",
@@ -25,6 +28,23 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "price_at_purchase",
             "line_total",
         )
+
+    def get_product(self, obj):
+        product = obj.variant.product
+        image = next((item for item in product.images.all() if item.is_main), None)
+        if image is None:
+            image = next(iter(product.images.all()), None)
+        return {
+            "id": product.id,
+            "name": product.name,
+            "slug": product.slug,
+            "is_active": product.is_active,
+            "main_image": (
+                ProductImageSerializer(image, context=self.context).data
+                if image
+                else None
+            ),
+        }
 
 
 class OrderSerializer(serializers.ModelSerializer):

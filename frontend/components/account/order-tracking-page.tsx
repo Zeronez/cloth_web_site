@@ -282,6 +282,42 @@ export function OrderTrackingPage({ orderId }: { orderId: number | null }) {
         <TrackingSummary order={order} />
 
         <section className="border border-white/10 bg-white/[0.04] p-6">
+          <div>
+            <p className="text-xs font-black uppercase text-neon-teal">
+              Состав заказа
+            </p>
+            <h2 className="mt-3 text-2xl font-black">Товары в заказе</h2>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {order.items.map((item) => (
+              <article
+                key={item.id}
+                className="flex items-center justify-between gap-4 border border-white/10 bg-ink-900/60 p-4"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/products/${item.product.slug}`}
+                    className="font-bold text-white transition hover:text-neon-teal"
+                  >
+                    {item.product_name}
+                  </Link>
+                  <p className="mt-1 text-xs uppercase text-slate-500">
+                    Размер {item.size} · {item.color} · {item.quantity} шт.
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-bold text-slate-200">
+                  {new Intl.NumberFormat("ru-RU", {
+                    currency: "RUB",
+                    style: "currency"
+                  }).format(Number(item.line_total))}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="border border-white/10 bg-white/[0.04] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase text-neon-amber">

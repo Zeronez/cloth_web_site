@@ -298,11 +298,30 @@ function OrderSummary({
             key={`${item.id}-${item.size}`}
             className="grid grid-cols-[72px_1fr] gap-4 border border-white/10 bg-ink-900/60 p-3"
           >
-            <ProductImagePlaceholder label="AA" variant="cart" className="h-[88px]" />
+            <div className="overflow-hidden border border-white/10 bg-black/20">
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.imageAlt ?? item.name}
+                  className="h-[88px] w-full object-cover"
+                />
+              ) : (
+                <ProductImagePlaceholder label="AA" variant="cart" className="h-[88px]" />
+              )}
+            </div>
             <div className="min-w-0">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-bold leading-tight text-white">{item.name}</h3>
+                  {item.productSlug ? (
+                    <Link
+                      href={`/products/${item.productSlug}`}
+                      className="font-bold leading-tight text-white transition hover:text-neon-teal"
+                    >
+                      {item.name}
+                    </Link>
+                  ) : (
+                    <h3 className="font-bold leading-tight text-white">{item.name}</h3>
+                  )}
                   <p className="mt-1 text-xs uppercase text-slate-400">
                     Размер {item.size} · {item.quantity} шт.
                   </p>

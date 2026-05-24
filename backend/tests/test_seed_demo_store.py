@@ -31,19 +31,23 @@ def test_seed_demo_store_creates_realistic_russian_demo_data_idempotently():
         "payment_methods": PaymentMethod.objects.count(),
     } == first_counts
     assert first_counts == {
-        "categories": 5,
-        "franchises": 4,
-        "products": 4,
-        "variants": 12,
+        "categories": 9,
+        "franchises": 12,
+        "products": 26,
+        "variants": 78,
         "delivery_methods": 2,
         "payment_methods": 1,
     }
 
-    product = Product.objects.get(slug="neon-ronin-shell")
-    assert product.name == "Куртка Neon Ronin"
-    assert product.category.slug == "jackets"
-    assert product.franchise.slug == "cyber-saga"
-    assert product.variants.filter(is_active=True).count() == 3
+    assert Product.objects.filter(slug="neon-ronin-shell").exists() is False
+    assert Product.objects.filter(slug="arcade-alley-hoodie").exists() is False
+    assert Product.objects.filter(slug="ghost-frame-tee").exists() is False
+    assert Product.objects.filter(slug="signal-cargo-pants").exists() is False
+
+    new_product = Product.objects.get(slug="chainsaw-body")
+    assert new_product.category.slug == "bodysuits"
+    assert new_product.franchise.slug == "chainsaw-man"
+    assert new_product.images.filter(is_approved=True).count() == 7
 
     assert DeliveryMethod.objects.filter(code="courier-cis", is_active=True).exists()
     payment_method = PaymentMethod.objects.get(code="manual-card")

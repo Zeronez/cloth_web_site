@@ -108,7 +108,26 @@ function makeOrder() {
     shipping_postal_code: "101000",
     shipping_line1: "Test street 1",
     shipping_line2: "",
-    items: [],
+    items: [
+      {
+        id: 1,
+        variant_id: 44,
+        product: {
+          id: 21,
+          name: "Neon Ronin Shell",
+          slug: "neon-ronin-shell",
+          is_active: true,
+          main_image: null
+        },
+        product_name: "Neon Ronin Shell",
+        sku: "NRS-001",
+        size: "M",
+        color: "Black",
+        quantity: 2,
+        price_at_purchase: "9450.00",
+        line_total: "18900.00"
+      }
+    ],
     created_at: "2026-05-04T09:00:00Z",
     updated_at: "2026-05-05T10:30:00Z"
   };
@@ -145,9 +164,7 @@ describe("OrderTrackingPage", () => {
 
     renderWithQueryClient(<OrderTrackingPage orderId={77} />);
 
-    expect(
-      document.querySelector('main[aria-label]')
-    ).toBeInTheDocument();
+    expect(document.querySelector('main[aria-label]')).toBeInTheDocument();
 
     pending.resolve(makeOrder() as any);
 
@@ -156,7 +173,7 @@ describe("OrderTrackingPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders tracking details and timeline", async () => {
+  it("renders tracking details, timeline, and linked order items", async () => {
     useUserStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -173,6 +190,10 @@ describe("OrderTrackingPage", () => {
     expect(screen.getByText("TRACK-77")).toBeInTheDocument();
     expect(screen.getAllByText("Курьер уже едет").length).toBeGreaterThan(0);
     expect(screen.getByText("Курьер выехал.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Neon Ronin Shell" })).toHaveAttribute(
+      "href",
+      "/products/neon-ronin-shell"
+    );
   });
 
   it("can retry after the initial order load fails", async () => {

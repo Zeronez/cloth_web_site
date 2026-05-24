@@ -1,12 +1,10 @@
 export function CatalogGridSkeleton() {
   return (
-    <div className="grid auto-rows-[260px] gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid auto-rows-[minmax(320px,_auto)] gap-4 md:grid-cols-2 xl:grid-cols-3">
       {[0, 1, 2, 3, 4, 5].map((item) => (
         <div
           key={item}
-          className={`animate-pulse border border-white/10 bg-white/[0.04] p-5 ${
-            item === 0 ? "md:col-span-2 md:row-span-2" : ""
-          }`}
+          className="animate-pulse border border-white/10 bg-white/[0.04] p-5"
         >
           <div className="h-full w-full bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]" />
         </div>

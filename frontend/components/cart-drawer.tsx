@@ -14,6 +14,22 @@ const currencyFormatter = new Intl.NumberFormat("ru-RU", {
   style: "currency"
 });
 
+function CartItemMedia({
+  image,
+  imageAlt,
+  name
+}: {
+  image?: string;
+  imageAlt?: string;
+  name: string;
+}) {
+  if (image) {
+    return <img src={image} alt={imageAlt ?? name} className="h-[88px] w-full object-cover" />;
+  }
+
+  return <ProductImagePlaceholder label="AA" variant="cart" className="h-[88px]" />;
+}
+
 export function CartDrawer() {
   const items = useCartStore((state) => state.items);
   const isOpen = useCartStore((state) => state.isOpen);
@@ -121,15 +137,33 @@ export function CartDrawer() {
                       key={`${item.id}-${item.size}`}
                       className="grid grid-cols-[72px_1fr] gap-4 border border-white/10 bg-white/[0.04] p-3"
                     >
-                      <ProductImagePlaceholder
-                        label="AA"
-                        variant="cart"
-                        className="h-[88px]"
-                      />
+                      {item.productSlug ? (
+                        <Link
+                          href={`/products/${item.productSlug}`}
+                          onClick={closeCart}
+                          className="overflow-hidden border border-white/10 bg-black/20 transition hover:border-white/25"
+                        >
+                          <CartItemMedia image={item.image} imageAlt={item.imageAlt} name={item.name} />
+                        </Link>
+                      ) : (
+                        <div className="overflow-hidden border border-white/10 bg-black/20">
+                          <CartItemMedia image={item.image} imageAlt={item.imageAlt} name={item.name} />
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="font-bold leading-tight">{item.name}</h3>
+                            {item.productSlug ? (
+                              <Link
+                                href={`/products/${item.productSlug}`}
+                                onClick={closeCart}
+                                className="font-bold leading-tight transition hover:text-neon-teal"
+                              >
+                                {item.name}
+                              </Link>
+                            ) : (
+                              <h3 className="font-bold leading-tight">{item.name}</h3>
+                            )}
                             <p className="mt-1 text-xs uppercase text-slate-400">
                               Размер {item.size}
                             </p>

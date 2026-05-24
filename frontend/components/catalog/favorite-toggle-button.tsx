@@ -103,9 +103,20 @@ export function FavoriteToggleButton({
           : `h-11 min-w-11 rounded-full border border-white/15 bg-white/10 px-3 text-sm font-black uppercase text-white hover:border-white/25 hover:bg-white/15`
       } ${className}`}
     >
-      <span aria-hidden="true" className="text-base leading-none">
-        {isFavorite ? "♥" : "♡"}
-      </span>
+      {isFavorite ? (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+          <path d="M12 21s-7-4.438-10-9.5C-0.4 6.6 2.4 3 6 3c2 0 3.4 1.1 4 2 0.6-0.9 2-2 4-2 3.6 0 6.4 3.6 4 8.5C19 16.562 12 21 12 21z" />
+        </svg>
+      ) : (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+          <path
+            d="M12 20.5s-7-4.4-10-9.4C-0.4 6.7 2.4 3.2 6 3.2c2 0 3.4 1.1 4 2 0.6-0.9 2-2 4-2 3.6 0 6.4 3.5 4 7.9-3 5-10 9.4-10 9.4z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
       {!compact ? (
         <span className="ml-2">
           {isPending ? "..." : isFavorite ? "В избранном" : "В избранное"}

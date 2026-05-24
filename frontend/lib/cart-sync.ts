@@ -20,7 +20,10 @@ export function toLocalCartItem(item: ServerCartItem): CartItem {
     name: item.product.name,
     price: toAmount(item.unit_price),
     size: item.variant.size,
-    image: undefined,
+    image: item.product.main_image?.url,
+    imageAlt:
+      item.product.main_image?.alt_text || `Изображение товара ${item.product.name}`,
+    productSlug: item.product.slug,
     quantity: item.quantity
   };
 }

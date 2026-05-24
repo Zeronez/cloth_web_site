@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import {
   fetchCategories,
@@ -91,8 +91,8 @@ describe("CatalogPage", () => {
           id: 1,
           name: "Neon Ronin Shell",
           slug: "neon-ronin-shell",
-          category: { id: 10, name: "Куртки", slug: "jackets" },
-          franchise: { id: 11, name: "Akira", slug: "akira" },
+          category: { id: 10, name: "Куртки", slug: "jackets", description: "" },
+          franchise: { id: 11, name: "Akira", slug: "akira", description: "" },
           base_price: "12990.00",
           is_featured: true,
           main_image: {
@@ -121,5 +121,173 @@ describe("CatalogPage", () => {
     expect(
       screen.getByRole("link", { name: /neon ronin shell/i })
     ).toHaveAttribute("href", "/products/neon-ronin-shell");
+  });
+
+  it("deduplicates products when the next page repeats an item", async () => {
+    jest
+      .mocked(fetchProducts)
+      .mockResolvedValueOnce({
+        count: 3,
+        next: "http://api.example.com/products/?page=2",
+        previous: null,
+        results: [
+          {
+            id: 1,
+            name: "Tokyo Team",
+            slug: "tokyo-team-tee",
+            category: {
+              id: 10,
+              name: "Футболки",
+              slug: "tshirts",
+              description: ""
+            },
+            franchise: {
+              id: 11,
+              name: "Магическая битва",
+              slug: "jujutsu-kaisen",
+              description: ""
+            },
+            base_price: "5100.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 8
+          },
+          {
+            id: 2,
+            name: "Chainsaw Body",
+            slug: "chainsaw-body",
+            category: { id: 12, name: "Боди", slug: "bodysuits", description: "" },
+            franchise: {
+              id: 13,
+              name: "Человек-бензопила",
+              slug: "chainsaw-man",
+              description: ""
+            },
+            base_price: "5790.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 6
+          }
+        ]
+      } as any)
+      .mockResolvedValueOnce({
+        count: 3,
+        next: null,
+        previous: "http://api.example.com/products?limit=18&offset=0",
+        results: [
+          {
+            id: 2,
+            name: "Chainsaw Body",
+            slug: "chainsaw-body",
+            category: { id: 12, name: "Боди", slug: "bodysuits", description: "" },
+            franchise: {
+              id: 13,
+              name: "Человек-бензопила",
+              slug: "chainsaw-man",
+              description: ""
+            },
+            base_price: "5790.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 6
+          },
+          {
+            id: 3,
+            name: "Hyuga Tales Body",
+            slug: "hyuga-tales-body",
+            category: { id: 12, name: "Боди", slug: "bodysuits", description: "" },
+            franchise: {
+              id: 14,
+              name: "Наруто",
+              slug: "naruto",
+              description: ""
+            },
+            base_price: "5290.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 7
+          }
+        ]
+      } as any);
+
+    renderWithQueryClient(<CatalogPage />);
+
+    expect(await screen.findByRole("link", { name: /tokyo team/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /ещё/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: /hyuga tales body/i })).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByRole("link", { name: /chainsaw body/i })).toHaveLength(1);
+  });
+
+  it("uses the backend next offset for the next page request", async () => {
+    jest
+      .mocked(fetchProducts)
+      .mockResolvedValueOnce({
+        count: 20,
+        next: "http://api.example.com/products/?page=3",
+        previous: null,
+        results: [
+          {
+            id: 1,
+            name: "Tokyo Team",
+            slug: "tokyo-team-tee",
+            category: {
+              id: 10,
+              name: "Футболки",
+              slug: "tshirts",
+              description: ""
+            },
+            franchise: {
+              id: 11,
+              name: "Jujutsu Kaisen",
+              slug: "jujutsu-kaisen",
+              description: ""
+            },
+            base_price: "5100.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 8
+          }
+        ]
+      } as any)
+      .mockResolvedValueOnce({
+        count: 20,
+        next: null,
+        previous: "http://api.example.com/products?limit=18&offset=0",
+        results: [
+          {
+            id: 2,
+            name: "Eva 01 Body",
+            slug: "eva01-body",
+            category: { id: 12, name: "Боди", slug: "bodysuits", description: "" },
+            franchise: {
+              id: 13,
+              name: "Evangelion",
+              slug: "evangelion",
+              description: ""
+            },
+            base_price: "5790.00",
+            is_featured: false,
+            main_image: null,
+            total_stock: 6
+          }
+        ]
+      } as any);
+
+    renderWithQueryClient(<CatalogPage />);
+
+    expect(await screen.findByRole("link", { name: /tokyo team/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /ещё/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: /eva 01 body/i })).toBeInTheDocument();
+    });
+
+    expect(jest.mocked(fetchProducts).mock.calls[1][0].get("page")).toBe("3");
   });
 });

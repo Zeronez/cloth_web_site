@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? "/api/v1";
 
 function apiPath(path: string) {
@@ -133,6 +133,13 @@ export type ProductImage = {
   sort_order: number;
 };
 
+export type ProductTag = {
+  id: number;
+  name: string;
+  slug: string;
+  label: string;
+};
+
 export type ProductVariant = {
   id: number;
   sku: string;
@@ -154,6 +161,7 @@ export type Product = {
   is_featured: boolean;
   main_image: ProductImage | null;
   total_stock: number;
+  tags?: ProductTag[];
   description?: string;
   images?: ProductImage[];
   variants?: ProductVariant[];
@@ -172,6 +180,13 @@ export type OrderStatus =
 export type OrderItem = {
   id: number;
   variant_id: number;
+  product: {
+    id: number;
+    name: string;
+    slug: string;
+    is_active: boolean;
+    main_image: ProductImage | null;
+  };
   product_name: string;
   sku: string;
   size: string;
@@ -462,6 +477,7 @@ export type ServerCartItem = {
     slug: string;
     base_price: string;
     is_active: boolean;
+    main_image: ProductImage | null;
   };
   quantity: number;
   unit_price: string;

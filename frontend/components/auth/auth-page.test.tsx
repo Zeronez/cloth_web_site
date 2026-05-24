@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
 
-import { fetchMe, loginUser, registerUser } from "../../lib/api";
+import { ApiError, fetchMe, loginUser, registerUser } from "../../lib/api";
 import { mergeGuestCartIntoServer } from "../../lib/cart-sync";
 import { useCartStore } from "../../stores/cart-store";
 import { useUserStore } from "../../stores/user-store";
@@ -211,7 +211,7 @@ describe("AuthPage", () => {
       target: { value: "Shopper" }
     });
     fireEvent.change(container.querySelector('input[name="phone"]')!, {
-      target: { value: "+79991234567" }
+      target: { value: "89991234567" }
     });
     fireEvent.change(container.querySelector('input[name="password"]')!, {
       target: { value: "GhibliMerch!2026" }
@@ -239,5 +239,117 @@ describe("AuthPage", () => {
         marketing_opt_in: true
       });
     });
+  });
+
+  it("formats Russian phone input and hides register eyebrow in form card", () => {
+    const { container, queryByText } = render(<AuthPage mode="register" />);
+
+    const phoneInput = container.querySelector('input[name="phone"]') as HTMLInputElement;
+    fireEvent.change(phoneInput, {
+      target: { value: "9991234567" }
+    });
+
+    expect(phoneInput.value).toBe("+7 (999) 123-45-67");
+    expect(phoneInput.placeholder).toBe("+7 (___) ___-__-__");
+    expect(queryByText("Создание аккаунта")).not.toBeInTheDocument();
+  });
+
+  it("deletes previous phone digit when backspacing over mask characters", () => {
+    const { container } = render(<AuthPage mode="register" />);
+
+    const phoneInput = container.querySelector('input[name="phone"]') as HTMLInputElement;
+    fireEvent.change(phoneInput, {
+      target: { value: "332" }
+    });
+
+    phoneInput.setSelectionRange(8, 8);
+    fireEvent.keyDown(phoneInput, { key: "Backspace" });
+
+    expect(phoneInput.value).toBe("+7 (33");
+  });
+
+  it("shows field-level validation for a short password before submit", async () => {
+    const { container, findByText } = render(<AuthPage mode="register" />);
+
+    fireEvent.change(container.querySelector('input[name="username"]')!, {
+      target: { value: "senko" }
+    });
+    fireEvent.change(container.querySelector('input[name="email"]')!, {
+      target: { value: "senko@example.com" }
+    });
+    fireEvent.change(container.querySelector('input[name="first_name"]')!, {
+      target: { value: "Senko" }
+    });
+    fireEvent.change(container.querySelector('input[name="last_name"]')!, {
+      target: { value: "Fox" }
+    });
+    fireEvent.change(container.querySelector('input[name="phone"]')!, {
+      target: { value: "89991234567" }
+    });
+    fireEvent.change(container.querySelector('input[name="password"]')!, {
+      target: { value: "1234567" }
+    });
+    fireEvent.change(container.querySelector('input[name="confirmPassword"]')!, {
+      target: { value: "1234567" }
+    });
+
+    const consentCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+    fireEvent.click(consentCheckboxes[0]!);
+    fireEvent.click(consentCheckboxes[1]!);
+    fireEvent.submit(container.querySelector("form")!);
+
+    expect(registerUser).not.toHaveBeenCalled();
+    expect(
+      await findByText("Пароль должен содержать минимум 8 символов.")
+    ).toBeInTheDocument();
+  });
+
+  it("shows duplicate field errors returned by the API", async () => {
+    jest.mocked(registerUser).mockRejectedValue(
+      new ApiError("Проверьте введенные данные.", 400, {
+        error: {
+          message: "Проверьте введенные данные.",
+          details: {
+            username: [{ message: "Этот логин уже используется." }],
+            email: [{ message: "Этот email уже используется." }],
+            phone: [{ message: "Этот телефон уже используется." }]
+          }
+        }
+      })
+    );
+
+    const { container, findByText, queryByText } = render(<AuthPage mode="register" />);
+
+    fireEvent.change(container.querySelector('input[name="username"]')!, {
+      target: { value: "senko" }
+    });
+    fireEvent.change(container.querySelector('input[name="email"]')!, {
+      target: { value: "senko@example.com" }
+    });
+    fireEvent.change(container.querySelector('input[name="first_name"]')!, {
+      target: { value: "Senko" }
+    });
+    fireEvent.change(container.querySelector('input[name="last_name"]')!, {
+      target: { value: "Fox" }
+    });
+    fireEvent.change(container.querySelector('input[name="phone"]')!, {
+      target: { value: "89991234567" }
+    });
+    fireEvent.change(container.querySelector('input[name="password"]')!, {
+      target: { value: "12345678" }
+    });
+    fireEvent.change(container.querySelector('input[name="confirmPassword"]')!, {
+      target: { value: "12345678" }
+    });
+
+    const consentCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+    fireEvent.click(consentCheckboxes[0]!);
+    fireEvent.click(consentCheckboxes[1]!);
+    fireEvent.submit(container.querySelector("form")!);
+
+    expect(await findByText("Этот логин уже используется.")).toBeInTheDocument();
+    expect(await findByText("Этот email уже используется.")).toBeInTheDocument();
+    expect(await findByText("Этот телефон уже используется.")).toBeInTheDocument();
+    expect(queryByText("Проверьте введенные данные.")).not.toBeInTheDocument();
   });
 });

@@ -120,7 +120,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       id: String(variant.id),
       name: product.name,
       price: Number(variant.price),
-      size: variant.size
+      size: variant.size,
+      image: product.main_image?.url,
+      imageAlt: product.main_image?.alt_text || product.name,
+      productSlug: product.slug
     });
     trackEvent("add_to_cart", {
       product_id: product.id,

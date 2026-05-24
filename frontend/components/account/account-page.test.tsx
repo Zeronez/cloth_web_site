@@ -180,6 +180,13 @@ describe("AccountPage", () => {
             {
               id: 1,
               variant_id: 44,
+              product: {
+                id: 21,
+                name: "Neon Ronin Shell",
+                slug: "neon-ronin-shell",
+                is_active: true,
+                main_image: null
+              },
               product_name: "Neon Ronin Shell",
               sku: "NRS-001",
               size: "M",
@@ -220,6 +227,13 @@ describe("AccountPage", () => {
             {
               id: 2,
               variant_id: 45,
+              product: {
+                id: 21,
+                name: "Neon Ronin Shell",
+                slug: "neon-ronin-shell",
+                is_active: true,
+                main_image: null
+              },
               product_name: "Neon Ronin Shell",
               sku: "NRS-002",
               size: "L",

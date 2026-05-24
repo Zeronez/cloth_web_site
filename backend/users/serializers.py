@@ -101,6 +101,41 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
 
+    def validate_username(self, value):
+        username = value.strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise serializers.ValidationError("Этот логин уже используется.")
+        return username
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("Этот email уже используется.")
+        return email
+
+    def validate_phone(self, value):
+        digits = "".join(character for character in value if character.isdigit())
+
+        if not digits:
+            raise serializers.ValidationError("Укажите телефон.")
+
+        if digits.startswith("8"):
+            digits = f"7{digits[1:]}"
+        elif not digits.startswith("7"):
+            digits = f"7{digits}"
+
+        normalized_phone = f"+{digits[:11]}"
+
+        if len(digits[:11]) != 11:
+            raise serializers.ValidationError(
+                "Введите телефон в формате +7 (999) 123-45-67."
+            )
+
+        if User.objects.filter(phone=normalized_phone).exists():
+            raise serializers.ValidationError("Этот телефон уже используется.")
+
+        return normalized_phone
+
     def validate_privacy_policy_accepted(self, value):
         if not value:
             raise serializers.ValidationError(

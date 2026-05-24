@@ -108,16 +108,13 @@ function Start-Backend {
     $python = Get-BackendPython
     $env:DJANGO_SETTINGS_MODULE = "config.settings.development"
 
-    # Ensure DB schema exists; seed demo catalog if empty.
+    # Ensure DB schema exists; seed demo store data (idempotent).
     try {
         Push-Location $backendDir
         try {
             & $python "manage.py" "migrate" "--noinput" | Out-Null
-            $count = & $python "manage.py" "shell" "-c" "from catalog.models import Product; print(Product.objects.count())"
-            if ([int]($count | Select-Object -Last 1) -eq 0) {
-                & $python "manage.py" "seed_demo_catalog" "--count" "24" | Out-Null
-                Write-Host "Seeded demo catalog (24 products)."
-            }
+            & $python "manage.py" "seed_demo_store" | Out-Null
+            Write-Host "Seeded demo store (seed_demo_store)."
         }
         finally {
             Pop-Location

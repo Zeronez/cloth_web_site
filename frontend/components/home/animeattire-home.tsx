@@ -22,15 +22,15 @@ const featureDrops = [
   },
   {
     code: "02",
-    id: "flash-of-the-leaf-tee",
-    name: "ФУТБОЛКА | FLASH OF THE LEAF",
-    detail: "Лёгкая унисекс футболка с лайкрой для идеальной посадки и активности.",
-    price: "4 790 ₽",
-    priceValue: 4790,
+    id: "blazonry-body-white",
+    name: "Боди | BLAZONRY WHT",
+    detail: "Облегающий силуэт, плотная эластичная ткань и графика в духе dark fantasy для собранного образа.",
+    price: "5 290 ₽",
+    priceValue: 5290,
     variant: "jacket" as const,
     defaultSize: "M",
-    imageSrc: "/products/flash-of-the-leaf-tee-1.webp",
-    imageAlt: "Футболка FLASH OF THE LEAF"
+    imageSrc: "/products/blazonry-body-white-1.webp",
+    imageAlt: "Боди BLAZONRY WHT"
   },
   {
     code: "03",
@@ -166,7 +166,10 @@ export function AnimeAttireHome() {
                       id: drop.id,
                       name: drop.name,
                       price: drop.priceValue,
-                      size: drop.defaultSize
+                      size: drop.defaultSize,
+                      image: drop.imageSrc,
+                      imageAlt: drop.imageAlt,
+                      productSlug: drop.id
                     });
                   }
                 }}
@@ -320,7 +323,10 @@ export function AnimeAttireHome() {
                       id: drop.id,
                       name: drop.name,
                       price: drop.priceValue,
-                      size: drop.defaultSize
+                      size: drop.defaultSize,
+                      image: drop.imageSrc,
+                      imageAlt: drop.imageAlt,
+                      productSlug: drop.id
                     })
                   }
                   className="mt-6 h-11 w-full rounded-full border border-white/15 bg-white/5 px-6 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"

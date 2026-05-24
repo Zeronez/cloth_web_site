@@ -1,0 +1,287 @@
+# Формат
+# - `added: true` означает, что товар заведен в проект через `seed_demo_store.py`.
+# - `added: false` означает, что товар пока не добавлен в seed (например, нет исходных фото).
+# - `category_hint` / `franchise_hint` — подсказки для каталога.
+# - `source_images` — файлы из папки `stock files/`, которые используются для карточки товара.
+
+products:
+  - source_id: 1
+    added: true
+    seed_slug: "blazonry-body-white"
+    name: "Боди | BLAZONRY WHT"
+    subtitle: "Геральдика, белый"
+    brand: "AnimeAttire"
+    category_hint: "bodysuits"
+    franchise_hint: "berserk"
+    price_rub: 5290
+    production_time: "Стандартный срок"
+    description: |
+      Боди из мягкого, хорошо тянущегося трикотажа с длинными рукавами и
+      потайными кнопками снизу. Принт по мотивам аниме «Берсерк».
+    source_images:
+      - "1-1 BODI-blazonry-white.webp"
+      - "1-2 BODI-blazonry-white.webp"
+
+  - source_id: 2
+    added: true
+    seed_slug: "chainsaw-body"
+    name: "Боди | CHAINSAW"
+    subtitle: "Бензопила"
+    brand: "AnimeAttire"
+    category_hint: "bodysuits"
+    franchise_hint: "chainsaw-man"
+    price_rub: 5790
+    production_time: "Стандартный срок"
+    description: |
+      Боди из мягкого, хорошо тянущегося трикотажа с длинными рукавами и
+      потайными кнопками снизу. Принт по мотивам аниме «Человек-бензопила».
+    source_images:
+      - "2-1 BODI-chainsaw.webp"
+      - "2-2 BODI-chainsaw.webp"
+      - "2-3 BODI-chainsaw.webp"
+      - "2-4 BODI-chainsaw.webp"
+      - "2-5 BODI-chainsaw.webp"
+      - "2-6 BODI-chainsaw.webp"
+      - "2-7 BODI-chainsaw.webp"
+
+  - source_id: 3
+    added: true
+    seed_slug: "hyuga-tales-body"
+    name: "Боди | HYUGA TALES"
+    subtitle: "Истории Хьюги"
+    brand: "AnimeAttire"
+    category_hint: "bodysuits"
+    franchise_hint: "naruto"
+    price_rub: 5290
+    production_time: "Ручной окрас, деликатный уход"
+    description: |
+      Боди из мягкого, хорошо тянущегося трикотажа с длинными рукавами и
+      потайными кнопками снизу. Принт Hyuga Tales по мотивам аниме «Наруто».
+    care_summary: |
+      Стирка при 30°C в деликатном или ручном режиме. Отбеливатели и
+      пятновыводители запрещены.
+    source_images:
+      - "3-1 BODI-HYOGA-TALES.webp"
+      - "3-2 BODI-HYOGA-TALES.webp"
+      - "3-3 BODI-HYOGA-TALES.webp"
+      - "3-4 BODI-HYOGA-TALES.webp"
+
+  - source_id: 4
+    added: true
+    seed_slug: "eva01-body"
+    name: "Боди | EVA01"
+    subtitle: "ЕВА01"
+    brand: "AnimeAttire"
+    category_hint: "bodysuits"
+    franchise_hint: "eva"
+    price_rub: 5790
+    production_time: "Стандартный срок"
+    description: |
+      Боди из мягкого трикотажного полотна с длинными рукавами и потайными
+      кнопками снизу. Принт EVA 01 по мотивам аниме «Евангелион».
+    source_images:
+      - "4-1 BODI-EVA01.webp"
+      - "4-2 BODI-EVA01.webp"
+
+  - source_id: 5
+    added: true
+    seed_slug: "masks-tee"
+    name: "Футболка | MASKS"
+    subtitle: "Маски"
+    brand: "AnimeAttire"
+    category_hint: "tshirts"
+    franchise_hint: ""
+    price_rub: 4150
+    production_time: "Стандартный срок"
+    description: |
+      Легкая унисекс футболка из качественного тонкого хлопка с лайкрой для
+      удобной посадки в повседневной носке и активностях.
+    source_images:
+      - "5-1 FUTBOLKA-MASKS-scaled.webp"
+      - "5-2 FUTBOLKA-MASKS-scaled.webp"
+      - "5-3 FUTBOLKA-MASKS-scaled.webp"
+      - "5-4 FUTBOLKA-MASKS-scaled.webp"
+
+  - source_id: 6
+    added: true
+    seed_slug: "madman-tee"
+    name: "Футболка | MADMAN"
+    subtitle: "Безумец"
+    brand: "AnimeAttire"
+    category_hint: "tshirts"
+    franchise_hint: "my-hero-academia"
+    price_rub: 5790
+    production_time: "Стандартный срок"
+    description: |
+      Легкая унисекс футболка из качественного хлопкового трикотажа с лайкрой.
+      Подходит для повседневной носки и активного образа жизни.
+    source_images:
+      - "6-1 t-shirt-MADMAN.webp"
+      - "6-2 t-shirt-MADMAN.webp"
+
+  - source_id: 7
+    added: false
+    seed_slug: ""
+    name: "Футболка | BLACK SWORDSMAN"
+    subtitle: "Чёрный мечник"
+    brand: "AnimeAttire"
+    category_hint: "tshirts"
+    franchise_hint: "berserk"
+    price_rub: 5690
+    production_time: "Стандартный срок"
+    description: |
+      Легкая унисекс футболка из мягкого хлопкового трикотажа с лайкрой.
+      Принт выполнен ДТФ-печатью и белой объемной плёнкой.
+    care_summary: |
+      Стирка до 30°C на деликатном режиме, барабанная сушка запрещена, гладить
+      с изнаночной стороны.
+    source_images: []
+    note: "Не добавлен в seed: в `stock files/` нет исходных изображений."
+
+  - source_id: 8
+    added: true
+    seed_slug: "chainsaw-man-longsleeve"
+    name: "Лонгслив | CHAINSAW MAN"
+    subtitle: "Человек-бензопила"
+    brand: "AnimeAttire"
+    category_hint: "longsleeves"
+    franchise_hint: "chainsaw-man"
+    price_rub: 5590
+    production_time: "Стандартный срок"
+    description: |
+      Унисекс лонгслив с эластичной горловиной из качественного хлопка.
+      Хорошо дышит, тянется и подходит для многослойных образов.
+    source_images:
+      - "7-1 LONGSLIV-CHAINSAW-MAN-pred-scaled.webp"
+      - "7-2 LONGSLIV-CHAINSAW-MAN-pred-scaled.webp"
+      - "7-3 LONGSLIV-CHAINSAW-MAN-pred-scaled.webp"
+      - "7-4 LONGSLIV-CHAINSAW-MAN-pred-scaled.webp"
+      - "7-5 LONGSLIV-CHAINSAW-MAN-pred-scaled.webp"
+
+  - source_id: 9
+    added: true
+    seed_slug: "kanseitai-longsleeve"
+    name: "Лонгслив | KANSEITAI"
+    subtitle: "Завершённый"
+    brand: "AnimeAttire"
+    category_hint: "longsleeves"
+    franchise_hint: "naruto"
+    price_rub: 5790
+    production_time: "Стандартный срок"
+    description: |
+      Унисекс лонгслив с эластичной горловиной из качественного хлопка для
+      активной повседневной носки.
+    source_images:
+      - "8-1 KANSEITAI.webp"
+      - "8-2 KANSEITAI.webp"
+
+  - source_id: 10
+    added: true
+    seed_slug: "anbu-ninja-longsleeve"
+    name: "Лонгслив | ANBU NINJA"
+    subtitle: "Ниндзя АНБУ"
+    brand: "AnimeAttire"
+    category_hint: "longsleeves"
+    franchise_hint: "naruto"
+    price_rub: 5690
+    production_time: "От 30 дней"
+    description: |
+      Унисекс лонгслив с эластичной горловиной и свободной посадкой для
+      прохладной погоды и многослойных образов.
+    source_images:
+      - "9-1 ANBU-NINJA-pered-scaled.webp"
+      - "9-2 ANBU-NINJA-pered-scaled.webp"
+
+  - source_id: 11
+    added: true
+    seed_slug: "ghost-of-uchiha-jersey"
+    name: "Джерси | GHOST OF UCHIHA"
+    subtitle: "Призрак Учихи"
+    brand: "AnimeAttire"
+    category_hint: "jerseys"
+    franchise_hint: "naruto"
+    price_rub: 10590
+    production_time: "От 30 дней"
+    description: |
+      Джерси из мягкой высококачественной сетки, оверсайз силуэта с
+      треугольной горловиной и разрезами по бокам.
+    care_summary: |
+      Стирка не более 40°C, изделие не гладить.
+    source_images:
+      - "10-1 GHOST OF UCHIHA.webp"
+      - "10-2 GHOST OF UCHIHA.webp"
+
+  - source_id: 12
+    added: true
+    seed_slug: "jiraiya-gallant-quarter-zip"
+    name: "Свитшот на молнии | JIRAIYA: THE GALLANT"
+    subtitle: "Отважный Джирайя"
+    brand: "AnimeAttire"
+    category_hint: "sweatshirts"
+    franchise_hint: "naruto"
+    price_rub: 10000
+    production_time: "От 30 дней"
+    description: |
+      Объемный свитшот с длинным рукавом из футера 3х нитка петля. Свободный
+      крой и материал 80% хлопок / 20% полиэстер.
+    size_notes: "Исходник содержит диапазоны S-M и L-XL."
+    source_images:
+      - "11-1 QUARTER-ZIP-JIRAIYA-THE-GALLANT-vizualizatsiya.webp"
+      - "11-2 QUARTER-ZIP-JIRAIYA-THE-GALLANT-vizualizatsiya.webp"
+      - "11-3 QUARTER-ZIP-JIRAIYA-THE-GALLANT-vizualizatsiya.webp"
+    note: "Цена в исходном тексте не была указана явно; для seed принята 10 000 ₽."
+
+  - source_id: 13
+    added: true
+    seed_slug: "neo-tokyo-experiment-quarter-zip"
+    name: "Свитшот на молнии | NEO TOKYO EXPERIMENT"
+    subtitle: "Нео токийский эксперимент"
+    brand: "AnimeAttire"
+    category_hint: "sweatshirts"
+    franchise_hint: "akira"
+    price_rub: 10000
+    production_time: "От 30 дней"
+    description: |
+      Объемный свитшот с длинным рукавом из легкой дышащей ткани
+      (футер 3х нитка петля) для прохладной погоды.
+    source_images:
+      - "12-1 quarter-akira-krasn-vis-aktualno-spina.webp"
+      - "12-2 quarter-akira-krasn-vis-aktualno-spina.webp"
+
+  - source_id: 14
+    added: true
+    seed_slug: "ryomen-sukuna-quarter-zip"
+    name: "Свитшот на молнии | RYOMEN SUKUNA"
+    subtitle: "Рёмен Сукуна"
+    brand: "AnimeAttire"
+    category_hint: "sweatshirts"
+    franchise_hint: "jujutsu-kaisen"
+    price_rub: 10000
+    production_time: "От 30 дней"
+    description: |
+      Объемный свитшот с длинным рукавом из футера 3х нитка петля.
+      Свободный крой, материал 80% хлопок / 20% полиэстер.
+    size_notes: "Исходник содержит диапазоны S-M и L-XL."
+    source_images:
+      - "13-1 kvaterzip-sukuna-vizualizatsiya.webp"
+      - "13-2 kvaterzip-sukuna-vizualizatsiya.webp"
+      - "13-3 kvaterzip-sukuna-vizualizatsiya.webp"
+
+  - source_id: 15
+    added: true
+    seed_slug: "tokyo-team-tee"
+    name: "Футболка | TOKYO TEAM"
+    subtitle: "Токийская команда"
+    brand: "AnimeAttire"
+    category_hint: "tshirts"
+    franchise_hint: "jujutsu-kaisen"
+    price_rub: 5100
+    production_time: "От 30 дней"
+    description: |
+      Легкая унисекс футболка с трендовым эффектом старения и потертости.
+      Подходит для повседневной носки.
+    care_summary: |
+      Стирка не выше 30°C, вывернув изделие наизнанку, без пятновыводителей.
+    source_images:
+      - "14-1 TOKYO TEAM.webp"
+      - "14-2 TOKYO TEAM.webp"

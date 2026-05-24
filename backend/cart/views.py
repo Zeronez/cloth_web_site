@@ -44,6 +44,13 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         cart = self.get_queryset().first()
         return Response(self.get_serializer(cart).data)
 
+    def _serialized_cart_response(self, cart, *, status_code=status.HTTP_200_OK):
+        cart = self.get_queryset().get(pk=cart.pk)
+        return Response(
+            self.get_serializer(cart).data,
+            status=status_code,
+        )
+
     @action(detail=False, methods=["post"], url_path="items", throttle_scope="cart")
     def add_item(self, request):
         serializer = AddCartItemSerializer(data=request.data)
@@ -51,10 +58,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         cart = get_or_create_cart(request)
         add_variant_to_cart(cart, **serializer.validated_data)
         cart.refresh_from_db()
-        return Response(
-            CartSerializer(cart, context=self.get_serializer_context()).data,
-            status=status.HTTP_201_CREATED,
-        )
+        return self._serialized_cart_response(cart, status_code=status.HTTP_201_CREATED)
 
     @action(
         detail=False,
@@ -72,9 +76,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             item = get_object_or_404(CartItem, pk=item_id, cart=cart)
             item.delete()
         cart.refresh_from_db()
-        return Response(
-            CartSerializer(cart, context=self.get_serializer_context()).data
-        )
+        return self._serialized_cart_response(cart)
 
     @action(
         detail=False,
@@ -88,9 +90,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             cart.coupon = None
             cart.save(update_fields=["coupon", "updated_at"])
             cart.refresh_from_db()
-            return Response(
-                CartSerializer(cart, context=self.get_serializer_context()).data
-            )
+            return self._serialized_cart_response(cart)
 
         serializer = ApplyCouponSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -112,9 +112,7 @@ class CartViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         cart.coupon = coupon
         cart.save(update_fields=["coupon", "updated_at"])
         cart.refresh_from_db()
-        return Response(
-            CartSerializer(cart, context=self.get_serializer_context()).data
-        )
+        return self._serialized_cart_response(cart)
 
     @action(detail=False, methods=["post"], url_path="quote", throttle_scope="checkout")
     def quote(self, request):

@@ -39,7 +39,7 @@ describe("API auth transport", () => {
     await fetchMe("access-token");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/users/me/",
+      "/api/v1/users/me/",
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -65,7 +65,7 @@ describe("API auth transport", () => {
 
     const [, options] = fetchMock.mock.calls[0];
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "http://localhost:8000/api/v1/auth/token/"
+      "/api/v1/auth/token/"
     );
     expect(options.headers).not.toHaveProperty("Authorization");
     expect(options).not.toHaveProperty("credentials");
@@ -86,7 +86,7 @@ describe("API auth transport", () => {
 
     const [, options] = fetchMock.mock.calls[0];
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "http://localhost:8000/api/v1/auth/token/refresh/"
+      "/api/v1/auth/token/refresh/"
     );
     expect(options).toMatchObject({
       method: "POST",

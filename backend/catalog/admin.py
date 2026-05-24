@@ -132,6 +132,18 @@ class AnimeFranchiseAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     PRICE_QUANT = Decimal("0.01")
+    excluded_fields = (
+        "collections",
+        "search_synonyms",
+        "material",
+        "fit",
+        "care",
+        "gender",
+        "season",
+        "weight_grams",
+        "seo_title",
+        "seo_description",
+    )
 
     list_display = (
         "name",
@@ -157,7 +169,8 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     list_select_related = ("category", "franchise")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "description", "variants__sku")
-    inlines = [ProductVariantInline, ProductImageInline, ProductVideoInline]
+    inlines = [ProductVariantInline, ProductImageInline]
+    exclude = excluded_fields
     actions = (
         "archive_selected_products",
         "restore_selected_products",

@@ -4,13 +4,12 @@ from catalog.models import (
     AnimeFranchise,
     Category,
     Product,
-    ProductCollection,
     ProductImage,
     ProductTag,
     ProductVariant,
-    ProductVideo,
     SizeChart,
 )
+from catalog.tag_translations import get_tag_label
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -59,24 +58,14 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
 
 class ProductTagSerializer(serializers.ModelSerializer):
+    label = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductTag
-        fields = ("id", "name", "slug")
+        fields = ("id", "name", "slug", "label")
 
-
-class ProductCollectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductCollection
-        fields = ("id", "name", "slug", "description")
-
-
-class ProductVideoSerializer(serializers.ModelSerializer):
-    variant_id = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = ProductVideo
-        fields = ("id", "url", "alt_text", "sort_order", "variant_id")
-
+    def get_label(self, obj):
+        return get_tag_label(obj.slug, obj.name)
 
 class SizeChartSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,6 +78,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     franchise = AnimeFranchiseSerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
     total_stock = serializers.IntegerField(read_only=True)
+    tags = ProductTagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -102,6 +92,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_featured",
             "main_image",
             "total_stock",
+            "tags",
         )
 
     def get_main_image(self, obj):
@@ -117,8 +108,6 @@ class ProductDetailSerializer(ProductListSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = serializers.SerializerMethodField()
     tags = ProductTagSerializer(many=True, read_only=True)
-    collections = ProductCollectionSerializer(many=True, read_only=True)
-    videos = ProductVideoSerializer(many=True, read_only=True)
     size_charts = SizeChartSerializer(many=True, read_only=True)
 
     class Meta(ProductListSerializer.Meta):
@@ -127,17 +116,7 @@ class ProductDetailSerializer(ProductListSerializer):
             "images",
             "variants",
             "tags",
-            "collections",
-            "videos",
             "size_charts",
-            "material",
-            "fit",
-            "care",
-            "gender",
-            "season",
-            "weight_grams",
-            "seo_title",
-            "seo_description",
             "canonical_url",
             "og_image_url",
         )
