@@ -31,6 +31,7 @@ from users.views import (
     RegisterView,
     ScopedTokenObtainPairView,
     ScopedTokenRefreshView,
+    UserFitProfileView,
     UserMeView,
     logout,
 )
@@ -77,6 +78,11 @@ def build_api_urlpatterns(*, schema_url_name):
             name="token_refresh",
         ),
         path("users/me/", UserMeView.as_view(), name="user_me"),
+        path(
+            "users/me/fit-profile/",
+            UserFitProfileView.as_view(),
+            name="user_fit_profile",
+        ),
         path("users/me/export/", AccountExportView.as_view(), name="user_me_export"),
         path("users/me/delete/", AccountDeleteView.as_view(), name="user_me_delete"),
         path(

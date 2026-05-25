@@ -165,6 +165,8 @@ def delete_customer_account(*, user):
     locked_user.last_name = ""
     locked_user.phone = ""
     locked_user.avatar = ""
+    locked_user.fit_profile = {}
+    locked_user.fit_profile_updated_at = None
     locked_user.is_active = False
     locked_user.account_deleted_at = timezone.now()
     locked_user.marketing_opt_in_at = None
@@ -178,6 +180,8 @@ def delete_customer_account(*, user):
             "last_name",
             "phone",
             "avatar",
+            "fit_profile",
+            "fit_profile_updated_at",
             "is_active",
             "account_deleted_at",
             "marketing_opt_in_at",

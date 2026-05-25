@@ -7,9 +7,17 @@ Current state is NOT a complete production product yet.
 It is a strong engineering foundation: repository structure, Django/DRF core, SKU model,
 cart/checkout service, Next.js storefront scaffold, Docker, and CI skeleton exist.
 
+Checklist Markers
+-----------------
+[x] Done and evidenced in repo or verified workflow.
+[~] Partially done: scaffold/docs/tests exist, but not fully proven end-to-end.
+[ ] Open and realistically implementable inside the repo.
+[!] Blocked by external dependency, credentials, infrastructure, or business decision.
+
 Definition of Done for "production-ready"
 -----------------------------------------
 [ ] A real customer can register, browse, filter, add SKU variants to cart, pay, receive order confirmation, track fulfillment, and get support.
+[ ] A real customer can enter body parameters and style preferences, receive a size recommendation, a ready-made outfit, and a clear explanation of why the recommendation fits.
 [ ] Store staff can manage catalog, stock, orders, refunds, shipping statuses, content, discounts, and customer issues without developer access.
 [ ] Payments, delivery, email/SMS, media storage, analytics, monitoring, backups, secrets, CI/CD, security controls, and legal pages are wired for real operation.
 [ ] Every release passes automated tests in CI against real service containers: PostgreSQL, Redis, Celery worker, object storage emulator, frontend browser, and API.
@@ -21,6 +29,11 @@ Remote: https://github.com/Zeronez/cloth_web_site.git
 
 Phase 0: Product Scope and Release Decisions
 --------------------------------------------
+[~] Position product as an intelligent clothing store with size recommendation, capsule outfits, and return-risk reduction. (Decision: make "smart fitting room + stylist" the core differentiator)
+[!] Define MVP boundary for smart recommendations: deterministic rules first or ML-assisted ranking later. (Blocked by product decision)
+[!] Define required customer inputs for recommendation flow: height, weight, gender, body measurements, style, season, fit preference, budget. (Blocked by product decision)
+[!] Define explanation policy for recommendations: why this size, why this look, what risk warnings are shown. (Blocked by product decision)
+[!] Define business rules for warnings: runs small, runs large, oversized by design, style mismatch, seasonal mismatch, low confidence. (Blocked by product decision)
 [x] Define launch countries: Russia only or broader CIS list. (Decision: Russia only)
 [x] Define default currency: RUB first, optional KZT/BYN/AMD/UZS later. (Decision: RUB)
 [x] Define payment providers to integrate: YooKassa/CloudPayments/Tinkoff/Robokassa/etc. (Decision: no provider for launch; stub "order placed" flow; authorize semantics)
@@ -85,6 +98,8 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement password reset and email confirmation.
 [x] Implement phone confirmation if SMS provider is selected.
 [x] Implement customer profile API.
+[x] Add customer fit profile: height, weight, chest, waist, hips, shoulder width, preferred fit, preferred style, preferred season, budget range.
+[ ] Add fit-profile edit flow in account with consent note explaining how recommendation data is used.
 [x] Implement address CRUD with default address.
 [x] Implement order history and order detail API.
 [x] Implement wishlist/favorites API.
@@ -97,6 +112,9 @@ Phase 2.3: Catalog and Merchandising
 [x] Add collection/drop model for limited capsules.
 [x] Add product tags and search synonyms in Russian.
 [x] Add product attributes: material, fit, care, gender/unisex, season, weight.
+[ ] Add recommendation attributes to products and variants: fit tendency, true-to-size confidence, silhouette, style tags, seasonality, layering role, body-shape notes.
+[ ] Add stylist compatibility metadata between products for outfit generation.
+[ ] Add merchant-authored recommendation notes: "runs small", "take one size up", "good for oversized look", "not for fitted style".
 [x] Add size chart entities per category/product.
 [x] Add variant images by color.
 [x] Add video/media support for product hover/gallery.
@@ -112,6 +130,7 @@ Phase 2.4: Pricing, Promotions, and Taxes
 [x] Store money internally with Decimal and currency code.
 [x] Add price history/audit.
 [x] Add sale price/scheduled promotions.
+[ ] Add outfit recommendation budget rules: under budget, near budget, over budget warning.
 [x] Add coupon model: fixed, percentage, free shipping, min cart, per-user limit.
 [x] Add discount conflict rules.
 [x] Add gift cards/store credit if needed.
@@ -164,8 +183,20 @@ Phase 2.7: Notifications and Support
 [x] Add low-stock/internal admin email.
 [x] Add SMS/Telegram notifications if provider selected. (Decision: not selected for launch)
 [x] Add support request/contact form.
+[ ] Add support visibility into recommendation context so staff can explain size choice and outfit logic during disputes/returns.
 [x] Add support/admin notes on orders.
 [x] Add notification delivery log and idempotent order confirmation task.
+
+Phase 2.8: Recommendation Engine and Smart Fitting
+--------------------------------------------------
+[x] Design size recommendation engine v1 using deterministic rules from size charts, product fit metadata, and customer fit profile.
+[x] Design outfit recommendation engine v1 that assembles capsule looks by style, season, color compatibility, and budget.
+[x] Implement recommendation explanation layer: why this size, why this item, why this full look.
+[ ] Implement risk scoring for returns: low/medium/high confidence with visible reasons.
+[ ] Add fallback behavior when confidence is low or fit data is incomplete.
+[ ] Add admin tooling to tune recommendation rules without developer intervention.
+[ ] Log recommendation decisions for later analysis and quality improvement.
+[ ] Prepare phase-2 architecture option for ML/ranking upgrade after sufficient behavioral data is collected.
 
 Phase 3: Frontend Core
 ----------------------
@@ -211,6 +242,12 @@ Phase 3.2: Frontend Production UX
 [x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
+[ ] Add smart fitting wizard UI: height, weight, measurements, fit preference, style, season, budget.
+[ ] Show recommended size on product page with confidence label and plain-language explanation.
+[ ] Show warnings on product page: runs small, size up recommended, style mismatch, low confidence.
+[ ] Add "Complete the look" capsule block with 2-5 compatible items and total outfit price.
+[ ] Add outfit recommendation panel on catalog and product pages.
+[ ] Add recommendation history/save-state so the customer can compare suggested looks.
 [x] Implement order tracking page.
 [x] Implement search page with suggestions.
 [x] Implement SEO metadata for all public pages.
@@ -311,6 +348,10 @@ Backend Unit Tests
 ------------------
 [x] Cart totals and duplicate-line merge contracts.
 [x] Stock availability and validation contracts.
+[x] Size recommendation rule evaluation.
+[x] Recommendation explanation generation.
+[ ] Return-risk scoring logic.
+[x] Outfit compatibility and budget filtering.
 [ ] Money calculations: Decimal precision, rounding, currency.
 [ ] Product variant price calculation with price_delta.
 [ ] Coupon calculation and conflict rules.
@@ -326,10 +367,13 @@ Backend Integration Tests Against Real PostgreSQL
 -------------------------------------------------
 [x] Apply all migrations on PostgreSQL 16 before tests.
 [x] User registration/login/token refresh flow.
+[x] Fit profile create/update/read flow.
 [x] Address CRUD flow.
 [x] Category/franchise/product/variant creation and querying.
 [x] Product filters: category, franchise, size, color, in_stock, min/max price, ordering, search.
 [x] Product detail returns images and variants.
+[x] Product detail returns recommendation block, explanation, and confidence for a user with fit profile.
+[x] Recommendation API returns size advice, outfit suggestions, and risk warnings.
 [x] Cart creation for guest session.
 [x] Cart creation for authenticated user.
 [x] Add SKU to cart.
@@ -386,6 +430,10 @@ Frontend Unit and Component Tests
 [x] Cart drawer item quantity changes.
 [x] Zustand cart persistence and merge behavior.
 [x] User store session set/clear.
+[ ] Smart fitting form validation in Russian.
+[ ] Product page recommendation card rendering.
+[ ] Outfit recommendation carousel/grid rendering.
+[ ] Size warning badge rendering.
 [ ] Product card renders price/stock/category.
 [ ] Catalog filters update query params/API params.
 [ ] Product detail size selection.
@@ -398,6 +446,9 @@ Frontend Integration Tests
 --------------------------
 [ ] React Query API client handles success, 401, 404, 500.
 [x] Authenticated user sees account menu.
+[ ] Fit profile loads into recommendation UI and updates API.
+[ ] Product page renders live recommendation response from test backend.
+[ ] Catalog page shows capsule recommendations from real API.
 [ ] Guest cart survives refresh.
 [ ] Cart syncs after login.
 [ ] Catalog page renders real API data from test backend.
@@ -412,6 +463,9 @@ End-to-End Browser Tests With Real App Stack
 [ ] E2E: browse home page.
 [ ] E2E: open catalog and filter by category/franchise/size/stock.
 [ ] E2E: open product detail and select size.
+[ ] E2E: fill smart fitting profile and receive recommended size.
+[ ] E2E: view capsule outfit and add recommended set items to cart.
+[ ] E2E: see warning when selected product likely does not match preferred style or fit.
 [ ] E2E: add SKU to cart and update quantity.
 [ ] E2E: register/login user.
 [ ] E2E: add shipping address.
@@ -462,12 +516,12 @@ Performance and Load Tests
 
 Operational Acceptance Tests
 ----------------------------
-[ ] Backup and restore drill on staging.
-[ ] Migration rollback drill.
+[!] Backup and restore drill on staging. (Blocked by staging environment and backup destination)
+[!] Migration rollback drill. (Blocked by staging environment)
 [ ] Production image boot smoke test.
 [ ] Health/readiness endpoint test.
-[ ] Monitoring alert test.
-[ ] Sentry/error reporting test.
+[!] Monitoring alert test. (Blocked by live alert sink/on-call route)
+[!] Sentry/error reporting test. (Blocked by real DSN and deployed environment)
 [x] Staff can create product, variant, image, stock adjustment in admin.
 [ ] Staff can process order through fulfillment statuses.
 [x] Staff can issue refund/cancel order according to rules.
@@ -475,19 +529,30 @@ Operational Acceptance Tests
 
 Manual Pre-Launch Checklist
 ---------------------------
-[ ] Legal pages reviewed and published.
-[ ] Payment provider live credentials tested with real small payment.
-[ ] Delivery provider live credentials tested with real shipment/pickup fixture.
-[ ] Email domain DNS configured: SPF/DKIM/DMARC.
+[!] Legal pages reviewed and published. (Blocked by legal review and publication target)
+[!] Payment provider live credentials tested with real small payment. (Blocked by live provider credentials)
+[!] Delivery provider live credentials tested with real shipment/pickup fixture. (Blocked by live provider credentials)
+[!] Email domain DNS configured: SPF/DKIM/DMARC. (Blocked by production domain and DNS access)
 [ ] Error pages polished in Russian.
 [ ] 404/500 pages polished.
 [ ] SEO metadata reviewed.
 [ ] Analytics events validated.
 [ ] Cookie/consent behavior validated.
-[ ] Admin accounts secured.
-[ ] Backups enabled.
-[ ] Rollback path tested.
-[ ] First production smoke order completed.
+[!] Admin accounts secured. (Blocked by production identity/access setup)
+[!] Backups enabled. (Blocked by production backup target)
+[!] Rollback path tested. (Blocked by deploy target and release flow)
+[!] First production smoke order completed. (Blocked by live environment)
+
+Next Executable Tranche
+-----------------------
+[x] Implement fit profile backend model/API/edit flow.
+[x] Implement deterministic recommendation engine v1 with explanation and low-confidence fallback.
+[ ] Add recommendation metadata to catalog/admin and wire product detail recommendation response.
+[ ] Add smart fitting frontend wizard and recommendation UI on product/catalog pages.
+[~] Add backend/frontend/unit/integration tests for fit profile and recommendation flows.
+[ ] Add CI browser test harness with real frontend server and artifact uploads.
+[ ] Add CI MinIO/S3-emulator media tests and image smoke checks.
+[ ] Add security regression tests: permission bypass, IDOR, webhook replay/idempotency.
 
 Agent Notes
 -----------
@@ -495,5 +560,5 @@ Agent-Designer owns brand visual assets.
 Agent-DevOps owns Docker, CI, deployment, service containers, and environment gates.
 Agent-QA owns real product test matrix and CI execution strategy.
 Agent-Backend owns domain logic, integrations, transactions, and admin workflows.
-Agent-Frontend owns Russian storefront UX, accessibility, performance, and checkout UI.
+Agent-Frontend owns Russian storefront UX, accessibility, performance, checkout UI, and recommendation presentation.
 Agent-Git owns release commands, commit hygiene, branches, changelog, and push flow.

@@ -12,6 +12,7 @@ REQUIRED_PATHS = {
     "/api/auth/token/",
     "/api/auth/token/refresh/",
     "/api/users/me/",
+    "/api/users/me/fit-profile/",
     "/api/categories/",
     "/api/franchises/",
     "/api/products/",
@@ -31,6 +32,7 @@ V1_REQUIRED_PATHS = {path.replace("/api/", "/api/v1/") for path in REQUIRED_PATH
 
 PROTECTED_PATHS = {
     "/api/users/me/",
+    "/api/users/me/fit-profile/",
     "/api/addresses/",
     "/api/orders/",
     "/api/orders/checkout/",

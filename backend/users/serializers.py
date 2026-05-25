@@ -46,6 +46,8 @@ class UserSerializer(serializers.ModelSerializer):
     offer_agreement_version = serializers.CharField(read_only=True)
     is_marketing_subscribed = serializers.BooleanField(required=False)
     marketing_opt_in_version = serializers.CharField(read_only=True)
+    fit_profile = serializers.JSONField(read_only=True)
+    fit_profile_updated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = User
@@ -65,6 +67,8 @@ class UserSerializer(serializers.ModelSerializer):
             "offer_agreement_version",
             "is_marketing_subscribed",
             "marketing_opt_in_version",
+            "fit_profile",
+            "fit_profile_updated_at",
         )
         read_only_fields = ("id", "username", "avatar")
 
@@ -199,6 +203,123 @@ class AddressSerializer(serializers.ModelSerializer):
                 pk=instance.pk
             ).update(is_default=False)
         return super().update(instance, validated_data)
+
+
+class FitProfileSerializer(serializers.Serializer):
+    height_cm = serializers.IntegerField(
+        required=False, allow_null=True, min_value=120, max_value=250
+    )
+    weight_kg = serializers.DecimalField(
+        required=False,
+        allow_null=True,
+        max_digits=5,
+        decimal_places=1,
+        min_value=30,
+        max_value=300,
+    )
+    chest_cm = serializers.IntegerField(
+        required=False, allow_null=True, min_value=60, max_value=180
+    )
+    waist_cm = serializers.IntegerField(
+        required=False, allow_null=True, min_value=50, max_value=180
+    )
+    hips_cm = serializers.IntegerField(
+        required=False, allow_null=True, min_value=70, max_value=200
+    )
+    inseam_cm = serializers.IntegerField(
+        required=False, allow_null=True, min_value=50, max_value=120
+    )
+    preferred_fit = serializers.ChoiceField(
+        required=False,
+        allow_null=True,
+        choices=("slim", "regular", "relaxed", "oversized"),
+    )
+    preferred_style = serializers.ChoiceField(
+        required=False,
+        allow_null=True,
+        choices=("minimal", "streetwear", "dark_fantasy", "sport", "casual"),
+    )
+    preferred_season = serializers.ChoiceField(
+        required=False,
+        allow_null=True,
+        choices=("spring", "summer", "autumn", "winter", "all_season"),
+    )
+    tops_usual_size = serializers.ChoiceField(
+        required=False,
+        allow_null=True,
+        choices=("XS", "S", "M", "L", "XL", "XXL", "ONE_SIZE"),
+    )
+    bottoms_usual_size = serializers.ChoiceField(
+        required=False,
+        allow_null=True,
+        choices=("XS", "S", "M", "L", "XL", "XXL", "ONE_SIZE"),
+    )
+    notes = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=500
+    )
+    budget_min_rub = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=1_000_000
+    )
+    budget_max_rub = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=1_000_000
+    )
+    updated_at = serializers.DateTimeField(read_only=True)
+    is_complete = serializers.BooleanField(read_only=True)
+
+    def validate(self, attrs):
+        budget_min = attrs.get("budget_min_rub")
+        budget_max = attrs.get("budget_max_rub")
+        if (
+            budget_min is not None
+            and budget_max is not None
+            and budget_min > budget_max
+        ):
+            raise serializers.ValidationError(
+                {
+                    "budget_max_rub": "Максимальный бюджет должен быть не меньше минимального."
+                }
+            )
+        return attrs
+
+    def to_representation(self, instance):
+        stored_profile = getattr(instance, "fit_profile", {}) or {}
+        data = {
+            "height_cm": stored_profile.get("height_cm"),
+            "weight_kg": stored_profile.get("weight_kg"),
+            "chest_cm": stored_profile.get("chest_cm"),
+            "waist_cm": stored_profile.get("waist_cm"),
+            "hips_cm": stored_profile.get("hips_cm"),
+            "inseam_cm": stored_profile.get("inseam_cm"),
+            "preferred_fit": stored_profile.get("preferred_fit"),
+            "preferred_style": stored_profile.get("preferred_style"),
+            "preferred_season": stored_profile.get("preferred_season"),
+            "tops_usual_size": stored_profile.get("tops_usual_size"),
+            "bottoms_usual_size": stored_profile.get("bottoms_usual_size"),
+            "notes": stored_profile.get("notes"),
+            "budget_min_rub": stored_profile.get("budget_min_rub"),
+            "budget_max_rub": stored_profile.get("budget_max_rub"),
+            "updated_at": getattr(instance, "fit_profile_updated_at", None),
+        }
+        data["is_complete"] = bool(
+            data["height_cm"]
+            and data["weight_kg"]
+            and data["preferred_fit"]
+            and (data["chest_cm"] or data["waist_cm"] or data["hips_cm"])
+        )
+        return super().to_representation(data)
+
+    def update(self, instance, validated_data):
+        profile = dict(getattr(instance, "fit_profile", {}) or {})
+        for key, value in validated_data.items():
+            if value in (None, ""):
+                profile.pop(key, None)
+                continue
+            if hasattr(value, "quantize"):
+                value = str(value)
+            profile[key] = value
+        instance.update_fit_profile(profile)
+        instance.refresh_from_db(fields=["fit_profile", "fit_profile_updated_at"])
+        return instance
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

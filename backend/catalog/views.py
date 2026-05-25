@@ -3,10 +3,13 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.db.models import Prefetch
 from rest_framework.filters import SearchFilter
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from catalog.filters import ProductFilter
 from catalog.models import AnimeFranchise, Category, Product, ProductImage
+from catalog.services import build_size_recommendation
 from catalog.serializers import (
     AnimeFranchiseSerializer,
     CategorySerializer,
@@ -14,6 +17,7 @@ from catalog.serializers import (
     ProductListSerializer,
 )
 from catalog.tag_translations import get_matching_tag_slugs
+from users.serializers import FitProfileSerializer
 
 
 @extend_schema_view(list=extend_schema(auth=[]), retrieve=extend_schema(auth=[]))
@@ -47,6 +51,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             "videos",
             "tags",
             "collections",
+            "size_charts",
         )
     )
     filterset_class = ProductFilter
@@ -98,3 +103,21 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             search_filter |= Q(tags__slug__in=translated_tag_slugs)
 
         return queryset.filter(search_filter).distinct()
+
+    @action(detail=True, methods=["get"], permission_classes=(AllowAny,))
+    def recommendation(self, request, *args, **kwargs):
+        product = self.get_object()
+        serializer = FitProfileSerializer(
+            data={
+                key: value
+                for key, value in request.query_params.items()
+                if key in FitProfileSerializer().fields
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        recommendation = build_size_recommendation(
+            product=product,
+            user=request.user,
+            profile_override=serializer.validated_data or None,
+        )
+        return Response(recommendation)

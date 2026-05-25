@@ -9,6 +9,7 @@ from catalog.models import (
     ProductVariant,
     SizeChart,
 )
+from catalog.services import build_size_recommendation
 from catalog.tag_translations import get_tag_label
 
 
@@ -67,6 +68,7 @@ class ProductTagSerializer(serializers.ModelSerializer):
     def get_label(self, obj):
         return get_tag_label(obj.slug, obj.name)
 
+
 class SizeChartSerializer(serializers.ModelSerializer):
     class Meta:
         model = SizeChart
@@ -109,6 +111,7 @@ class ProductDetailSerializer(ProductListSerializer):
     variants = serializers.SerializerMethodField()
     tags = ProductTagSerializer(many=True, read_only=True)
     size_charts = SizeChartSerializer(many=True, read_only=True)
+    fit_recommendation = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + (
@@ -117,6 +120,7 @@ class ProductDetailSerializer(ProductListSerializer):
             "variants",
             "tags",
             "size_charts",
+            "fit_recommendation",
             "canonical_url",
             "og_image_url",
         )
@@ -128,3 +132,8 @@ class ProductDetailSerializer(ProductListSerializer):
             many=True,
             context=self.context,
         ).data
+
+    def get_fit_recommendation(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        return build_size_recommendation(product=obj, user=user)

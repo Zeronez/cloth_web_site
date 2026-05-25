@@ -9,6 +9,8 @@ from django.contrib.auth.hashers import check_password, make_password
 class User(AbstractUser):
     phone = models.CharField(max_length=32, blank=True)
     avatar = models.ImageField(upload_to="avatars/", blank=True)
+    fit_profile = models.JSONField(default=dict, blank=True)
+    fit_profile_updated_at = models.DateTimeField(null=True, blank=True)
     account_deleted_at = models.DateTimeField(null=True, blank=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
     phone_verified_at = models.DateTimeField(null=True, blank=True)
@@ -92,6 +94,11 @@ class User(AbstractUser):
                 update_fields.append("marketing_opt_in_version")
         if update_fields:
             self.save(update_fields=update_fields)
+
+    def update_fit_profile(self, profile):
+        self.fit_profile = profile
+        self.fit_profile_updated_at = timezone.now()
+        self.save(update_fields=["fit_profile", "fit_profile_updated_at"])
 
     def save(self, *args, **kwargs):
         if self.avatar and not getattr(self.avatar, "_committed", True):

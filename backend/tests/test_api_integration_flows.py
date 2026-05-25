@@ -5,7 +5,14 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from cart.models import Cart, CartItem
-from catalog.models import AnimeFranchise, Category, Product, ProductTag, ProductVariant
+from catalog.models import (
+    AnimeFranchise,
+    Category,
+    Product,
+    ProductRelation,
+    ProductTag,
+    ProductVariant,
+)
 from favorites.models import FavoriteProduct
 from orders.models import Order, OrderItem
 from users.models import Address
@@ -296,6 +303,139 @@ def test_catalog_search_matches_translated_tag_labels(api_client, product_factor
     assert [item["slug"] for item in items] == [product.slug]
     assert items[0]["tags"][0]["slug"] == "bestseller"
     assert items[0]["tags"][0]["label"] == "Бестселлер"
+
+
+def test_user_can_manage_fit_profile(authenticated_client, user):
+    update_response = authenticated_client.patch(
+        "/api/v1/users/me/fit-profile/",
+        {
+            "height_cm": 182,
+            "weight_kg": "78.5",
+            "chest_cm": 101,
+            "waist_cm": 84,
+            "preferred_fit": "regular",
+            "preferred_style": "streetwear",
+            "preferred_season": "autumn",
+            "tops_usual_size": "L",
+            "budget_min_rub": 5000,
+            "budget_max_rub": 20000,
+        },
+        format="json",
+    )
+
+    fetch_response = authenticated_client.get("/api/v1/users/me/fit-profile/")
+
+    assert update_response.status_code == 200
+    assert fetch_response.status_code == 200
+    assert fetch_response.data["height_cm"] == 182
+    assert fetch_response.data["preferred_style"] == "streetwear"
+    assert fetch_response.data["budget_max_rub"] == 20000
+    assert fetch_response.data["is_complete"] is True
+    user.refresh_from_db()
+    assert user.fit_profile["preferred_season"] == "autumn"
+
+
+def test_product_detail_returns_richer_fit_recommendation_for_authenticated_user(
+    authenticated_client, user, product_factory
+):
+    product = product_factory(
+        name="Recommendation Hoodie",
+        description="Oversized hoodie for dark fantasy styling.",
+        base_price="8900.00",
+        variants=[
+            {
+                "sku": "RECO-HOODIE-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 4,
+            },
+            {
+                "sku": "RECO-HOODIE-L",
+                "size": ProductVariant.Size.L,
+                "color": "Black",
+                "stock_quantity": 2,
+            },
+        ],
+    )
+    product.fit = "oversized"
+    product.season = "winter"
+    product.save(update_fields=["fit", "season", "updated_at"])
+    product.tags.add(ProductTag.objects.create(name="Dark Fantasy", slug="dark-fantasy"))
+
+    related_product = product_factory(
+        name="Recommendation Tee",
+        franchise=product.franchise,
+        base_price="3200.00",
+        description="Layer tee for dark fantasy looks.",
+    )
+    ProductRelation.objects.create(
+        from_product=product,
+        to_product=related_product,
+        sort_order=1,
+    )
+
+    user.update_fit_profile(
+        {
+            "height_cm": 177,
+            "weight_kg": "71.0",
+            "chest_cm": 99,
+            "waist_cm": 82,
+            "preferred_fit": "regular",
+            "preferred_style": "streetwear",
+            "preferred_season": "winter",
+            "tops_usual_size": "M",
+            "budget_max_rub": 15000,
+        }
+    )
+
+    response = authenticated_client.get(f"/api/v1/products/{product.slug}/")
+
+    assert response.status_code == 200
+    recommendation = response.data["fit_recommendation"]
+    assert recommendation["recommended_size"] == "M"
+    assert recommendation["profile_ready"] is True
+    assert recommendation["summary"]
+    assert recommendation["reasons"]
+    assert recommendation["outfit"]["items"]
+
+
+def test_product_recommendation_endpoint_accepts_query_profile_override(
+    api_client, product_factory
+):
+    product = product_factory(
+        name="Query Recommendation Tee",
+        description="Minimal tee for clean daily outfits.",
+        variants=[
+            {
+                "sku": "QUERY-TEE-S",
+                "size": ProductVariant.Size.S,
+                "color": "White",
+                "stock_quantity": 4,
+            },
+            {
+                "sku": "QUERY-TEE-M",
+                "size": ProductVariant.Size.M,
+                "color": "White",
+                "stock_quantity": 4,
+            },
+        ],
+    )
+
+    response = api_client.get(
+        f"/api/v1/products/{product.slug}/recommendation/",
+        {
+            "height_cm": 169,
+            "weight_kg": "60.0",
+            "chest_cm": 92,
+            "preferred_fit": "regular",
+            "preferred_style": "minimal",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.data["recommended_size"] in {"S", "M"}
+    assert response.data["profile_ready"] is True
+    assert response.data["missing_profile_fields"] == []
 
 
 def test_archived_product_is_hidden_from_storefront_but_preserved_in_order_history(
