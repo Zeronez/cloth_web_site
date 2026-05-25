@@ -12,6 +12,7 @@ from catalog.models import (
     LowStockAlert,
     Product,
     ProductCollection,
+    RecommendationDecisionLog,
     ProductImage,
     ProductTag,
     ProductVariant,
@@ -31,7 +32,16 @@ from users.staff_roles import (
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 0
-    fields = ("sku", "size", "color", "stock_quantity", "price_delta", "is_active")
+    fields = (
+        "sku",
+        "size",
+        "color",
+        "stock_quantity",
+        "price_delta",
+        "recommendation_fit_tendency_override",
+        "recommendation_notes_override",
+        "is_active",
+    )
 
 
 class ProductImageInline(admin.TabularInline):
@@ -150,6 +160,7 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
         "category",
         "franchise",
         "base_price",
+        "recommendation_fit_tendency",
         "status",
         "is_active",
         "is_featured",
@@ -171,6 +182,46 @@ class ProductAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     search_fields = ("name", "description", "variants__sku")
     inlines = [ProductVariantInline, ProductImageInline]
     exclude = excluded_fields
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "category",
+                    "franchise",
+                    "name",
+                    "slug",
+                    "description",
+                    "base_price",
+                    "currency",
+                    "sale_price",
+                    "sale_starts_at",
+                    "sale_ends_at",
+                    "status",
+                    "is_featured",
+                    "canonical_url",
+                    "og_image_url",
+                    "tags",
+                )
+            },
+        ),
+        (
+            "Recommendation metadata",
+            {
+                "fields": (
+                    "recommendation_fit_tendency",
+                    "recommendation_fit_confidence",
+                    "recommendation_silhouette",
+                    "recommendation_style_tags",
+                    "recommendation_seasonality",
+                    "recommendation_layering_role",
+                    "recommendation_body_shape_notes",
+                    "recommendation_notes",
+                ),
+                "description": "Данные для умной примерочной, капсульных образов и объяснений рекомендаций.",
+            },
+        ),
+    )
     actions = (
         "archive_selected_products",
         "restore_selected_products",
@@ -820,3 +871,38 @@ class LowStockAlertAdmin(AuditedModelAdminMixin, admin.ModelAdmin):
     )
     list_filter = ("acknowledged_at", "created_at")
     search_fields = ("variant__sku", "variant__product__name")
+
+
+@admin.register(RecommendationDecisionLog)
+class RecommendationDecisionLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "source",
+        "product",
+        "user",
+        "recommended_size",
+        "confidence",
+        "risk_level",
+    )
+    list_filter = ("source", "confidence", "risk_level", "created_at")
+    search_fields = ("product__name", "product__slug", "user__username", "user__email")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "product",
+        "user",
+        "source",
+        "recommended_size",
+        "confidence",
+        "risk_level",
+        "warnings",
+        "reasons",
+        "fallback_action",
+        "profile_snapshot",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser

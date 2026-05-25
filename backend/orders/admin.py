@@ -34,13 +34,44 @@ from users.staff_roles import (
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ("line_total_display",)
+    readonly_fields = ("line_total_display", "recommendation_summary")
+    fields = (
+        "variant",
+        "product_name",
+        "sku",
+        "size",
+        "color",
+        "quantity",
+        "price_at_purchase",
+        "line_total_display",
+        "recommendation_summary",
+    )
 
     @admin.display(description="Сумма позиции")
     def line_total_display(self, obj):
         if obj is None or obj.price_at_purchase is None or obj.quantity is None:
             return "-"
         return obj.line_total
+
+    @admin.display(description="Контекст рекомендации")
+    def recommendation_summary(self, obj):
+        if obj is None or not obj.recommendation_snapshot:
+            return "Снимок рекомендации не сохранён."
+        snapshot = obj.recommendation_snapshot
+        warnings = ", ".join(snapshot.get("warnings") or []) or "без предупреждений"
+        risk_reasons = ", ".join(snapshot.get("risk_reasons") or []) or "—"
+        return format_html(
+            "<strong>Размер:</strong> {}<br>"
+            "<strong>Уверенность:</strong> {}<br>"
+            "<strong>Риск возврата:</strong> {}<br>"
+            "<strong>Warnings:</strong> {}<br>"
+            "<strong>Почему:</strong> {}",
+            snapshot.get("recommended_size") or "—",
+            snapshot.get("confidence") or "—",
+            snapshot.get("risk_level") or "—",
+            warnings,
+            risk_reasons,
+        )
 
 
 class OrderDeliverySnapshotInline(admin.StackedInline):

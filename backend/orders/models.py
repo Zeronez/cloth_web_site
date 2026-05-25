@@ -193,6 +193,7 @@ class OrderItem(models.Model):
     color = models.CharField(max_length=80)
     quantity = models.PositiveIntegerField()
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+    recommendation_snapshot = models.JSONField(default=dict, blank=True)
 
     class Meta:
         indexes = [models.Index(fields=["sku"], name="orders_orde_sku_71777a_idx")]

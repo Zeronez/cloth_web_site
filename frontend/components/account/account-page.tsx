@@ -27,7 +27,6 @@ import {
   type Address,
   type AddressInput,
   type FavoriteProductEntry,
-  type FitProfile,
   type FitProfilePreferredFit,
   type FitProfilePreferredSeason,
   type FitProfilePreferredStyle,
@@ -35,7 +34,15 @@ import {
   type Order,
   type UserProfile
 } from "../../lib/api";
+import {
+  emptyFitProfileForm,
+  fitProfileFormToPayload,
+  fitProfileToForm,
+  fitSizeOptions
+} from "../../lib/fit-profile";
+import { RecommendationHistoryPanel } from "../fitting/recommendation-history-panel";
 import { useFavoritesStore } from "../../stores/favorites-store";
+import { getRecommendationScopeKey } from "../../stores/recommendation-history-store";
 import { useUserStore } from "../../stores/user-store";
 
 type ProfileFormState = {
@@ -76,33 +83,6 @@ const emptyAddressForm: AddressFormState = {
   is_default: false
 };
 
-const emptyFitProfileForm: FitProfileFormState = {
-  height_cm: "",
-  weight_kg: "",
-  chest_cm: "",
-  waist_cm: "",
-  hips_cm: "",
-  inseam_cm: "",
-  preferred_fit: "",
-  preferred_style: "",
-  preferred_season: "",
-  tops_usual_size: "",
-  bottoms_usual_size: "",
-  budget_min_rub: "",
-  budget_max_rub: "",
-  notes: ""
-};
-
-const fitSizeOptions: FitProfileSize[] = [
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "ONE_SIZE"
-];
-
 const currencyFormatter = new Intl.NumberFormat("ru-RU", {
   currency: "RUB",
   style: "currency"
@@ -126,41 +106,6 @@ function formatDate(value: string) {
     month: "long",
     year: "numeric"
   }).format(new Date(value));
-}
-
-function toFormValue(value: string | number | null | undefined) {
-  return value === null || value === undefined ? "" : String(value);
-}
-
-function fitProfileToForm(profile?: Partial<FitProfile> | null): FitProfileFormState {
-  return {
-    height_cm: toFormValue(profile?.height_cm),
-    weight_kg: toFormValue(profile?.weight_kg),
-    chest_cm: toFormValue(profile?.chest_cm),
-    waist_cm: toFormValue(profile?.waist_cm),
-    hips_cm: toFormValue(profile?.hips_cm),
-    inseam_cm: toFormValue(profile?.inseam_cm),
-    preferred_fit: (profile?.preferred_fit ?? "") as FitProfileFormState["preferred_fit"],
-    preferred_style: (profile?.preferred_style ??
-      "") as FitProfileFormState["preferred_style"],
-    preferred_season: (profile?.preferred_season ??
-      "") as FitProfileFormState["preferred_season"],
-    tops_usual_size: (profile?.tops_usual_size ??
-      "") as FitProfileFormState["tops_usual_size"],
-    bottoms_usual_size: (profile?.bottoms_usual_size ??
-      "") as FitProfileFormState["bottoms_usual_size"],
-    budget_min_rub: toFormValue(profile?.budget_min_rub),
-    budget_max_rub: toFormValue(profile?.budget_max_rub),
-    notes: profile?.notes ?? ""
-  };
-}
-
-function normalizeOptionalNumber(value: string) {
-  if (!value.trim()) {
-    return null;
-  }
-
-  return Number(value);
 }
 
 function initials(profile: UserProfile | null) {
@@ -532,6 +477,8 @@ export function AccountPage() {
     ? "Заполнен"
     : "Нужно уточнить";
 
+  const recommendationScopeKey = getRecommendationScopeKey(currentProfile?.id);
+
   const metrics = useMemo(
     () => [
       { label: "Имя пользователя", value: currentProfile?.username ?? "—" },
@@ -588,22 +535,10 @@ export function AccountPage() {
     setIsSavingFitProfile(true);
 
     try {
-      const updatedFitProfile = await updateFitProfile(accessToken, {
-        height_cm: normalizeOptionalNumber(fitProfileForm.height_cm),
-        weight_kg: fitProfileForm.weight_kg.trim() || null,
-        chest_cm: normalizeOptionalNumber(fitProfileForm.chest_cm),
-        waist_cm: normalizeOptionalNumber(fitProfileForm.waist_cm),
-        hips_cm: normalizeOptionalNumber(fitProfileForm.hips_cm),
-        inseam_cm: normalizeOptionalNumber(fitProfileForm.inseam_cm),
-        preferred_fit: fitProfileForm.preferred_fit || null,
-        preferred_style: fitProfileForm.preferred_style || null,
-        preferred_season: fitProfileForm.preferred_season || null,
-        tops_usual_size: fitProfileForm.tops_usual_size || null,
-        bottoms_usual_size: fitProfileForm.bottoms_usual_size || null,
-        budget_min_rub: normalizeOptionalNumber(fitProfileForm.budget_min_rub),
-        budget_max_rub: normalizeOptionalNumber(fitProfileForm.budget_max_rub),
-        notes: fitProfileForm.notes.trim() || null
-      });
+      const updatedFitProfile = await updateFitProfile(
+        accessToken,
+        fitProfileFormToPayload(fitProfileForm)
+      );
 
       setFitProfileForm(fitProfileToForm(updatedFitProfile));
       setSession({
@@ -1194,7 +1129,33 @@ export function AccountPage() {
               </form>
             </section>
 
+            <div className="mt-8">
+              <RecommendationHistoryPanel
+                scopeKey={recommendationScopeKey}
+                title="Сохранённые рекомендации"
+                description="Просмотренные smart fitting рекомендации и capsule looks остаются в аккаунте для быстрого сравнения."
+                emptyText="История появится после просмотра карточек товаров с персональной рекомендацией."
+              />
+            </div>
+
             <div className="mt-8 border border-white/10 bg-ink-900/60 p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
+                <div>
+                  <p className="text-xs font-black uppercase text-neon-teal">
+                    Smart fitting wizard
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Если удобнее проходить fit-profile по шагам, откройте отдельный wizard.
+                  </p>
+                </div>
+                <Link
+                  href="/fitting"
+                  className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
+                >
+                  Открыть wizard
+                </Link>
+              </div>
+
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase text-neon-amber">

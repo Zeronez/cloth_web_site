@@ -191,6 +191,9 @@ export type FitRecommendationWarning =
   | "one_size_only"
   | "closest_available_size_selected"
   | "recommended_size_out_of_stock"
+  | "runs_small"
+  | "runs_large"
+  | "oversized_by_design"
   | "style_fit_mismatch"
   | "season_mismatch"
   | "style_mismatch";
@@ -209,15 +212,20 @@ export type FitRecommendationOutfitItem = {
 export type FitRecommendation = {
   recommended_size: FitProfileSize | null;
   confidence: FitRecommendationConfidence;
+  risk_level?: "low" | "medium" | "high";
   profile_ready: boolean;
   missing_profile_fields: Array<keyof FitProfile | string>;
   summary: string;
   explanation: string;
   reasons: string[];
+  risk_reasons?: string[];
   warnings: Array<FitRecommendationWarning | string>;
+  fallback_action?: string;
   outfit: {
     items: FitRecommendationOutfitItem[];
     total_price: string | null;
+    budget_status?: "not_checked" | "under_budget" | "near_budget" | "over_budget";
+    budget_warning?: string;
   };
 };
 

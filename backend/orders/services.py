@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from catalog.models import InventoryAdjustment
+from catalog.services import build_size_recommendation
 from catalog.stock import adjust_variant_stock
 from cart.models import Cart, CartItem
 from catalog.models import ProductVariant
@@ -210,6 +211,11 @@ def checkout_cart(user, shipping_data):
                 color=variant.color,
                 quantity=item.quantity,
                 price_at_purchase=price,
+                recommendation_snapshot=build_size_recommendation(
+                    product=variant.product,
+                    user=user,
+                    profile_override=dict(getattr(user, "fit_profile", {}) or {}),
+                ),
             )
         )
 

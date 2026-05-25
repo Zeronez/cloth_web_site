@@ -13,6 +13,11 @@ import {
 import { trackEvent } from "../../lib/analytics";
 import { useCartSync } from "../../lib/use-cart-sync";
 import { useFavoritesStore } from "../../stores/favorites-store";
+import {
+  getRecommendationEntryId,
+  getRecommendationScopeKey,
+  useRecommendationHistoryStore
+} from "../../stores/recommendation-history-store";
 import { useUserStore } from "../../stores/user-store";
 import { FavoriteToggleButton } from "../catalog/favorite-toggle-button";
 import { InlineNotice, ProductDetailSkeleton } from "../loading-states";
@@ -71,8 +76,15 @@ function availabilityText(variant: ProductVariant | null | undefined) {
 export function ProductDetailPage({ slug }: { slug: string }) {
   const { addItem } = useCartSync();
   const accessToken = useUserStore((state) => state.accessToken);
+  const profile = useUserStore((state) => state.profile);
   const clearSession = useUserStore((state) => state.clearSession);
   const setFavorites = useFavoritesStore((state) => state.setFavorites);
+  const recordRecommendationView = useRecommendationHistoryStore(
+    (state) => state.recordView
+  );
+  const toggleSavedRecommendation = useRecommendationHistoryStore(
+    (state) => state.toggleSaved
+  );
   const productQuery = useQuery({
     queryKey: ["product", slug, accessToken],
     queryFn: async () => {
@@ -102,6 +114,18 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const product = productQuery.data ?? null;
   const fitRecommendation = product?.fit_recommendation ?? null;
   const [trackedProductId, setTrackedProductId] = useState<number | null>(null);
+  const recommendationScopeKey = useMemo(
+    () => getRecommendationScopeKey(profile?.id),
+    [profile?.id]
+  );
+  const recommendationEntryId = product
+    ? getRecommendationEntryId(recommendationScopeKey, product.id)
+    : null;
+  const isRecommendationSaved = useRecommendationHistoryStore((state) =>
+    recommendationEntryId
+      ? Boolean(state.entries.find((entry) => entry.id === recommendationEntryId)?.savedAt)
+      : false
+  );
 
   const selectableVariants = useMemo(
     () => (product?.variants ?? []).filter((variant) => variant.is_active),
@@ -157,6 +181,27 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       product_name: product.name
     });
   }, [product, trackedProductId]);
+
+  useEffect(() => {
+    if (!accessToken || !product || !fitRecommendation) {
+      return;
+    }
+
+    recordRecommendationView({
+      scopeKey: recommendationScopeKey,
+      productId: product.id,
+      productSlug: product.slug,
+      productName: product.name,
+      categoryName: product.category.name,
+      recommendation: fitRecommendation
+    });
+  }, [
+    accessToken,
+    fitRecommendation,
+    product,
+    recommendationScopeKey,
+    recordRecommendationView
+  ]);
 
   useEffect(() => {
     if (favoritesQuery.error instanceof ApiError && favoritesQuery.error.status === 401) {
@@ -353,6 +398,26 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 {fitRecommendation.explanation}
               </p>
 
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/fitting"
+                  className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
+                >
+                  Открыть fitting wizard
+                </Link>
+                {recommendationEntryId ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSavedRecommendation(recommendationEntryId)}
+                    className="h-10 border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-neon-crimson/60 hover:bg-white/10"
+                  >
+                    {isRecommendationSaved
+                      ? "Убрать из сохранённого"
+                      : "Сохранить рекомендацию"}
+                  </button>
+                ) : null}
+              </div>
+
               {fitRecommendation.warnings.length > 0 ? (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {fitRecommendation.warnings.map((warning) => (
@@ -364,16 +429,24 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                         ? "Размер заканчивается"
                         : warning === "closest_available_size_selected"
                           ? "Подобран ближайший размер"
-                          : warning === "style_fit_mismatch"
-                            ? "Посадка отличается от предпочтений"
-                            : warning === "season_mismatch"
-                              ? "Сезон не совпадает"
-                              : warning === "style_mismatch"
-                                ? "Стиль может не совпасть"
-                                : warning === "fit_profile_incomplete"
-                                  ? "Нужны дополнительные данные"
-                                  : warning === "one_size_only"
-                                    ? "One size"
+                          : warning === "runs_small"
+                            ? "Маломерит"
+                            : warning === "runs_large"
+                              ? "Большемерит"
+                              : warning === "oversized_by_design"
+                                ? "Оверсайз по дизайну"
+                            : warning === "style_fit_mismatch"
+                              ? "Посадка отличается от предпочтений"
+                              : warning === "season_mismatch"
+                                ? "Сезон не совпадает"
+                                : warning === "style_mismatch"
+                                  ? "Стиль может не совпасть"
+                                  : warning === "fit_profile_incomplete"
+                                    ? "Нужны дополнительные данные"
+                                    : warning === "one_size_only"
+                                      ? "One size"
+                                      : warning === "no_active_sizes"
+                                        ? "Нет активных размеров"
                                     : warning}
                     </span>
                   ))}

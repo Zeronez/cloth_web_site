@@ -27,6 +27,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "quantity",
             "price_at_purchase",
             "line_total",
+            "recommendation_snapshot",
         )
 
     def get_product(self, obj):

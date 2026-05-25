@@ -56,6 +56,18 @@ class Product(TimeStampedModel):
         ACTIVE = "active", "Active"
         ARCHIVED = "archived", "Archived"
 
+    class RecommendationFitTendency(models.TextChoices):
+        TRUE_TO_SIZE = "true_to_size", "Соответствует размеру"
+        RUNS_SMALL = "runs_small", "Маломерит"
+        RUNS_LARGE = "runs_large", "Большемерит"
+        OVERSIZED_DESIGN = "oversized_design", "Оверсайз по дизайну"
+
+    class RecommendationLayeringRole(models.TextChoices):
+        BASE = "base", "База"
+        MID = "mid", "Средний слой"
+        OUTER = "outer", "Верхний слой"
+        STATEMENT = "statement", "Акцент"
+
     category = models.ForeignKey(
         Category, related_name="products", on_delete=models.PROTECT
     )
@@ -97,6 +109,22 @@ class Product(TimeStampedModel):
     gender = models.CharField(max_length=32, blank=True)
     season = models.CharField(max_length=32, blank=True)
     weight_grams = models.PositiveIntegerField(null=True, blank=True)
+    recommendation_fit_tendency = models.CharField(
+        max_length=24,
+        choices=RecommendationFitTendency.choices,
+        default=RecommendationFitTendency.TRUE_TO_SIZE,
+    )
+    recommendation_fit_confidence = models.PositiveSmallIntegerField(default=3)
+    recommendation_silhouette = models.CharField(max_length=120, blank=True)
+    recommendation_style_tags = models.JSONField(default=list, blank=True)
+    recommendation_seasonality = models.CharField(max_length=64, blank=True)
+    recommendation_layering_role = models.CharField(
+        max_length=24,
+        choices=RecommendationLayeringRole.choices,
+        blank=True,
+    )
+    recommendation_body_shape_notes = models.TextField(blank=True)
+    recommendation_notes = models.TextField(blank=True)
 
     seo_title = models.CharField(max_length=180, blank=True)
     seo_description = models.CharField(max_length=320, blank=True)
@@ -309,6 +337,12 @@ class ProductVariant(TimeStampedModel):
     stock_version = models.PositiveIntegerField(default=0)
     price_delta = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
+    recommendation_fit_tendency_override = models.CharField(
+        max_length=24,
+        choices=Product.RecommendationFitTendency.choices,
+        blank=True,
+    )
+    recommendation_notes_override = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ["product", "color", "size"]
@@ -457,6 +491,45 @@ class LowStockAlert(TimeStampedModel):
 
     def __str__(self):
         return f"Low stock {self.variant.sku} ({self.stock_quantity})"
+
+
+class RecommendationDecisionLog(TimeStampedModel):
+    class Source(models.TextChoices):
+        PRODUCT_DETAIL = "product_detail", "Карточка товара"
+        PRODUCT_LIST = "product_list", "Список товаров"
+        RECOMMENDATION_API = "recommendation_api", "Recommendation API"
+        CHECKOUT = "checkout", "Checkout snapshot"
+
+    product = models.ForeignKey(
+        Product,
+        related_name="recommendation_logs",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        "users.User",
+        related_name="recommendation_logs",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    source = models.CharField(max_length=32, choices=Source.choices)
+    recommended_size = models.CharField(max_length=16, blank=True)
+    confidence = models.CharField(max_length=16, blank=True)
+    risk_level = models.CharField(max_length=16, blank=True)
+    warnings = models.JSONField(default=list, blank=True)
+    reasons = models.JSONField(default=list, blank=True)
+    fallback_action = models.CharField(max_length=120, blank=True)
+    profile_snapshot = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["source", "created_at"], name="catalog_reco_source_idx"),
+            models.Index(fields=["product", "created_at"], name="catalog_reco_product_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.product_id}:{self.source}:{self.recommended_size or '-'}"
 
 
 class ProductImage(TimeStampedModel):

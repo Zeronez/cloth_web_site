@@ -62,6 +62,18 @@ function getWarningLabel(warning: string) {
   if (warning === "one_size_only") {
     return "One size";
   }
+  if (warning === "runs_small") {
+    return "Маломерит";
+  }
+  if (warning === "runs_large") {
+    return "Большемерит";
+  }
+  if (warning === "oversized_by_design") {
+    return "Оверсайз по дизайну";
+  }
+  if (warning === "no_active_sizes") {
+    return "Нет активных размеров";
+  }
   return warning;
 }
 

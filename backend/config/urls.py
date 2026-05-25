@@ -36,6 +36,10 @@ from users.views import (
     logout,
 )
 
+admin.site.site_header = "AnimeAttire Control Room"
+admin.site.site_title = "AnimeAttire Admin"
+admin.site.index_title = "Управление магазином и умной примерочной"
+
 router = DefaultRouter()
 router.register("categories", CategoryViewSet, basename="category")
 router.register("franchises", AnimeFranchiseViewSet, basename="franchise")

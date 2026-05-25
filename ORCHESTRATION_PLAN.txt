@@ -112,9 +112,9 @@ Phase 2.3: Catalog and Merchandising
 [x] Add collection/drop model for limited capsules.
 [x] Add product tags and search synonyms in Russian.
 [x] Add product attributes: material, fit, care, gender/unisex, season, weight.
-[ ] Add recommendation attributes to products and variants: fit tendency, true-to-size confidence, silhouette, style tags, seasonality, layering role, body-shape notes.
-[ ] Add stylist compatibility metadata between products for outfit generation.
-[ ] Add merchant-authored recommendation notes: "runs small", "take one size up", "good for oversized look", "not for fitted style".
+[x] Add recommendation attributes to products and variants: fit tendency, true-to-size confidence, silhouette, style tags, seasonality, layering role, body-shape notes.
+[x] Add stylist compatibility metadata between products for outfit generation.
+[x] Add merchant-authored recommendation notes: "runs small", "take one size up", "good for oversized look", "not for fitted style".
 [x] Add size chart entities per category/product.
 [x] Add variant images by color.
 [x] Add video/media support for product hover/gallery.
@@ -130,7 +130,7 @@ Phase 2.4: Pricing, Promotions, and Taxes
 [x] Store money internally with Decimal and currency code.
 [x] Add price history/audit.
 [x] Add sale price/scheduled promotions.
-[ ] Add outfit recommendation budget rules: under budget, near budget, over budget warning.
+[x] Add outfit recommendation budget rules: under budget, near budget, over budget warning.
 [x] Add coupon model: fixed, percentage, free shipping, min cart, per-user limit.
 [x] Add discount conflict rules.
 [x] Add gift cards/store credit if needed.
@@ -183,7 +183,7 @@ Phase 2.7: Notifications and Support
 [x] Add low-stock/internal admin email.
 [x] Add SMS/Telegram notifications if provider selected. (Decision: not selected for launch)
 [x] Add support request/contact form.
-[ ] Add support visibility into recommendation context so staff can explain size choice and outfit logic during disputes/returns.
+[x] Add support visibility into recommendation context so staff can explain size choice and outfit logic during disputes/returns.
 [x] Add support/admin notes on orders.
 [x] Add notification delivery log and idempotent order confirmation task.
 
@@ -192,10 +192,10 @@ Phase 2.8: Recommendation Engine and Smart Fitting
 [x] Design size recommendation engine v1 using deterministic rules from size charts, product fit metadata, and customer fit profile.
 [x] Design outfit recommendation engine v1 that assembles capsule looks by style, season, color compatibility, and budget.
 [x] Implement recommendation explanation layer: why this size, why this item, why this full look.
-[ ] Implement risk scoring for returns: low/medium/high confidence with visible reasons.
-[ ] Add fallback behavior when confidence is low or fit data is incomplete.
-[ ] Add admin tooling to tune recommendation rules without developer intervention.
-[ ] Log recommendation decisions for later analysis and quality improvement.
+[x] Implement risk scoring for returns: low/medium/high confidence with visible reasons.
+[x] Add fallback behavior when confidence is low or fit data is incomplete.
+[x] Add admin tooling to tune recommendation rules without developer intervention.
+[x] Log recommendation decisions for later analysis and quality improvement.
 [ ] Prepare phase-2 architecture option for ML/ranking upgrade after sufficient behavioral data is collected.
 
 Phase 3: Frontend Core
@@ -242,12 +242,12 @@ Phase 3.2: Frontend Production UX
 [x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
-[~] Add smart fitting wizard UI: height, weight, measurements, fit preference, style, season, budget. (Account-based fit profile UI shipped; dedicated wizard still pending)
+[x] Add smart fitting wizard UI: height, weight, measurements, fit preference, style, season, budget.
 [x] Show recommended size on product page with confidence label and plain-language explanation.
 [x] Show warnings on product page: runs small, size up recommended, style mismatch, low confidence.
 [x] Add "Complete the look" capsule block with 2-5 compatible items and total outfit price.
 [x] Add outfit recommendation panel on catalog and product pages.
-[ ] Add recommendation history/save-state so the customer can compare suggested looks.
+[x] Add recommendation history/save-state so the customer can compare suggested looks.
 [x] Implement order tracking page.
 [x] Implement search page with suggestions.
 [x] Implement SEO metadata for all public pages.
@@ -259,7 +259,7 @@ Phase 3.2: Frontend Production UX
 
 Phase 4: Admin and Operations Product
 -------------------------------------
-[ ] Improve Django Admin branding and navigation for AnimeAttire.
+[x] Improve Django Admin branding and navigation for AnimeAttire.
 [x] Add staff roles/groups and permissions.
 [x] Add catalog manager workflow.
 [x] Add order manager workflow.
@@ -350,7 +350,7 @@ Backend Unit Tests
 [x] Stock availability and validation contracts.
 [x] Size recommendation rule evaluation.
 [x] Recommendation explanation generation.
-[ ] Return-risk scoring logic.
+[x] Return-risk scoring logic.
 [x] Outfit compatibility and budget filtering.
 [ ] Money calculations: Decimal precision, rounding, currency.
 [ ] Product variant price calculation with price_delta.
@@ -430,16 +430,16 @@ Frontend Unit and Component Tests
 [x] Cart drawer item quantity changes.
 [x] Zustand cart persistence and merge behavior.
 [x] User store session set/clear.
-[ ] Smart fitting form validation in Russian.
+[x] Smart fitting form validation in Russian.
 [x] Product page recommendation card rendering.
 [x] Outfit recommendation carousel/grid rendering.
 [ ] Size warning badge rendering.
 [ ] Product card renders price/stock/category.
 [ ] Catalog filters update query params/API params.
-[ ] Product detail size selection.
+[x] Product detail size selection.
 [ ] Checkout form validation in Russian.
-[ ] Error state rendering.
-[ ] Skeleton state rendering.
+[x] Error state rendering.
+[~] Skeleton state rendering.
 [ ] Accessibility checks for key components.
 
 Frontend Integration Tests
@@ -449,8 +449,8 @@ Frontend Integration Tests
 [x] Fit profile loads into recommendation UI and updates API.
 [x] Product page renders live recommendation response from test backend.
 [x] Catalog page shows capsule recommendations from real API.
-[ ] Guest cart survives refresh.
-[ ] Cart syncs after login.
+[~] Guest cart survives refresh.
+[~] Cart syncs after login.
 [ ] Catalog page renders real API data from test backend.
 [ ] Product page renders real API data from test backend.
 [x] Checkout page posts to real backend API contract in component tests.
@@ -523,7 +523,7 @@ Operational Acceptance Tests
 [!] Monitoring alert test. (Blocked by live alert sink/on-call route)
 [!] Sentry/error reporting test. (Blocked by real DSN and deployed environment)
 [x] Staff can create product, variant, image, stock adjustment in admin.
-[ ] Staff can process order through fulfillment statuses.
+[x] Staff can process order through fulfillment statuses.
 [x] Staff can issue refund/cancel order according to rules.
 [x] Support can find customer/order and add internal note.
 
@@ -547,8 +547,8 @@ Next Executable Tranche
 -----------------------
 [x] Implement fit profile backend model/API/edit flow.
 [x] Implement deterministic recommendation engine v1 with explanation and low-confidence fallback.
-[ ] Add recommendation metadata to catalog/admin and wire product detail recommendation response.
-[~] Add smart fitting frontend wizard and recommendation UI on product/catalog pages. (Account UI + PDP + catalog recommendation shipped; dedicated wizard/history still pending)
+[x] Add recommendation metadata to catalog/admin and wire product detail recommendation response.
+[x] Add smart fitting frontend wizard and recommendation UI on product/catalog pages.
 [x] Add backend/frontend/unit/integration tests for fit profile and recommendation flows.
 [ ] Add CI browser test harness with real frontend server and artifact uploads.
 [ ] Add CI MinIO/S3-emulator media tests and image smoke checks.

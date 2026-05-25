@@ -8,7 +8,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from catalog.filters import ProductFilter
-from catalog.models import AnimeFranchise, Category, Product, ProductImage
+from catalog.models import (
+    AnimeFranchise,
+    Category,
+    Product,
+    ProductImage,
+    RecommendationDecisionLog,
+)
 from catalog.services import build_size_recommendation
 from catalog.serializers import (
     AnimeFranchiseSerializer,
@@ -119,5 +125,17 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             product=product,
             user=request.user,
             profile_override=serializer.validated_data or None,
+        )
+        RecommendationDecisionLog.objects.create(
+            product=product,
+            user=request.user if getattr(request.user, "is_authenticated", False) else None,
+            source=RecommendationDecisionLog.Source.RECOMMENDATION_API,
+            recommended_size=recommendation.get("recommended_size") or "",
+            confidence=recommendation.get("confidence") or "",
+            risk_level=recommendation.get("risk_level") or "",
+            warnings=recommendation.get("warnings") or [],
+            reasons=recommendation.get("reasons") or [],
+            fallback_action=recommendation.get("fallback_action") or "",
+            profile_snapshot=serializer.data or getattr(request.user, "fit_profile", {}) or {},
         )
         return Response(recommendation)

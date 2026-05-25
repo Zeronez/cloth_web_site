@@ -75,6 +75,21 @@ class SizeChartSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "measurements", "notes", "category_id", "product_id")
 
 
+class ProductRecommendationMetadataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = (
+            "recommendation_fit_tendency",
+            "recommendation_fit_confidence",
+            "recommendation_silhouette",
+            "recommendation_style_tags",
+            "recommendation_seasonality",
+            "recommendation_layering_role",
+            "recommendation_body_shape_notes",
+            "recommendation_notes",
+        )
+
+
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     franchise = AnimeFranchiseSerializer(read_only=True)
@@ -82,6 +97,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     total_stock = serializers.IntegerField(read_only=True)
     tags = ProductTagSerializer(many=True, read_only=True)
     fit_recommendation = serializers.SerializerMethodField()
+    recommendation_metadata = ProductRecommendationMetadataSerializer(read_only=True, source="*")
 
     class Meta:
         model = Product
@@ -96,6 +112,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "main_image",
             "total_stock",
             "tags",
+            "recommendation_metadata",
             "fit_recommendation",
         )
 

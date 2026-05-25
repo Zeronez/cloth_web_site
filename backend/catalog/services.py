@@ -27,12 +27,15 @@ STYLE_TOKENS = {
 DEFAULT_RECOMMENDATION = {
     "recommended_size": None,
     "confidence": "none",
+    "risk_level": "high",
     "profile_ready": False,
     "missing_profile_fields": ["height_cm", "weight_kg", "preferred_fit"],
     "summary": "Заполните параметры фигуры, чтобы получить рекомендацию по размеру и образу.",
     "explanation": "Добавьте рост, вес и предпочтения по посадке в fit profile, чтобы включить умную примерочную.",
     "reasons": [],
+    "risk_reasons": ["Недостаточно данных для персональной рекомендации."],
     "warnings": ["fit_profile_incomplete"],
+    "fallback_action": "fill_fit_profile",
     "outfit": {"items": [], "total_price": None},
 }
 
@@ -60,6 +63,21 @@ def _nearest_available_size(
             SIZE_ORDER.get(size, 999),
         ),
     )
+
+
+def _shift_size(size: str | None, delta: int) -> str | None:
+    if size is None or size == ProductVariant.Size.ONE_SIZE:
+        return size
+    rank = SIZE_ORDER.get(size)
+    if rank is None:
+        return size
+    reverse_lookup = {
+        value: key
+        for key, value in SIZE_ORDER.items()
+        if key != ProductVariant.Size.ONE_SIZE
+    }
+    shifted_rank = max(0, min(max(reverse_lookup), rank + delta))
+    return reverse_lookup.get(shifted_rank, size)
 
 
 def _numeric(profile: dict, key: str) -> float | None:
@@ -216,6 +234,42 @@ def _main_image_url(product: Product) -> str | None:
     return image.image.url if isinstance(image, ProductImage) and image.image else None
 
 
+def _build_risk_summary(*, confidence: str, warnings: list[str], profile_ready: bool) -> tuple[str, list[str], str]:
+    risk_reasons: list[str] = []
+    risk_level = "low"
+    fallback_action = "ready"
+
+    if not profile_ready:
+        risk_level = "high"
+        fallback_action = "fill_fit_profile"
+        risk_reasons.append("Профиль заполнен не полностью, поэтому точность рекомендации снижена.")
+
+    if "recommended_size_out_of_stock" in warnings:
+        risk_level = "high"
+        fallback_action = "check_alternative_size"
+        risk_reasons.append("Рекомендованный размер сейчас отсутствует на складе.")
+    elif "closest_available_size_selected" in warnings:
+        risk_level = "medium" if risk_level != "high" else risk_level
+        fallback_action = "compare_neighbor_sizes"
+        risk_reasons.append("Система выбрала ближайший размер, а не точное совпадение.")
+
+    if "season_mismatch" in warnings or "style_mismatch" in warnings or "style_fit_mismatch" in warnings:
+        if risk_level == "low":
+            risk_level = "medium"
+        fallback_action = "review_style_match"
+        risk_reasons.append("Есть расхождение между товаром и предпочтениями пользователя.")
+
+    if confidence in {"none", "low"} and risk_level == "low":
+        risk_level = "medium"
+        fallback_action = "review_measurements"
+        risk_reasons.append("Рекомендация собрана с ограниченной уверенностью.")
+
+    if not risk_reasons:
+        risk_reasons.append("Существенных факторов риска для возврата не обнаружено.")
+
+    return risk_level, risk_reasons, fallback_action
+
+
 def _build_outfit_recommendation(product: Product, profile: dict) -> dict:
     budget_max = _numeric(profile, "budget_max_rub")
     preferred_style = (profile.get("preferred_style") or "").lower()
@@ -245,6 +299,8 @@ def _build_outfit_recommendation(product: Product, profile: dict) -> dict:
     current_total = Decimal(product.base_price)
     items = []
     used_categories = {product.category_id}
+    budget_status = "not_checked" if budget_max is None else "under_budget"
+    budget_warning = ""
 
     for related_product in related_products:
         if related_product.category_id in used_categories:
@@ -259,6 +315,8 @@ def _build_outfit_recommendation(product: Product, profile: dict) -> dict:
 
         next_total = current_total + Decimal(related_product.base_price)
         if budget_max is not None and float(next_total) > budget_max and items:
+            budget_status = "over_budget"
+            budget_warning = "Следующий товар выводит капсулу выше заданного бюджета."
             continue
 
         items.append(
@@ -283,9 +341,19 @@ def _build_outfit_recommendation(product: Product, profile: dict) -> dict:
         if len(items) == 3:
             break
 
+    if budget_max is not None and items:
+        if float(current_total) > budget_max:
+            budget_status = "over_budget"
+            budget_warning = "Готовый образ превышает заданный бюджет."
+        elif float(current_total) >= budget_max * 0.85:
+            budget_status = "near_budget"
+            budget_warning = "Готовый образ почти упирается в верхнюю границу бюджета."
+
     return {
         "items": items,
         "total_price": str(current_total) if items else None,
+        "budget_status": budget_status,
+        "budget_warning": budget_warning,
     }
 
 
@@ -297,12 +365,15 @@ def build_size_recommendation(
         return {
             "recommended_size": None,
             "confidence": "none",
+            "risk_level": "high",
             "profile_ready": False,
             "missing_profile_fields": [],
             "summary": "Сейчас у товара нет активных размеров.",
             "explanation": "Размерная рекомендация недоступна, потому что активные варианты отсутствуют.",
             "reasons": [],
+            "risk_reasons": ["У товара нет активных размеров, поэтому подобрать размер нельзя."],
             "warnings": ["no_active_sizes"],
+            "fallback_action": "wait_for_restock",
             "outfit": {"items": [], "total_price": None},
         }
 
@@ -337,6 +408,20 @@ def build_size_recommendation(
             confidence = "high" if measurement_score >= 2 else "medium"
             reasons.append("Размер подобран по сохранённым меркам и параметрам фигуры.")
 
+    fit_tendency = product.recommendation_fit_tendency
+
+    if fit_tendency == Product.RecommendationFitTendency.RUNS_SMALL:
+        target_size = _shift_size(target_size, 1)
+        warnings.append("runs_small")
+        reasons.append("Модель помечена как маломерящая, поэтому рекомендация сдвинута на размер вверх.")
+    elif fit_tendency == Product.RecommendationFitTendency.RUNS_LARGE:
+        target_size = _shift_size(target_size, -1)
+        warnings.append("runs_large")
+        reasons.append("Модель помечена как большемерящая, поэтому рекомендация сдвинута на размер вниз.")
+    elif fit_tendency == Product.RecommendationFitTendency.OVERSIZED_DESIGN:
+        warnings.append("oversized_by_design")
+        reasons.append("Посадка заложена как оверсайз по дизайну изделия.")
+
     if target_size is None and ProductVariant.Size.ONE_SIZE in available_sizes:
         target_size = ProductVariant.Size.ONE_SIZE
         warnings.append("one_size_only")
@@ -360,12 +445,21 @@ def build_size_recommendation(
     recommended_variant = next(
         variant for variant in active_variants if variant.size == recommended_size
     )
+    variant_fit_tendency = (
+        recommended_variant.recommendation_fit_tendency_override or fit_tendency
+    )
     if recommended_variant.stock_quantity == 0:
         warnings.append("recommended_size_out_of_stock")
         confidence = "low"
         reasons.append(
             "Рекомендованный размер виден в витрине, но сейчас отсутствует на складе."
         )
+    if (
+        variant_fit_tendency == Product.RecommendationFitTendency.OVERSIZED_DESIGN
+        and "oversized_by_design" not in warnings
+    ):
+        warnings.append("oversized_by_design")
+        reasons.append("Конкретный вариант также отмечен как оверсайз по дизайну.")
 
     product_fit = (product.fit or "").lower()
     preferred_fit = (profile.get("preferred_fit") or "").lower()
@@ -389,6 +483,13 @@ def build_size_recommendation(
         if expected_tokens and not any(token in style_tokens for token in expected_tokens):
             warnings.append("style_mismatch")
 
+    if product.recommendation_notes:
+        reasons.append(product.recommendation_notes)
+    if product.recommendation_body_shape_notes:
+        reasons.append(product.recommendation_body_shape_notes)
+    if recommended_variant.recommendation_notes_override:
+        reasons.append(recommended_variant.recommendation_notes_override)
+
     if not profile_ready:
         confidence = "low"
         warnings.append("fit_profile_incomplete")
@@ -398,9 +499,16 @@ def build_size_recommendation(
             "Рекомендация построена по сохранённому fit profile и доступным размерам."
         )
 
+    risk_level, risk_reasons, fallback_action = _build_risk_summary(
+        confidence=confidence,
+        warnings=warnings,
+        profile_ready=profile_ready,
+    )
+
     return {
         "recommended_size": recommended_size,
         "confidence": confidence,
+        "risk_level": risk_level,
         "profile_ready": profile_ready,
         "missing_profile_fields": missing_fields,
         "summary": (
@@ -410,6 +518,8 @@ def build_size_recommendation(
         ),
         "explanation": " ".join(reasons),
         "reasons": reasons,
+        "risk_reasons": risk_reasons,
         "warnings": warnings,
+        "fallback_action": fallback_action,
         "outfit": _build_outfit_recommendation(product, profile),
     }

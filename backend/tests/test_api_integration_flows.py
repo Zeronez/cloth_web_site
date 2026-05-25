@@ -391,11 +391,14 @@ def test_product_detail_returns_richer_fit_recommendation_for_authenticated_user
     response = authenticated_client.get(f"/api/v1/products/{product.slug}/")
 
     assert response.status_code == 200
+    assert response.data["recommendation_metadata"]["recommendation_fit_tendency"] == "true_to_size"
     recommendation = response.data["fit_recommendation"]
     assert recommendation["recommended_size"] == "M"
     assert recommendation["profile_ready"] is True
     assert recommendation["summary"]
     assert recommendation["reasons"]
+    assert recommendation["risk_level"] in {"low", "medium", "high"}
+    assert recommendation["fallback_action"]
     assert recommendation["outfit"]["items"]
 
 
@@ -445,6 +448,7 @@ def test_product_list_returns_fit_recommendation_for_authenticated_user(
     )
     assert result["fit_recommendation"]["recommended_size"] == "M"
     assert result["fit_recommendation"]["summary"]
+    assert result["recommendation_metadata"]["recommendation_fit_confidence"] == 3
 
 
 def test_product_recommendation_endpoint_accepts_query_profile_override(
@@ -687,6 +691,12 @@ def test_checkout_creates_order_decrements_stock_and_clears_cart(
     assert checkout_response.data["status"] == "pending"
     assert checkout_response.data["total_amount"] == "125.00"
     assert len(checkout_response.data["items"]) == 2
+    assert checkout_response.data["items"][0]["recommendation_snapshot"]["fallback_action"]
+    assert checkout_response.data["items"][0]["recommendation_snapshot"]["risk_level"] in {
+        "low",
+        "medium",
+        "high",
+    }
 
     order = Order.objects.get(user=user)
     assert order.total_amount == Decimal("125.00")
