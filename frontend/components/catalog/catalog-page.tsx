@@ -33,6 +33,38 @@ const money = new Intl.NumberFormat("ru-RU", {
   style: "currency"
 });
 
+const fitRecommendationTone: Record<string, string> = {
+  none: "border-white/10 bg-white/5 text-slate-300",
+  low: "border-neon-amber/20 bg-neon-amber/10 text-orange-100",
+  medium: "border-neon-teal/20 bg-neon-teal/10 text-neon-teal",
+  high: "border-neon-crimson/20 bg-neon-crimson/10 text-white"
+};
+
+function getWarningLabel(warning: string) {
+  if (warning === "recommended_size_out_of_stock") {
+    return "Размер заканчивается";
+  }
+  if (warning === "closest_available_size_selected") {
+    return "Ближайший размер";
+  }
+  if (warning === "style_fit_mismatch") {
+    return "Посадка отличается";
+  }
+  if (warning === "season_mismatch") {
+    return "Сезон не совпадает";
+  }
+  if (warning === "style_mismatch") {
+    return "Стиль может не совпасть";
+  }
+  if (warning === "fit_profile_incomplete") {
+    return "Нужны ещё данные";
+  }
+  if (warning === "one_size_only") {
+    return "One size";
+  }
+  return warning;
+}
+
 function getNextPageNumber(nextPageUrl: string | null) {
   if (!nextPageUrl) {
     return undefined;
@@ -77,10 +109,20 @@ export function CatalogPage() {
   const productsQuery = useInfiniteQuery({
     queryKey: ["products", productParams.toString()],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams(productParams);
       params.set("page", String(pageParam));
-      return fetchProducts(params);
+
+      try {
+        return await fetchProducts(params, accessToken);
+      } catch (error) {
+        if (accessToken && error instanceof ApiError && error.status === 401) {
+          clearSession();
+          return fetchProducts(params);
+        }
+
+        throw error;
+      }
     },
     getNextPageParam: (lastPage) => getNextPageNumber(lastPage.next),
     refetchOnMount: "always",
@@ -345,6 +387,66 @@ export function CatalogPage() {
                                       {tag.label}
                                     </span>
                                   ))}
+                                </div>
+                              ) : null}
+
+                              {product.fit_recommendation ? (
+                                <div
+                                  className={`mt-4 rounded-2xl border p-3 ${fitRecommendationTone[product.fit_recommendation.confidence] ?? fitRecommendationTone.none}`}
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.18em]">
+                                      Умная примерочная
+                                    </p>
+                                    <span className="text-xs font-semibold uppercase">
+                                      {product.fit_recommendation.recommended_size
+                                        ? `Размер ${product.fit_recommendation.recommended_size}`
+                                        : "Нужны данные"}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 line-clamp-2 text-sm leading-5">
+                                    {product.fit_recommendation.summary}
+                                  </p>
+                                  {product.fit_recommendation.warnings.length > 0 ? (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      {product.fit_recommendation.warnings
+                                        .slice(0, 2)
+                                        .map((warning) => (
+                                          <span
+                                            key={`${product.slug}-${warning}`}
+                                            className="rounded-full border border-white/10 bg-black/15 px-2 py-1 text-[10px] font-semibold uppercase text-slate-100"
+                                          >
+                                            {getWarningLabel(warning)}
+                                          </span>
+                                        ))}
+                                    </div>
+                                  ) : null}
+                                  {product.fit_recommendation.outfit.items.length > 0 ? (
+                                    <p className="mt-3 text-xs leading-5 text-slate-200">
+                                      Капсула:{" "}
+                                      <span className="font-semibold">
+                                        {product.fit_recommendation.outfit.items.length}{" "}
+                                        {product.fit_recommendation.outfit.items.length === 1
+                                          ? "вещь"
+                                          : product.fit_recommendation.outfit.items.length < 5
+                                            ? "вещи"
+                                            : "вещей"}
+                                      </span>
+                                      {product.fit_recommendation.outfit.total_price ? (
+                                        <>
+                                          {" "}
+                                          · Итого{" "}
+                                          <span className="font-semibold">
+                                            {money.format(
+                                              Number(
+                                                product.fit_recommendation.outfit.total_price
+                                              )
+                                            )}
+                                          </span>
+                                        </>
+                                      ) : null}
+                                    </p>
+                                  ) : null}
                                 </div>
                               ) : null}
                             </div>

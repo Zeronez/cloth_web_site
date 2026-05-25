@@ -751,9 +751,15 @@ async function apiRequest<T>(
   return payload as T;
 }
 
-export async function fetchProducts(params: URLSearchParams) {
+export async function fetchProducts(
+  params: URLSearchParams,
+  token?: string | null
+) {
   const query = params.toString();
-  return apiGet<Paginated<Product>>(apiPath(`/products/${query ? `?${query}` : ""}`));
+  return apiRequest<Paginated<Product>>(
+    apiPath(`/products/${query ? `?${query}` : ""}`),
+    { token }
+  );
 }
 
 export async function fetchProduct(slug: string, token?: string | null) {

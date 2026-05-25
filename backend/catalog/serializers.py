@@ -81,6 +81,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     total_stock = serializers.IntegerField(read_only=True)
     tags = ProductTagSerializer(many=True, read_only=True)
+    fit_recommendation = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -95,6 +96,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "main_image",
             "total_stock",
             "tags",
+            "fit_recommendation",
         )
 
     def get_main_image(self, obj):
@@ -105,13 +107,17 @@ class ProductListSerializer(serializers.ModelSerializer):
             ProductImageSerializer(image, context=self.context).data if image else None
         )
 
+    def get_fit_recommendation(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        return build_size_recommendation(product=obj, user=user)
+
 
 class ProductDetailSerializer(ProductListSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = serializers.SerializerMethodField()
     tags = ProductTagSerializer(many=True, read_only=True)
     size_charts = SizeChartSerializer(many=True, read_only=True)
-    fit_recommendation = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + (
@@ -132,8 +138,3 @@ class ProductDetailSerializer(ProductListSerializer):
             many=True,
             context=self.context,
         ).data
-
-    def get_fit_recommendation(self, obj):
-        request = self.context.get("request")
-        user = getattr(request, "user", None) if request else None
-        return build_size_recommendation(product=obj, user=user)

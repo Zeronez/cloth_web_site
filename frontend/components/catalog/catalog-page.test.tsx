@@ -290,4 +290,63 @@ describe("CatalogPage", () => {
 
     expect(jest.mocked(fetchProducts).mock.calls[1][0].get("page")).toBe("3");
   });
+
+  it("renders smart fitting recommendation in catalog for authenticated user", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    jest.mocked(fetchProducts).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 8,
+          name: "Blazonry Body WHT",
+          slug: "blazonry-body-white",
+          category: { id: 14, name: "Боди", slug: "bodysuits", description: "" },
+          franchise: { id: 15, name: "Оригинал", slug: "original", description: "" },
+          base_price: "6990.00",
+          is_featured: true,
+          main_image: null,
+          total_stock: 5,
+          tags: [],
+          fit_recommendation: {
+            recommended_size: "M",
+            confidence: "high",
+            profile_ready: true,
+            missing_profile_fields: [],
+            summary: "Рекомендуем размер M.",
+            explanation: "Размер подобран по сохранённым параметрам пользователя.",
+            reasons: [],
+            warnings: ["closest_available_size_selected"],
+            outfit: {
+              items: [
+                {
+                  id: 100,
+                  name: "Tokyo Team Tee",
+                  slug: "tokyo-team-tee",
+                  category: "Футболки",
+                  franchise: "Оригинал",
+                  base_price: "5100.00",
+                  main_image_url: null,
+                  reason: "Поддерживает образ."
+                }
+              ],
+              total_price: "12090.00"
+            }
+          }
+        }
+      ]
+    } as any);
+
+    renderWithQueryClient(<CatalogPage />);
+
+    expect(await screen.findByText("Умная примерочная")).toBeInTheDocument();
+    expect(screen.getByText("Размер M")).toBeInTheDocument();
+    expect(screen.getByText(/итого/i)).toBeInTheDocument();
+    expect(jest.mocked(fetchProducts).mock.calls[0][1]).toBe("access-token");
+  });
 });

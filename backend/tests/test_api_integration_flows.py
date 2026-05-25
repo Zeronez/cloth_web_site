@@ -399,6 +399,54 @@ def test_product_detail_returns_richer_fit_recommendation_for_authenticated_user
     assert recommendation["outfit"]["items"]
 
 
+@pytest.mark.django_db
+def test_product_list_returns_fit_recommendation_for_authenticated_user(
+    authenticated_client,
+    user,
+    product_factory,
+):
+    user.update_fit_profile(
+        {
+            "height_cm": 178,
+            "weight_kg": "74",
+            "preferred_fit": "regular",
+            "preferred_style": "streetwear",
+            "tops_usual_size": "M",
+        }
+    )
+    product = product_factory(
+        name="Catalog Recommendation Hoodie",
+        base_price="8900.00",
+        description="Recommendation-ready hoodie.",
+        variants=[
+            {
+                "sku": "CAT-REC-M",
+                "size": ProductVariant.Size.M,
+                "color": "Black",
+                "stock_quantity": 5,
+                "price_delta": "0.00",
+                "is_active": True,
+            }
+        ],
+    )
+    product.slug = "catalog-recommendation-hoodie"
+    product.fit = "regular"
+    product.season = "autumn"
+    product.status = Product.PublishingStatus.ACTIVE
+    product.save(update_fields=["slug", "fit", "season", "status"])
+
+    response = authenticated_client.get("/api/v1/products/")
+
+    assert response.status_code == 200
+    result = next(
+        item
+        for item in response.data["results"]
+        if item["slug"] == "catalog-recommendation-hoodie"
+    )
+    assert result["fit_recommendation"]["recommended_size"] == "M"
+    assert result["fit_recommendation"]["summary"]
+
+
 def test_product_recommendation_endpoint_accepts_query_profile_override(
     api_client, product_factory
 ):
