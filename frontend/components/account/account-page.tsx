@@ -13,6 +13,7 @@ import {
   exportAccountData,
   fetchAddresses,
   fetchFavorites,
+  fetchFitProfile,
   fetchMe,
   fetchOrders,
   getOrderStatusLabel,
@@ -20,11 +21,17 @@ import {
   getOrderStatusTone,
   logoutUser,
   removeFavorite,
+  updateFitProfile,
   updateAddress,
   updateMe,
   type Address,
   type AddressInput,
   type FavoriteProductEntry,
+  type FitProfile,
+  type FitProfilePreferredFit,
+  type FitProfilePreferredSeason,
+  type FitProfilePreferredStyle,
+  type FitProfileSize,
   type Order,
   type UserProfile
 } from "../../lib/api";
@@ -36,6 +43,23 @@ type ProfileFormState = {
   last_name: string;
   email: string;
   phone: string;
+};
+
+type FitProfileFormState = {
+  height_cm: string;
+  weight_kg: string;
+  chest_cm: string;
+  waist_cm: string;
+  hips_cm: string;
+  inseam_cm: string;
+  preferred_fit: "" | FitProfilePreferredFit;
+  preferred_style: "" | FitProfilePreferredStyle;
+  preferred_season: "" | FitProfilePreferredSeason;
+  tops_usual_size: "" | FitProfileSize;
+  bottoms_usual_size: "" | FitProfileSize;
+  budget_min_rub: string;
+  budget_max_rub: string;
+  notes: string;
 };
 
 type AddressFormState = AddressInput;
@@ -51,6 +75,33 @@ const emptyAddressForm: AddressFormState = {
   line2: "",
   is_default: false
 };
+
+const emptyFitProfileForm: FitProfileFormState = {
+  height_cm: "",
+  weight_kg: "",
+  chest_cm: "",
+  waist_cm: "",
+  hips_cm: "",
+  inseam_cm: "",
+  preferred_fit: "",
+  preferred_style: "",
+  preferred_season: "",
+  tops_usual_size: "",
+  bottoms_usual_size: "",
+  budget_min_rub: "",
+  budget_max_rub: "",
+  notes: ""
+};
+
+const fitSizeOptions: FitProfileSize[] = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "ONE_SIZE"
+];
 
 const currencyFormatter = new Intl.NumberFormat("ru-RU", {
   currency: "RUB",
@@ -75,6 +126,41 @@ function formatDate(value: string) {
     month: "long",
     year: "numeric"
   }).format(new Date(value));
+}
+
+function toFormValue(value: string | number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function fitProfileToForm(profile?: Partial<FitProfile> | null): FitProfileFormState {
+  return {
+    height_cm: toFormValue(profile?.height_cm),
+    weight_kg: toFormValue(profile?.weight_kg),
+    chest_cm: toFormValue(profile?.chest_cm),
+    waist_cm: toFormValue(profile?.waist_cm),
+    hips_cm: toFormValue(profile?.hips_cm),
+    inseam_cm: toFormValue(profile?.inseam_cm),
+    preferred_fit: (profile?.preferred_fit ?? "") as FitProfileFormState["preferred_fit"],
+    preferred_style: (profile?.preferred_style ??
+      "") as FitProfileFormState["preferred_style"],
+    preferred_season: (profile?.preferred_season ??
+      "") as FitProfileFormState["preferred_season"],
+    tops_usual_size: (profile?.tops_usual_size ??
+      "") as FitProfileFormState["tops_usual_size"],
+    bottoms_usual_size: (profile?.bottoms_usual_size ??
+      "") as FitProfileFormState["bottoms_usual_size"],
+    budget_min_rub: toFormValue(profile?.budget_min_rub),
+    budget_max_rub: toFormValue(profile?.budget_max_rub),
+    notes: profile?.notes ?? ""
+  };
+}
+
+function normalizeOptionalNumber(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+
+  return Number(value);
 }
 
 function initials(profile: UserProfile | null) {
@@ -311,6 +397,7 @@ export function AccountPage() {
   const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const [isMounted, setIsMounted] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [fitProfileError, setFitProfileError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
@@ -319,10 +406,13 @@ export function AccountPage() {
     email: "",
     phone: ""
   });
+  const [fitProfileForm, setFitProfileForm] =
+    useState<FitProfileFormState>(emptyFitProfileForm);
   const [addressForm, setAddressForm] =
     useState<AddressFormState>(emptyAddressForm);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingFitProfile, setIsSavingFitProfile] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accountToolsError, setAccountToolsError] = useState<string | null>(null);
@@ -345,6 +435,13 @@ export function AccountPage() {
     queryKey: ["addresses", accessToken],
     enabled: isMounted && Boolean(accessToken),
     queryFn: () => fetchAddresses(accessToken ?? ""),
+    retry: false
+  });
+
+  const fitProfileQuery = useQuery({
+    queryKey: ["fit-profile", accessToken],
+    enabled: isMounted && Boolean(accessToken),
+    queryFn: () => fetchFitProfile(accessToken ?? ""),
     retry: false
   });
 
@@ -376,6 +473,17 @@ export function AccountPage() {
   }, [profileQuery.data]);
 
   useEffect(() => {
+    if (fitProfileQuery.data) {
+      setFitProfileForm(fitProfileToForm(fitProfileQuery.data));
+      return;
+    }
+
+    if (profileQuery.data?.fit_profile) {
+      setFitProfileForm(fitProfileToForm(profileQuery.data.fit_profile));
+    }
+  }, [fitProfileQuery.data, profileQuery.data?.fit_profile]);
+
+  useEffect(() => {
     if (favoritesQuery.data) {
       setFavorites(favoritesQuery.data);
     }
@@ -386,6 +494,15 @@ export function AccountPage() {
       clearSession();
     }
   }, [clearSession, profileQuery.error]);
+
+  useEffect(() => {
+    if (
+      fitProfileQuery.error instanceof ApiError &&
+      fitProfileQuery.error.status === 401
+    ) {
+      clearSession();
+    }
+  }, [clearSession, fitProfileQuery.error]);
 
   useEffect(() => {
     if (
@@ -410,6 +527,10 @@ export function AccountPage() {
       clearSession();
     }
   }, [clearSession, favoritesQuery.error]);
+
+  const fitProfileStatus = fitProfileQuery.data?.is_complete
+    ? "Заполнен"
+    : "Нужно уточнить";
 
   const metrics = useMemo(
     () => [
@@ -454,6 +575,55 @@ export function AccountPage() {
       setProfileError(getErrorMessage(error));
     } finally {
       setIsSavingProfile(false);
+    }
+  }
+
+  async function handleFitProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || !refreshToken) {
+      return;
+    }
+
+    setFitProfileError(null);
+    setIsSavingFitProfile(true);
+
+    try {
+      const updatedFitProfile = await updateFitProfile(accessToken, {
+        height_cm: normalizeOptionalNumber(fitProfileForm.height_cm),
+        weight_kg: fitProfileForm.weight_kg.trim() || null,
+        chest_cm: normalizeOptionalNumber(fitProfileForm.chest_cm),
+        waist_cm: normalizeOptionalNumber(fitProfileForm.waist_cm),
+        hips_cm: normalizeOptionalNumber(fitProfileForm.hips_cm),
+        inseam_cm: normalizeOptionalNumber(fitProfileForm.inseam_cm),
+        preferred_fit: fitProfileForm.preferred_fit || null,
+        preferred_style: fitProfileForm.preferred_style || null,
+        preferred_season: fitProfileForm.preferred_season || null,
+        tops_usual_size: fitProfileForm.tops_usual_size || null,
+        bottoms_usual_size: fitProfileForm.bottoms_usual_size || null,
+        budget_min_rub: normalizeOptionalNumber(fitProfileForm.budget_min_rub),
+        budget_max_rub: normalizeOptionalNumber(fitProfileForm.budget_max_rub),
+        notes: fitProfileForm.notes.trim() || null
+      });
+
+      setFitProfileForm(fitProfileToForm(updatedFitProfile));
+      setSession({
+        accessToken,
+        refreshToken,
+        profile: {
+          ...(currentProfile ?? profile ?? {
+            id: 0,
+            username: "",
+            email: ""
+          }),
+          fit_profile: updatedFitProfile,
+          fit_profile_updated_at: updatedFitProfile.updated_at ?? null
+        }
+      });
+      await Promise.all([fitProfileQuery.refetch(), profileQuery.refetch()]);
+    } catch (error) {
+      setFitProfileError(getErrorMessage(error));
+    } finally {
+      setIsSavingFitProfile(false);
     }
   }
 
@@ -751,6 +921,29 @@ export function AccountPage() {
               ))}
             </dl>
 
+            <div className="mt-3 border border-neon-teal/20 bg-neon-teal/5 p-4">
+              <p className="text-xs font-black uppercase text-neon-teal">
+                Умная примерочная
+              </p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm leading-6 text-slate-200">
+                  Статус fit-профиля:{" "}
+                  <span className="font-semibold text-white">{fitProfileStatus}</span>
+                </p>
+                {fitProfileQuery.data?.updated_at ? (
+                  <p className="text-xs uppercase text-slate-400">
+                    Обновлён {formatDate(fitProfileQuery.data.updated_at)}
+                  </p>
+                ) : null}
+              </div>
+              {!fitProfileQuery.data?.is_complete ? (
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  Заполните параметры фигуры и предпочтения по стилю, чтобы магазин
+                  точнее рекомендовал размер и подбирал готовые образы.
+                </p>
+              ) : null}
+            </div>
+
             <form className="mt-6 space-y-4" onSubmit={handleProfileSubmit}>
               {[
                 ["first_name", "Имя"],
@@ -791,6 +984,215 @@ export function AccountPage() {
                 {isSavingProfile ? "Сохранение..." : "Сохранить профиль"}
               </button>
             </form>
+
+            <section className="mt-8 border border-white/10 bg-ink-900/60 p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase text-neon-teal">
+                    Fit profile
+                  </p>
+                  <h3 className="mt-2 text-lg font-black text-white">
+                    Параметры для умной примерочной
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                    Эти данные нужны, чтобы система предлагала подходящий размер,
+                    предупреждала о риске возврата и подбирала капсульные образы под
+                    ваш стиль и бюджет.
+                  </p>
+                </div>
+                <span className="border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase text-slate-300">
+                  {fitProfileStatus}
+                </span>
+              </div>
+
+              {fitProfileQuery.error ? (
+                <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                  {getErrorMessage(fitProfileQuery.error)}
+                </div>
+              ) : null}
+
+              <form className="mt-5 space-y-4" onSubmit={handleFitProfileSubmit}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[
+                    ["height_cm", "Рост, см"],
+                    ["weight_kg", "Вес, кг"],
+                    ["chest_cm", "Обхват груди, см"],
+                    ["waist_cm", "Обхват талии, см"],
+                    ["hips_cm", "Обхват бёдер, см"],
+                    ["inseam_cm", "Внутренний шов, см"],
+                    ["budget_min_rub", "Бюджет от, ₽"],
+                    ["budget_max_rub", "Бюджет до, ₽"]
+                  ].map(([name, label]) => (
+                    <label key={name} className="block">
+                      <span className="mb-2 block text-sm font-semibold text-slate-200">
+                        {label}
+                      </span>
+                      <input
+                        inputMode="decimal"
+                        value={fitProfileForm[name as keyof FitProfileFormState] as string}
+                        onChange={(event) =>
+                          setFitProfileForm((current) => ({
+                            ...current,
+                            [name]: event.target.value
+                          }))
+                        }
+                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-slate-200">
+                      Предпочтительная посадка
+                    </span>
+                    <select
+                      value={fitProfileForm.preferred_fit}
+                      onChange={(event) =>
+                        setFitProfileForm((current) => ({
+                          ...current,
+                          preferred_fit: event.target.value as FitProfileFormState["preferred_fit"]
+                        }))
+                      }
+                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                    >
+                      <option value="">Не выбрано</option>
+                      <option value="slim">По фигуре</option>
+                      <option value="regular">Стандартно</option>
+                      <option value="relaxed">Свободно</option>
+                      <option value="oversized">Оверсайз</option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-slate-200">
+                      Любимый стиль
+                    </span>
+                    <select
+                      value={fitProfileForm.preferred_style}
+                      onChange={(event) =>
+                        setFitProfileForm((current) => ({
+                          ...current,
+                          preferred_style: event.target.value as FitProfileFormState["preferred_style"]
+                        }))
+                      }
+                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                    >
+                      <option value="">Не выбрано</option>
+                      <option value="minimal">Минимализм</option>
+                      <option value="streetwear">Стритвир</option>
+                      <option value="dark_fantasy">Тёмное фэнтези</option>
+                      <option value="sport">Спорт</option>
+                      <option value="casual">Повседневный</option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-slate-200">
+                      Предпочтительный сезон
+                    </span>
+                    <select
+                      value={fitProfileForm.preferred_season}
+                      onChange={(event) =>
+                        setFitProfileForm((current) => ({
+                          ...current,
+                          preferred_season: event.target.value as FitProfileFormState["preferred_season"]
+                        }))
+                      }
+                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                    >
+                      <option value="">Не выбрано</option>
+                      <option value="spring">Весна</option>
+                      <option value="summer">Лето</option>
+                      <option value="autumn">Осень</option>
+                      <option value="winter">Зима</option>
+                      <option value="all_season">Круглый год</option>
+                    </select>
+                  </label>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-semibold text-slate-200">
+                        Размер верха
+                      </span>
+                      <select
+                        value={fitProfileForm.tops_usual_size}
+                        onChange={(event) =>
+                          setFitProfileForm((current) => ({
+                            ...current,
+                            tops_usual_size: event.target.value as FitProfileFormState["tops_usual_size"]
+                          }))
+                        }
+                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                      >
+                        <option value="">Не выбрано</option>
+                        {fitSizeOptions.map((size) => (
+                          <option key={`tops-${size}`} value={size}>
+                            {size === "ONE_SIZE" ? "One size" : size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-semibold text-slate-200">
+                        Размер низа
+                      </span>
+                      <select
+                        value={fitProfileForm.bottoms_usual_size}
+                        onChange={(event) =>
+                          setFitProfileForm((current) => ({
+                            ...current,
+                            bottoms_usual_size: event.target.value as FitProfileFormState["bottoms_usual_size"]
+                          }))
+                        }
+                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                      >
+                        <option value="">Не выбрано</option>
+                        {fitSizeOptions.map((size) => (
+                          <option key={`bottoms-${size}`} value={size}>
+                            {size === "ONE_SIZE" ? "One size" : size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-200">
+                    Примечания для стилиста
+                  </span>
+                  <textarea
+                    rows={4}
+                    value={fitProfileForm.notes}
+                    onChange={(event) =>
+                      setFitProfileForm((current) => ({
+                        ...current,
+                        notes: event.target.value
+                      }))
+                    }
+                    className="w-full border border-white/10 bg-ink-900/80 px-4 py-3 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                    placeholder="Например: не люблю короткие худи, предпочитаю свободные брюки, нужен комплект до 20 000 ₽."
+                  />
+                </label>
+
+                {fitProfileError ? (
+                  <div className="border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                    {fitProfileError}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={isSavingFitProfile}
+                  className="flex h-12 items-center justify-center bg-neon-teal px-5 text-sm font-black uppercase text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingFitProfile ? "Сохраняем fit-profile..." : "Сохранить fit-profile"}
+                </button>
+              </form>
+            </section>
 
             <div className="mt-8 border border-white/10 bg-ink-900/60 p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">

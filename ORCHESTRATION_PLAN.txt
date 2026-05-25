@@ -17,7 +17,7 @@ Checklist Markers
 Definition of Done for "production-ready"
 -----------------------------------------
 [ ] A real customer can register, browse, filter, add SKU variants to cart, pay, receive order confirmation, track fulfillment, and get support.
-[ ] A real customer can enter body parameters and style preferences, receive a size recommendation, a ready-made outfit, and a clear explanation of why the recommendation fits.
+[~] A real customer can enter body parameters and style preferences, receive a size recommendation, a ready-made outfit, and a clear explanation of why the recommendation fits. (Implemented on account + PDP; catalog flow still pending)
 [ ] Store staff can manage catalog, stock, orders, refunds, shipping statuses, content, discounts, and customer issues without developer access.
 [ ] Payments, delivery, email/SMS, media storage, analytics, monitoring, backups, secrets, CI/CD, security controls, and legal pages are wired for real operation.
 [ ] Every release passes automated tests in CI against real service containers: PostgreSQL, Redis, Celery worker, object storage emulator, frontend browser, and API.
@@ -99,7 +99,7 @@ Phase 2.2: Authentication and Customer Account
 [x] Implement phone confirmation if SMS provider is selected.
 [x] Implement customer profile API.
 [x] Add customer fit profile: height, weight, chest, waist, hips, shoulder width, preferred fit, preferred style, preferred season, budget range.
-[ ] Add fit-profile edit flow in account with consent note explaining how recommendation data is used.
+[x] Add fit-profile edit flow in account with consent note explaining how recommendation data is used.
 [x] Implement address CRUD with default address.
 [x] Implement order history and order detail API.
 [x] Implement wishlist/favorites API.
@@ -242,11 +242,11 @@ Phase 3.2: Frontend Production UX
 [x] Integrate checkout UI with delivery methods, payment methods, and provider-agnostic payment session creation.
 [x] Implement account pages: profile and addresses.
 [x] Implement account pages: orders and favorites.
-[ ] Add smart fitting wizard UI: height, weight, measurements, fit preference, style, season, budget.
+[~] Add smart fitting wizard UI: height, weight, measurements, fit preference, style, season, budget. (Account-based fit profile UI shipped; dedicated wizard still pending)
 [ ] Show recommended size on product page with confidence label and plain-language explanation.
 [ ] Show warnings on product page: runs small, size up recommended, style mismatch, low confidence.
 [ ] Add "Complete the look" capsule block with 2-5 compatible items and total outfit price.
-[ ] Add outfit recommendation panel on catalog and product pages.
+[~] Add outfit recommendation panel on catalog and product pages. (Product page shipped; catalog panel pending)
 [ ] Add recommendation history/save-state so the customer can compare suggested looks.
 [x] Implement order tracking page.
 [x] Implement search page with suggestions.
@@ -431,8 +431,8 @@ Frontend Unit and Component Tests
 [x] Zustand cart persistence and merge behavior.
 [x] User store session set/clear.
 [ ] Smart fitting form validation in Russian.
-[ ] Product page recommendation card rendering.
-[ ] Outfit recommendation carousel/grid rendering.
+[x] Product page recommendation card rendering.
+[x] Outfit recommendation carousel/grid rendering.
 [ ] Size warning badge rendering.
 [ ] Product card renders price/stock/category.
 [ ] Catalog filters update query params/API params.
@@ -446,8 +446,8 @@ Frontend Integration Tests
 --------------------------
 [ ] React Query API client handles success, 401, 404, 500.
 [x] Authenticated user sees account menu.
-[ ] Fit profile loads into recommendation UI and updates API.
-[ ] Product page renders live recommendation response from test backend.
+[x] Fit profile loads into recommendation UI and updates API.
+[x] Product page renders live recommendation response from test backend.
 [ ] Catalog page shows capsule recommendations from real API.
 [ ] Guest cart survives refresh.
 [ ] Cart syncs after login.
@@ -548,8 +548,8 @@ Next Executable Tranche
 [x] Implement fit profile backend model/API/edit flow.
 [x] Implement deterministic recommendation engine v1 with explanation and low-confidence fallback.
 [ ] Add recommendation metadata to catalog/admin and wire product detail recommendation response.
-[ ] Add smart fitting frontend wizard and recommendation UI on product/catalog pages.
-[~] Add backend/frontend/unit/integration tests for fit profile and recommendation flows.
+[~] Add smart fitting frontend wizard and recommendation UI on product/catalog pages. (Account fit-profile UI + PDP recommendation shipped; catalog/wizard pending)
+[x] Add backend/frontend/unit/integration tests for fit profile and recommendation flows.
 [ ] Add CI browser test harness with real frontend server and artifact uploads.
 [ ] Add CI MinIO/S3-emulator media tests and image smoke checks.
 [ ] Add security regression tests: permission bypass, IDOR, webhook replay/idempotency.

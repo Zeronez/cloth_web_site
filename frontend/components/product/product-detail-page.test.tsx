@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { ApiError, fetchFavorites, fetchProduct } from "../../lib/api";
 import { useUserStore } from "../../stores/user-store";
@@ -40,7 +40,7 @@ function renderWithQueryClient(children: ReactNode) {
 
 describe("ProductDetailPage", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     useUserStore.setState({
       accessToken: null,
       refreshToken: null,
@@ -138,6 +138,123 @@ describe("ProductDetailPage", () => {
 
     expect(backThumb).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Neon Ronin back")).toBeInTheDocument();
+  });
+
+  it("renders fit recommendation and capsule outfit for authenticated users", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    jest.mocked(fetchProduct).mockResolvedValue({
+      id: 1,
+      name: "Neon Ronin Shell",
+      slug: "neon-ronin-shell",
+      category: { id: 10, name: "Куртки", slug: "jackets" },
+      franchise: { id: 11, name: "Akira", slug: "akira" },
+      base_price: "12990.00",
+      is_featured: true,
+      description: "Techwear shell for neon nights.",
+      main_image: null,
+      images: [],
+      total_stock: 6,
+      fit_recommendation: {
+        recommended_size: "L",
+        confidence: "high",
+        profile_ready: true,
+        missing_profile_fields: [],
+        summary: "Рекомендуем размер L.",
+        explanation: "Размер подобран по меркам и предпочтению более свободной посадки.",
+        reasons: [],
+        warnings: ["closest_available_size_selected"],
+        outfit: {
+          total_price: "24880.00",
+          items: [
+            {
+              id: 7,
+              name: "Tokyo Team Tee",
+              slug: "tokyo-team-tee",
+              category: "Футболки",
+              franchise: "Akira",
+              base_price: "5890.00",
+              main_image_url: null,
+              reason: "Поддерживает силуэт и цветовую температуру образа."
+            }
+          ]
+        }
+      },
+      variants: [
+        {
+          id: 201,
+          sku: "RONIN-L",
+          size: "L",
+          color: "Black",
+          stock_quantity: 4,
+          price_delta: "0.00",
+          price: "12990.00",
+          is_active: true
+        }
+      ]
+    } as any);
+
+    renderWithQueryClient(<ProductDetailPage slug="neon-ronin-shell" />);
+
+    expect(await screen.findByText("Рекомендуем размер L")).toBeInTheDocument();
+    expect(screen.getByText("Капсульный образ")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Tokyo Team Tee/i })).toHaveAttribute(
+      "href",
+      "/products/tokyo-team-tee"
+    );
+    expect(screen.getByRole("button", { name: /размер l, в наличии/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("falls back to anonymous product fetch after auth expiry", async () => {
+    useUserStore.setState({
+      accessToken: "expired-token",
+      refreshToken: "refresh-token",
+      profile: null
+    });
+    const fallbackProduct = {
+      id: 3,
+      name: "Fallback Product",
+      slug: "fallback-product",
+      category: { id: 12, name: "Худи", slug: "hoodies" },
+      franchise: null,
+      base_price: "9990.00",
+      is_featured: false,
+      description: "Recovered anonymously.",
+      main_image: null,
+      images: [],
+      total_stock: 2,
+      variants: [
+        {
+          id: 301,
+          sku: "FALLBACK-M",
+          size: "M",
+          color: "Black",
+          stock_quantity: 2,
+          price_delta: "0.00",
+          price: "9990.00",
+          is_active: true
+        }
+      ]
+    } as any;
+    jest
+      .mocked(fetchProduct)
+      .mockRejectedValueOnce(new ApiError("Unauthorized", 401, {}))
+      .mockResolvedValue(fallbackProduct);
+
+    renderWithQueryClient(<ProductDetailPage slug="fallback-product" />);
+
+    expect(await screen.findByRole("heading", { name: /fallback product/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchProduct).toHaveBeenCalledWith("fallback-product", "expired-token");
+      expect(fetchProduct).toHaveBeenCalledWith("fallback-product");
+    });
   });
 
   it("shows sold-out sizes in the selector and disables purchase for them", async () => {

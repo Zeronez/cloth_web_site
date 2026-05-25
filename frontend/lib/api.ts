@@ -29,6 +29,8 @@ export type UserProfile = {
   offer_agreement_version?: string;
   is_marketing_subscribed?: boolean;
   marketing_opt_in_version?: string;
+  fit_profile?: Partial<FitProfile>;
+  fit_profile_updated_at?: string | null;
 };
 
 export type Address = {
@@ -140,10 +142,89 @@ export type ProductTag = {
   label: string;
 };
 
+export type FitProfileSize = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "ONE_SIZE";
+
+export type FitProfilePreferredFit =
+  | "slim"
+  | "regular"
+  | "relaxed"
+  | "oversized";
+
+export type FitProfilePreferredStyle =
+  | "minimal"
+  | "streetwear"
+  | "dark_fantasy"
+  | "sport"
+  | "casual";
+
+export type FitProfilePreferredSeason =
+  | "spring"
+  | "summer"
+  | "autumn"
+  | "winter"
+  | "all_season";
+
+export type FitProfile = {
+  height_cm?: number | null;
+  weight_kg?: string | null;
+  chest_cm?: number | null;
+  waist_cm?: number | null;
+  hips_cm?: number | null;
+  inseam_cm?: number | null;
+  preferred_fit?: FitProfilePreferredFit | null;
+  preferred_style?: FitProfilePreferredStyle | null;
+  preferred_season?: FitProfilePreferredSeason | null;
+  tops_usual_size?: FitProfileSize | null;
+  bottoms_usual_size?: FitProfileSize | null;
+  notes?: string | null;
+  budget_min_rub?: number | null;
+  budget_max_rub?: number | null;
+  updated_at?: string | null;
+  is_complete?: boolean;
+};
+
+export type FitRecommendationConfidence = "none" | "low" | "medium" | "high";
+
+export type FitRecommendationWarning =
+  | "fit_profile_incomplete"
+  | "no_active_sizes"
+  | "one_size_only"
+  | "closest_available_size_selected"
+  | "recommended_size_out_of_stock"
+  | "style_fit_mismatch"
+  | "season_mismatch"
+  | "style_mismatch";
+
+export type FitRecommendationOutfitItem = {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  franchise: string | null;
+  base_price: string;
+  main_image_url: string | null;
+  reason: string;
+};
+
+export type FitRecommendation = {
+  recommended_size: FitProfileSize | null;
+  confidence: FitRecommendationConfidence;
+  profile_ready: boolean;
+  missing_profile_fields: Array<keyof FitProfile | string>;
+  summary: string;
+  explanation: string;
+  reasons: string[];
+  warnings: Array<FitRecommendationWarning | string>;
+  outfit: {
+    items: FitRecommendationOutfitItem[];
+    total_price: string | null;
+  };
+};
+
 export type ProductVariant = {
   id: number;
   sku: string;
-  size: string;
+  size: FitProfileSize;
   color: string;
   stock_quantity: number;
   price_delta: string;
@@ -165,6 +246,7 @@ export type Product = {
   description?: string;
   images?: ProductImage[];
   variants?: ProductVariant[];
+  fit_recommendation?: FitRecommendation | null;
 };
 
 export type OrderStatus =
@@ -674,8 +756,8 @@ export async function fetchProducts(params: URLSearchParams) {
   return apiGet<Paginated<Product>>(apiPath(`/products/${query ? `?${query}` : ""}`));
 }
 
-export async function fetchProduct(slug: string) {
-  return apiGet<Product>(apiPath(`/products/${slug}/`));
+export async function fetchProduct(slug: string, token?: string | null) {
+  return apiRequest<Product>(apiPath(`/products/${slug}/`), { token });
 }
 
 export async function fetchCategories() {
@@ -847,6 +929,18 @@ export async function fetchMe(token: string) {
 
 export async function updateMe(token: string, input: Partial<UserProfile>) {
   return apiRequest<UserProfile>(apiPath("/users/me/"), {
+    method: "PATCH",
+    token,
+    body: input
+  });
+}
+
+export async function fetchFitProfile(token: string) {
+  return apiRequest<FitProfile>(apiPath("/users/me/fit-profile/"), { token });
+}
+
+export async function updateFitProfile(token: string, input: Partial<FitProfile>) {
+  return apiRequest<FitProfile>(apiPath("/users/me/fit-profile/"), {
     method: "PATCH",
     token,
     body: input

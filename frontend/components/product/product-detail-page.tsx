@@ -24,6 +24,33 @@ const money = new Intl.NumberFormat("ru-RU", {
 });
 
 const LOW_STOCK_THRESHOLD = 3;
+const FIT_PROFILE_FIELD_LABELS: Record<string, string> = {
+  height_cm: "рост",
+  weight_kg: "вес",
+  chest_cm: "обхват груди",
+  waist_cm: "обхват талии",
+  hips_cm: "обхват бёдер",
+  inseam_cm: "длина по внутреннему шву",
+  preferred_fit: "предпочтительная посадка",
+  preferred_style: "любимый стиль",
+  preferred_season: "предпочтительный сезон",
+  tops_usual_size: "обычный размер верха",
+  bottoms_usual_size: "обычный размер низа",
+  budget_min_rub: "минимальный бюджет",
+  budget_max_rub: "максимальный бюджет"
+};
+const FIT_RECOMMENDATION_TONE: Record<string, string> = {
+  none: "border-white/10 bg-white/[0.04]",
+  low: "border-neon-amber/30 bg-neon-amber/10",
+  medium: "border-neon-teal/30 bg-neon-teal/10",
+  high: "border-neon-crimson/30 bg-neon-crimson/10"
+};
+
+function formatMissingFitFields(fields: string[]) {
+  return fields
+    .map((field) => FIT_PROFILE_FIELD_LABELS[field] ?? field)
+    .join(", ");
+}
 
 function availabilityText(variant: ProductVariant | null | undefined) {
   if (!variant) {
@@ -47,8 +74,19 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const clearSession = useUserStore((state) => state.clearSession);
   const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const productQuery = useQuery({
-    queryKey: ["product", slug],
-    queryFn: () => fetchProduct(slug)
+    queryKey: ["product", slug, accessToken],
+    queryFn: async () => {
+      try {
+        return await fetchProduct(slug, accessToken);
+      } catch (error) {
+        if (accessToken && error instanceof ApiError && error.status === 401) {
+          clearSession();
+          return fetchProduct(slug);
+        }
+
+        throw error;
+      }
+    }
   });
   const favoritesQuery = useQuery({
     queryKey: ["favorites", accessToken, slug],
@@ -62,6 +100,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     productQuery.error instanceof ApiError && productQuery.error.status === 404;
   const hasLoadError = productQuery.isError && !productQuery.data && !isMissingProduct;
   const product = productQuery.data ?? null;
+  const fitRecommendation = product?.fit_recommendation ?? null;
   const [trackedProductId, setTrackedProductId] = useState<number | null>(null);
 
   const selectableVariants = useMemo(
@@ -81,6 +120,20 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const selectedVariantInStock = Boolean(
     selectedVariant && selectedVariant.stock_quantity > 0
   );
+
+  useEffect(() => {
+    if (selectedVariantId || !fitRecommendation?.recommended_size) {
+      return;
+    }
+
+    const recommendedVariant = selectableVariants.find(
+      (variant) => variant.size === fitRecommendation.recommended_size
+    );
+
+    if (recommendedVariant) {
+      setSelectedVariantId(recommendedVariant.id);
+    }
+  }, [fitRecommendation?.recommended_size, selectableVariants, selectedVariantId]);
 
   useEffect(() => {
     if (favoritesQuery.data) {
@@ -265,6 +318,130 @@ export function ProductDetailPage({ slug }: { slug: string }) {
               <span>× Нет в наличии</span>
             </div>
           </div>
+
+          {fitRecommendation ? (
+            <section
+              aria-label="Рекомендация по размеру"
+              className={`mt-8 border p-5 ${FIT_RECOMMENDATION_TONE[fitRecommendation.confidence] ?? FIT_RECOMMENDATION_TONE.none}`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">
+                    Рекомендация по размеру
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-white">
+                    {fitRecommendation.recommended_size
+                      ? `Рекомендуем размер ${fitRecommendation.recommended_size}`
+                      : "Подберём размер точнее после заполнения fit-профиля"}
+                  </h2>
+                </div>
+                <span className="border border-white/10 bg-black/20 px-3 py-1 text-xs font-bold uppercase text-slate-200">
+                  {fitRecommendation.confidence === "high"
+                    ? "Высокая точность"
+                    : fitRecommendation.confidence === "medium"
+                      ? "Хорошее совпадение"
+                      : fitRecommendation.confidence === "low"
+                        ? "Предварительно"
+                        : "Нужны данные"}
+                </span>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-slate-200">
+                {fitRecommendation.summary}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {fitRecommendation.explanation}
+              </p>
+
+              {fitRecommendation.warnings.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {fitRecommendation.warnings.map((warning) => (
+                    <span
+                      key={warning}
+                      className="border border-white/10 bg-black/20 px-2 py-1 text-xs font-semibold uppercase text-slate-200"
+                    >
+                      {warning === "recommended_size_out_of_stock"
+                        ? "Размер заканчивается"
+                        : warning === "closest_available_size_selected"
+                          ? "Подобран ближайший размер"
+                          : warning === "style_fit_mismatch"
+                            ? "Посадка отличается от предпочтений"
+                            : warning === "season_mismatch"
+                              ? "Сезон не совпадает"
+                              : warning === "style_mismatch"
+                                ? "Стиль может не совпасть"
+                                : warning === "fit_profile_incomplete"
+                                  ? "Нужны дополнительные данные"
+                                  : warning === "one_size_only"
+                                    ? "One size"
+                                    : warning}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              {!fitRecommendation.profile_ready &&
+              fitRecommendation.missing_profile_fields.length > 0 ? (
+                <p className="mt-3 text-xs font-semibold text-slate-300">
+                  {accessToken
+                    ? `Чтобы рекомендация стала точнее, добавьте в fit-профиль: ${formatMissingFitFields(
+                        fitRecommendation.missing_profile_fields
+                      )}.`
+                    : "Войдите в аккаунт и заполните fit-профиль, чтобы получить персональную рекомендацию по размеру."}
+                </p>
+              ) : null}
+
+              {fitRecommendation.outfit.items.length > 0 ? (
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">
+                        Капсульный образ
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">
+                        Система собрала вещи, которые сочетаются с этой позицией.
+                      </p>
+                    </div>
+                    {fitRecommendation.outfit.total_price ? (
+                      <p className="text-sm font-semibold text-white">
+                        Итого: {money.format(Number(fitRecommendation.outfit.total_price))}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {fitRecommendation.outfit.items.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/products/${item.slug}`}
+                        className="flex items-center justify-between gap-4 border border-white/10 bg-black/10 p-3 transition hover:border-neon-teal/40 hover:bg-black/20"
+                      >
+                        <div>
+                          <p className="text-xs font-black uppercase text-neon-teal">
+                            {item.category}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-white">
+                            {item.name}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-slate-400">
+                            {item.reason}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-white">
+                            {money.format(Number(item.base_price))}
+                          </p>
+                          <p className="mt-1 text-xs uppercase text-slate-500">
+                            К карточке
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           <div className="mt-8 grid gap-3 sm:grid-cols-[1fr_auto]">
             <button

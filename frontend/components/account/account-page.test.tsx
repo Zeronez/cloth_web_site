@@ -7,8 +7,10 @@ import {
   exportAccountData,
   fetchAddresses,
   fetchFavorites,
+  fetchFitProfile,
   fetchMe,
-  fetchOrders
+  fetchOrders,
+  updateFitProfile
 } from "../../lib/api";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
@@ -43,11 +45,13 @@ jest.mock("../../lib/api", () => ({
   exportAccountData: jest.fn(),
   fetchAddresses: jest.fn(),
   fetchFavorites: jest.fn(),
+  fetchFitProfile: jest.fn(),
   fetchMe: jest.fn(),
   fetchOrders: jest.fn(),
   logoutUser: jest.fn(),
   removeFavorite: jest.fn(),
   updateAddress: jest.fn(),
+  updateFitProfile: jest.fn(),
   updateMe: jest.fn()
 }));
 
@@ -77,6 +81,10 @@ describe("AccountPage", () => {
     useFavoritesStore.setState({
       favorites: []
     });
+    jest.mocked(fetchFitProfile).mockResolvedValue({
+      updated_at: null,
+      is_complete: false
+    } as any);
   });
 
   it("shows login and registration links for anonymous visitors", async () => {
@@ -281,6 +289,7 @@ describe("AccountPage", () => {
 
     await waitFor(() => {
       expect(fetchMe).toHaveBeenCalledWith("access-token");
+      expect(fetchFitProfile).toHaveBeenCalledWith("access-token");
       expect(fetchAddresses).toHaveBeenCalledWith("access-token");
       expect(fetchOrders).toHaveBeenCalledWith("access-token");
       expect(fetchFavorites).toHaveBeenCalledWith("access-token");
@@ -340,6 +349,7 @@ describe("AccountPage", () => {
 
     await waitFor(() => {
       expect(fetchMe).toHaveBeenCalledWith("access-token");
+      expect(fetchFitProfile).toHaveBeenCalledWith("access-token");
       expect(fetchAddresses).toHaveBeenCalledWith("access-token");
       expect(fetchOrders).toHaveBeenCalledWith("access-token");
       expect(fetchFavorites).toHaveBeenCalledWith("access-token");
@@ -525,6 +535,97 @@ describe("AccountPage", () => {
       );
       expect(push).toHaveBeenCalledWith("/login");
       expect(useUserStore.getState().accessToken).toBeNull();
+    });
+  });
+
+  it("saves fit profile data for smart fitting", async () => {
+    useUserStore.setState({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      profile: {
+        id: 7,
+        username: "shopper",
+        email: "shopper@example.com",
+        first_name: "QA",
+        last_name: "Shopper",
+        phone: "+15551234567"
+      }
+    });
+    jest.mocked(fetchMe).mockResolvedValue({
+      id: 7,
+      username: "shopper",
+      email: "shopper@example.com",
+      first_name: "QA",
+      last_name: "Shopper",
+      phone: "+15551234567"
+    });
+    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchOrders).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    });
+    jest.mocked(fetchFavorites).mockResolvedValue([]);
+    jest.mocked(fetchFitProfile).mockResolvedValue({
+      height_cm: 176,
+      preferred_fit: "regular",
+      updated_at: "2026-05-25T08:00:00Z",
+      is_complete: false
+    } as any);
+    jest.mocked(updateFitProfile).mockResolvedValue({
+      height_cm: 182,
+      weight_kg: "76",
+      preferred_fit: "oversized",
+      preferred_style: "streetwear",
+      tops_usual_size: "L",
+      updated_at: "2026-05-25T09:00:00Z",
+      is_complete: true
+    } as any);
+
+    renderWithQueryClient(<AccountPage />);
+
+    expect(await screen.findByText("Параметры для умной примерочной")).toBeInTheDocument();
+    await waitFor(() => {
+      expect((screen.getByLabelText("Рост, см") as HTMLInputElement).value).toBe("176");
+    });
+
+    fireEvent.change(screen.getByLabelText("Рост, см"), {
+      target: { value: "182" }
+    });
+    fireEvent.change(screen.getByLabelText("Вес, кг"), {
+      target: { value: "76" }
+    });
+    fireEvent.change(screen.getByLabelText("Предпочтительная посадка"), {
+      target: { value: "oversized" }
+    });
+    fireEvent.change(screen.getByLabelText("Любимый стиль"), {
+      target: { value: "streetwear" }
+    });
+    fireEvent.change(screen.getByLabelText("Размер верха"), {
+      target: { value: "L" }
+    });
+    expect((screen.getByLabelText("Рост, см") as HTMLInputElement).value).toBe("182");
+
+    fireEvent.click(screen.getByRole("button", { name: /сохранить fit-profile/i }));
+
+    await waitFor(() => {
+      expect(updateFitProfile).toHaveBeenCalledWith("access-token", {
+        height_cm: 182,
+        weight_kg: "76",
+        chest_cm: null,
+        waist_cm: null,
+        hips_cm: null,
+        inseam_cm: null,
+        preferred_fit: "oversized",
+        preferred_style: "streetwear",
+        preferred_season: null,
+        tops_usual_size: "L",
+        bottoms_usual_size: null,
+        budget_min_rub: null,
+        budget_max_rub: null,
+        notes: null
+      });
     });
   });
 });

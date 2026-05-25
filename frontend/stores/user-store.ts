@@ -1,23 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import type { UserProfile } from "../lib/api";
 import { useFavoritesStore } from "./favorites-store";
-
-export type UserProfile = {
-  id: number;
-  username: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  avatar?: string | null;
-  has_accepted_privacy_policy?: boolean;
-  privacy_policy_version?: string;
-  has_accepted_offer_agreement?: boolean;
-  offer_agreement_version?: string;
-  is_marketing_subscribed?: boolean;
-  marketing_opt_in_version?: string;
-};
 
 type UserState = {
   accessToken: string | null;
