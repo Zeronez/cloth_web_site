@@ -18,9 +18,9 @@ billiard==4.2.4
     # via celery
 black==24.10.0
     # via -r requirements-dev.in
-boto3==1.43.9
+boto3==1.43.16
     # via -r requirements.in
-botocore==1.43.9
+botocore==1.43.16
     # via
     #   boto3
     #   s3transfer
