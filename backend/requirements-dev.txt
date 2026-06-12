@@ -16,7 +16,7 @@ attrs==26.1.0
     #   referencing
 billiard==4.2.4
     # via celery
-black==24.10.0
+black==26.5.1
     # via -r requirements-dev.in
 boto3==1.43.9
     # via -r requirements.in
@@ -131,6 +131,8 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   celery
+pytokens==0.4.1
+    # via black
 pyyaml==6.0.3
     # via drf-spectacular
 redis==5.3.1
