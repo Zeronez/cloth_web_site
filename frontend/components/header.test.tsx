@@ -56,6 +56,10 @@ describe("Header", () => {
       "href",
       "/catalog"
     );
+    expect(screen.getByRole("link", { name: "Рекомендации" })).toHaveAttribute(
+      "href",
+      "/fitting"
+    );
     expect(screen.getByRole("link", { name: "Контакты" })).toHaveAttribute(
       "href",
       "/contacts"
@@ -111,4 +115,3 @@ describe("Header", () => {
     expect(useCartStore.getState().isOpen).toBe(true);
   });
 });
-

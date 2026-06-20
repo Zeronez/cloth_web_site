@@ -8,7 +8,7 @@ describe("validateFitProfileForm", () => {
     expect(errors).toContain("Укажите вес.");
   });
 
-  it("validates budget range and numeric bounds", () => {
+  it("validates numeric bounds", () => {
     const errors = validateFitProfileForm(
       {
         ...emptyFitProfileForm,
@@ -21,14 +21,11 @@ describe("validateFitProfileForm", () => {
         preferred_style: "streetwear",
         preferred_season: "winter",
         tops_usual_size: "M",
-        bottoms_usual_size: "L",
-        budget_min_rub: "25000",
-        budget_max_rub: "15000"
+        bottoms_usual_size: "L"
       },
       "all"
     );
 
     expect(errors).toContain("Рост должен быть в диапазоне 130–230.");
-    expect(errors).toContain('Бюджет "от" не может быть больше бюджета "до".');
   });
 });

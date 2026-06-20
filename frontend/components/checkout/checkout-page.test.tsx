@@ -321,7 +321,12 @@ describe("CheckoutPage", () => {
       ]
     });
 
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest
       .mocked(fetchDeliveryMethods)
       .mockRejectedValueOnce(new Error("delivery offline"))
@@ -384,7 +389,12 @@ describe("CheckoutPage", () => {
       ]
     });
 
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest.mocked(fetchCart).mockResolvedValue(makeServerCart());
     jest.mocked(deleteCartItem).mockResolvedValue(makeServerCart());
     jest.mocked(updateCartItemQuantity).mockResolvedValue(makeServerCart());

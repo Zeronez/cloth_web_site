@@ -1108,7 +1108,65 @@ class Command(BaseCommand):
             },
         ]
 
+        recommendation_overrides = {
+            "tokyo-team-tee": {
+                "search_synonyms": "streetwear spring regular anime team tee",
+                "fit": "regular streetwear",
+                "season": "spring",
+                "recommendation_style_tags": ["streetwear", "basic"],
+                "recommendation_seasonality": "spring",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular tee",
+            },
+            "ghost-of-uchiha-jersey": {
+                "search_synonyms": "streetwear spring regular jersey anime",
+                "fit": "regular streetwear jersey",
+                "season": "spring",
+                "recommendation_style_tags": ["streetwear", "jersey"],
+                "recommendation_seasonality": "spring",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular jersey",
+            },
+            "ryomen-sukuna-quarter-zip": {
+                "search_synonyms": "streetwear spring regular sweatshirt hoodie",
+                "fit": "regular streetwear",
+                "season": "spring",
+                "recommendation_style_tags": ["streetwear", "hoodie"],
+                "recommendation_seasonality": "spring",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular sweatshirt",
+            },
+            "berserk-stone-wash-pants": {
+                "search_synonyms": "dark fantasy autumn berserk regular pants",
+                "fit": "regular dark fantasy",
+                "season": "autumn",
+                "recommendation_style_tags": ["dark", "fantasy", "berserk"],
+                "recommendation_seasonality": "autumn",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular pants",
+            },
+            "femto-hoodie-r": {
+                "search_synonyms": "dark fantasy autumn berserk regular hoodie",
+                "fit": "regular dark fantasy hoodie",
+                "season": "autumn",
+                "recommendation_style_tags": ["dark", "fantasy", "berserk", "hoodie"],
+                "recommendation_seasonality": "autumn",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular hoodie",
+            },
+            "chainsaw-man-longsleeve": {
+                "search_synonyms": "dark fantasy autumn chainsaw regular longsleeve",
+                "fit": "regular dark fantasy",
+                "season": "autumn",
+                "recommendation_style_tags": ["dark", "fantasy", "chainsaw"],
+                "recommendation_seasonality": "autumn",
+                "recommendation_fit_confidence": 5,
+                "recommendation_silhouette": "regular longsleeve",
+            },
+        }
+
         for item in products:
+            item.update(recommendation_overrides.get(item["slug"], {}))
             variants = item.pop("variants")
             images = item.pop("images", [])
             product, _ = Product.objects.update_or_create(

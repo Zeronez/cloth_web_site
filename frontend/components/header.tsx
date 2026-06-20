@@ -8,6 +8,7 @@ import { useUserStore } from "../stores/user-store";
 
 const navigationItems = [
   { label: "Каталог", href: "/catalog" },
+  { label: "Рекомендации", href: "/fitting" },
   { label: "Контакты", href: "/contacts" }
 ];
 

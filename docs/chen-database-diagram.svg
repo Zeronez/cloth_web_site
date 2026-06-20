@@ -1,0 +1,239 @@
+<svg width="1800" height="1160" viewBox="0 0 1800 1160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .entity { fill: #f8fafc; stroke: #0f172a; stroke-width: 2.2; rx: 14; }
+      .attr { fill: #ffffff; stroke: #334155; stroke-width: 1.8; }
+      .relation { fill: #fff7ed; stroke: #9a3412; stroke-width: 2; }
+      .line { stroke: #475569; stroke-width: 1.8; }
+      .entityText { font: 700 24px "Segoe UI", Arial, sans-serif; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+      .attrText { font: 500 18px "Segoe UI", Arial, sans-serif; fill: #334155; text-anchor: middle; dominant-baseline: middle; }
+      .relText { font: 700 18px "Segoe UI", Arial, sans-serif; fill: #9a3412; text-anchor: middle; dominant-baseline: middle; }
+      .title { font: 700 34px "Segoe UI", Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 18px "Segoe UI", Arial, sans-serif; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1160"/>
+  <text x="70" y="60" class="title">Концептуальная ER-модель базы данных AnimeAttire в нотации Чена</text>
+  <text x="70" y="95" class="subtitle">Ключевые сущности интернет-магазина, их атрибуты и основные связи</text>
+
+  <g transform="translate(90 36) scale(0.92)">
+  <!-- central entities -->
+  <rect class="entity" x="770" y="120" width="250" height="76"/>
+  <text class="entityText" x="895" y="158">Пользователь</text>
+
+  <rect class="entity" x="1080" y="120" width="250" height="76"/>
+  <text class="entityText" x="1205" y="158">Адрес</text>
+
+  <rect class="entity" x="430" y="250" width="250" height="76"/>
+  <text class="entityText" x="555" y="288">Корзина</text>
+
+  <rect class="entity" x="1110" y="270" width="250" height="76"/>
+  <text class="entityText" x="1235" y="308">Избранное</text>
+
+  <rect class="entity" x="770" y="280" width="250" height="76"/>
+  <text class="entityText" x="895" y="318">Заказ</text>
+
+  <rect class="entity" x="770" y="460" width="250" height="76"/>
+  <text class="entityText" x="895" y="498">Товар</text>
+
+  <rect class="entity" x="430" y="590" width="250" height="76"/>
+  <text class="entityText" x="555" y="628">Категория</text>
+
+  <rect class="entity" x="770" y="650" width="250" height="76"/>
+  <text class="entityText" x="895" y="688">Вариант товара</text>
+
+  <rect class="entity" x="1100" y="650" width="250" height="76"/>
+  <text class="entityText" x="1225" y="688">Позиция заказа</text>
+
+  <rect class="entity" x="430" y="820" width="250" height="76"/>
+  <text class="entityText" x="555" y="858">Оплата</text>
+
+  <rect class="entity" x="770" y="820" width="250" height="76"/>
+  <text class="entityText" x="895" y="858">Способ оплаты</text>
+
+  <rect class="entity" x="1110" y="820" width="250" height="76"/>
+  <text class="entityText" x="1235" y="858">Доставка</text>
+
+  <rect class="entity" x="1440" y="820" width="250" height="76"/>
+  <text class="entityText" x="1565" y="858">Способ доставки</text>
+
+  <!-- relationships -->
+  <polygon class="relation" points="1050,158 1085,123 1120,158 1085,193"/>
+  <text class="relText" x="1085" y="158">имеет</text>
+
+  <polygon class="relation" points="725,220 770,185 815,220 770,255"/>
+  <text class="relText" x="770" y="220">ведёт</text>
+
+  <polygon class="relation" points="1020,220 1065,185 1110,220 1065,255"/>
+  <text class="relText" x="1065" y="220">оформляет</text>
+
+  <polygon class="relation" points="1160,245 1205,210 1250,245 1205,280"/>
+  <text class="relText" x="1205" y="245">добавляет</text>
+
+  <polygon class="relation" points="895,405 940,370 985,405 940,440"/>
+  <text class="relText" x="940" y="405">включает</text>
+
+  <polygon class="relation" points="720,498 770,463 820,498 770,533"/>
+  <text class="relText" x="770" y="498">относится</text>
+
+  <polygon class="relation" points="895,610 940,575 985,610 940,645"/>
+  <text class="relText" x="940" y="610">имеет</text>
+
+  <polygon class="relation" points="1055,688 1100,653 1145,688 1100,723"/>
+  <text class="relText" x="1100" y="688">содержит</text>
+
+  <polygon class="relation" points="720,858 770,823 820,858 770,893"/>
+  <text class="relText" x="770" y="858">оплачивается</text>
+
+  <polygon class="relation" points="1050,858 1100,823 1150,858 1100,893"/>
+  <text class="relText" x="1100" y="858">доставляется</text>
+
+  <polygon class="relation" points="1390,858 1435,823 1480,858 1435,893"/>
+  <text class="relText" x="1435" y="858">использует</text>
+
+  <!-- lines -->
+  <line class="line" x1="1020" y1="158" x2="1050" y2="158"/>
+  <line class="line" x1="1120" y1="158" x2="1080" y2="158"/>
+
+  <line class="line" x1="816" y1="186" x2="790" y2="196"/>
+  <line class="line" x1="680" y1="272" x2="730" y2="236"/>
+
+  <line class="line" x1="975" y1="196" x2="1032" y2="214"/>
+  <line class="line" x1="980" y1="292" x2="1034" y2="238"/>
+
+  <line class="line" x1="1185" y1="196" x2="1198" y2="212"/>
+  <line class="line" x1="1220" y1="280" x2="1217" y2="270"/>
+
+  <line class="line" x1="895" y1="356" x2="895" y2="370"/>
+  <line class="line" x1="940" y1="440" x2="940" y2="460"/>
+
+  <line class="line" x1="680" y1="628" x2="720" y2="520"/>
+  <line class="line" x1="770" y1="498" x2="680" y2="628"/>
+
+  <line class="line" x1="895" y1="536" x2="895" y2="575"/>
+  <line class="line" x1="940" y1="645" x2="940" y2="650"/>
+
+  <line class="line" x1="1020" y1="688" x2="1055" y2="688"/>
+  <line class="line" x1="1145" y1="688" x2="1100" y2="688"/>
+
+  <line class="line" x1="817" y1="858" x2="770" y2="858"/>
+  <line class="line" x1="680" y1="858" x2="720" y2="858"/>
+
+  <line class="line" x1="1020" y1="858" x2="1050" y2="858"/>
+  <line class="line" x1="1110" y1="858" x2="1150" y2="858"/>
+
+  <line class="line" x1="1360" y1="858" x2="1390" y2="858"/>
+  <line class="line" x1="1480" y1="858" x2="1440" y2="858"/>
+
+  <!-- user attributes -->
+  <ellipse class="attr" cx="670" cy="95" rx="112" ry="34"/>
+  <text class="attrText" x="670" y="95">логин</text>
+  <line class="line" x1="748" y1="122" x2="720" y2="110"/>
+
+  <ellipse class="attr" cx="895" cy="55" rx="126" ry="34"/>
+  <text class="attrText" x="895" y="55">email</text>
+  <line class="line" x1="895" y1="89" x2="895" y2="120"/>
+
+  <ellipse class="attr" cx="1125" cy="95" rx="118" ry="34"/>
+  <text class="attrText" x="1125" y="95">телефон</text>
+  <line class="line" x1="1045" y1="122" x2="1070" y2="110"/>
+
+  <!-- address attributes -->
+  <ellipse class="attr" cx="1410" cy="110" rx="112" ry="34"/>
+  <text class="attrText" x="1410" y="110">город</text>
+  <line class="line" x1="1330" y1="145" x2="1360" y2="132"/>
+
+  <ellipse class="attr" cx="1465" cy="195" rx="138" ry="34"/>
+  <text class="attrText" x="1465" y="195">улица и дом</text>
+  <line class="line" x1="1330" y1="172" x2="1365" y2="184"/>
+
+  <!-- cart attributes -->
+  <ellipse class="attr" cx="265" cy="240" rx="138" ry="34"/>
+  <text class="attrText" x="265" y="240">дата обновления</text>
+  <line class="line" x1="430" y1="275" x2="403" y2="257"/>
+
+  <!-- order attributes -->
+  <ellipse class="attr" cx="670" cy="280" rx="128" ry="34"/>
+  <text class="attrText" x="670" y="280">статус заказа</text>
+  <line class="line" x1="770" y1="305" x2="735" y2="293"/>
+
+  <ellipse class="attr" cx="895" cy="240" rx="136" ry="34"/>
+  <text class="attrText" x="895" y="240">итоговая сумма</text>
+  <line class="line" x1="895" y1="274" x2="895" y2="280"/>
+
+  <ellipse class="attr" cx="665" cy="365" rx="120" ry="34"/>
+  <text class="attrText" x="665" y="365">дата создания</text>
+  <line class="line" x1="770" y1="332" x2="736" y2="347"/>
+
+  <!-- product attributes -->
+  <ellipse class="attr" cx="640" cy="465" rx="120" ry="34"/>
+  <text class="attrText" x="640" y="465">название</text>
+  <line class="line" x1="770" y1="490" x2="725" y2="477"/>
+
+  <ellipse class="attr" cx="895" cy="410" rx="126" ry="34"/>
+  <text class="attrText" x="895" y="410">базовая цена</text>
+  <line class="line" x1="895" y1="444" x2="895" y2="460"/>
+
+  <ellipse class="attr" cx="1125" cy="465" rx="112" ry="34"/>
+  <text class="attrText" x="1125" y="465">статус</text>
+  <line class="line" x1="1020" y1="490" x2="1065" y2="476"/>
+
+  <!-- category attributes -->
+  <ellipse class="attr" cx="285" cy="585" rx="112" ry="34"/>
+  <text class="attrText" x="285" y="585">название</text>
+  <line class="line" x1="430" y1="620" x2="395" y2="604"/>
+
+  <!-- variant attributes -->
+  <ellipse class="attr" cx="675" cy="690" rx="104" ry="34"/>
+  <text class="attrText" x="675" y="690">размер</text>
+  <line class="line" x1="770" y1="690" x2="720" y2="690"/>
+
+  <ellipse class="attr" cx="895" cy="760" rx="92" ry="34"/>
+  <text class="attrText" x="895" y="760">цвет</text>
+  <line class="line" x1="895" y1="726" x2="895" y2="760"/>
+
+  <ellipse class="attr" cx="1095" cy="760" rx="112" ry="34"/>
+  <text class="attrText" x="1095" y="760">артикул</text>
+  <line class="line" x1="1000" y1="713" x2="1035" y2="736"/>
+
+  <ellipse class="attr" cx="650" cy="785" rx="112" ry="34"/>
+  <text class="attrText" x="650" y="785">остаток</text>
+  <line class="line" x1="790" y1="726" x2="705" y2="760"/>
+
+  <!-- order item attributes -->
+  <ellipse class="attr" cx="1400" cy="688" rx="120" ry="34"/>
+  <text class="attrText" x="1400" y="688">количество</text>
+  <line class="line" x1="1350" y1="688" x2="1280" y2="688"/>
+
+  <!-- payment attributes -->
+  <ellipse class="attr" cx="265" cy="810" rx="128" ry="34"/>
+  <text class="attrText" x="265" y="810">статус оплаты</text>
+  <line class="line" x1="430" y1="845" x2="392" y2="827"/>
+
+  <ellipse class="attr" cx="265" cy="900" rx="112" ry="34"/>
+  <text class="attrText" x="265" y="900">сумма</text>
+  <line class="line" x1="430" y1="870" x2="382" y2="887"/>
+
+  <!-- delivery attributes -->
+  <ellipse class="attr" cx="1240" cy="950" rx="132" ry="34"/>
+  <text class="attrText" x="1240" y="950">статус доставки</text>
+  <line class="line" x1="1235" y1="896" x2="1238" y2="916"/>
+
+  <ellipse class="attr" cx="1485" cy="950" rx="122" ry="34"/>
+  <text class="attrText" x="1485" y="950">трек-номер</text>
+  <line class="line" x1="1360" y1="880" x2="1420" y2="922"/>
+
+  </g>
+
+  <!-- legend -->
+  <rect x="70" y="980" width="520" height="120" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect class="entity" x="95" y="1010" width="110" height="40"/>
+  <text class="entityText" x="150" y="1030" style="font-size:18px;">Сущность</text>
+  <ellipse class="attr" cx="315" cy="1030" rx="70" ry="24"/>
+  <text class="attrText" x="315" y="1030" style="font-size:16px;">Атрибут</text>
+  <polygon class="relation" points="445,1030 480,1000 515,1030 480,1060"/>
+  <text class="relText" x="480" y="1030" style="font-size:16px;">Связь</text>
+  <text x="95" y="1083" class="subtitle">Диаграмма отражает концептуальный уровень и основные прикладные сущности системы.</text>
+</svg>

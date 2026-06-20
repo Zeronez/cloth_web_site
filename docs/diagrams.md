@@ -1282,3 +1282,135 @@ stop
 *** История рекомендаций
 @endmindmap
 ```
+
+## 20. Диаграммы для раздела 2.4
+
+Ниже приведены отдельные диаграммы, которые можно использовать в пояснительной записке для рисунков `2.1`, `2.2` и `2.3` в разделе `2.4 Проектирование программы`.
+
+### 20.1. Рисунок 2.1 - Диаграмма состояний заказа
+
+```plantuml
+@startuml
+title Жизненный цикл заказа
+
+[*] --> created
+
+created --> awaiting_payment : заказ сформирован
+awaiting_payment --> paid : оплата подтверждена
+awaiting_payment --> cancelled : отмена / ошибка оплаты
+
+paid --> picking : заказ передан на сборку
+paid --> cancelled : отмена до сборки
+
+picking --> packed : товары собраны
+picking --> cancelled : отмена менеджером
+
+packed --> shipped : передано в доставку
+shipped --> delivered : заказ доставлен
+
+delivered --> returned : оформлен возврат
+shipped --> returned : возврат / недоставка
+
+cancelled --> [*]
+returned --> [*]
+delivered --> [*]
+@enduml
+```
+
+### 20.2. Рисунок 2.2 - Диаграмма последовательности оформления заказа
+
+```plantuml
+@startuml
+title Процесс оформления заказа
+
+actor "Покупатель" as Customer
+participant "Frontend" as UI
+participant "Backend API" as API
+participant "Order Service" as OrderService
+participant "Payment Service" as PaymentService
+database "PostgreSQL" as DB
+participant "Платёжный провайдер" as PSP
+
+Customer -> UI : Подтверждает оформление заказа
+UI -> API : POST /orders/checkout
+API -> OrderService : validateCartAndCheckout(user)
+OrderService -> DB : Проверить корзину,\nостатки и варианты
+DB --> OrderService : Данные корзины
+OrderService -> DB : Создать order,\norder_items,\ndelivery snapshot
+DB --> OrderService : order_id
+OrderService --> API : Заказ сформирован
+
+API -> PaymentService : createPaymentSession(order)
+PaymentService -> PSP : Инициализация оплаты
+PSP --> PaymentService : payment_url, status=pending
+PaymentService --> API : Платёжная сессия
+API --> UI : order + payment_url
+
+Customer -> PSP : Выполняет оплату
+PSP -> PaymentService : webhook / результат оплаты
+PaymentService -> DB : Сохранить payment,\npayment_event,\nобновить статус order
+DB --> PaymentService : OK
+
+UI -> API : GET /orders/{id}
+API -> DB : Получить актуальный статус
+DB --> API : order status
+API --> UI : Данные заказа
+UI --> Customer : Показать результат оформления
+@enduml
+```
+
+### 20.3. Рисунок 2.3 - Диаграмма активности обработки заказа
+
+```plantuml
+@startuml
+title Обработка заказа в системе
+
+start
+:Получить запрос на оформление заказа;
+:Проверить авторизацию пользователя;
+
+if (Пользователь авторизован?) then (да)
+  :Получить состав корзины;
+else (нет)
+  :Вернуть ошибку авторизации;
+  stop
+endif
+
+if (Корзина пуста?) then (да)
+  :Вернуть сообщение об ошибке;
+  stop
+else (нет)
+  :Проверить доступность товаров\nи количество на складе;
+endif
+
+if (Все позиции доступны?) then (да)
+  :Рассчитать итоговую стоимость;
+  :Создать заказ;
+  :Создать платёжную сессию;
+else (нет)
+  :Сообщить о недоступных позициях;
+  stop
+endif
+
+if (Оплата успешна?) then (да)
+  :Обновить статус заказа;
+  :Передать заказ на сборку;
+  :Подготовить данные доставки;
+  :Вернуть подтверждение клиенту;
+else (нет)
+  :Зафиксировать неуспешную оплату;
+  :Вернуть статус ошибки;
+endif
+
+stop
+@enduml
+```
+
+## 21. Материалы для раздела 2.5
+
+Для раздела `2.5 Проектирование пользовательского интерфейса` подготовлены:
+
+- текстовая версия раздела: [section-2.5-ui.md](</c:/Users/Всеволод/Desktop/cloth_web_site/docs/section-2.5-ui.md:1>);
+- схема главной страницы: [home-page-wireframe.svg](</c:/Users/Всеволод/Desktop/cloth_web_site/docs/ui-wireframes/home-page-wireframe.svg:1>);
+- схема каталога: [catalog-page-wireframe.svg](</c:/Users/Всеволод/Desktop/cloth_web_site/docs/ui-wireframes/catalog-page-wireframe.svg:1>);
+- схема личного кабинета: [account-page-wireframe.svg](</c:/Users/Всеволод/Desktop/cloth_web_site/docs/ui-wireframes/account-page-wireframe.svg:1>).

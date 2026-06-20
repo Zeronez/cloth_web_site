@@ -40,6 +40,86 @@ const fitRecommendationTone: Record<string, string> = {
   high: "border-neon-crimson/20 bg-neon-crimson/10 text-white"
 };
 
+const STYLE_TOKENS: Record<string, string[]> = {
+  minimal: ["minimal", "clean", "basic", "essential"],
+  streetwear: ["streetwear", "oversized", "cargo", "jersey", "hoodie"],
+  dark_fantasy: ["dark", "fantasy", "gothic", "berserk", "chainsaw"],
+  sport: ["sport", "jersey", "track", "training"],
+  casual: ["casual", "daily", "everyday", "basic"]
+};
+
+const personalFilterBlockingWarnings = new Set([
+  "fit_profile_incomplete",
+  "no_active_sizes",
+  "recommended_size_out_of_stock",
+  "style_fit_mismatch",
+  "season_mismatch",
+  "style_mismatch"
+]);
+
+function isPersonalMatch(product: {
+  fit_recommendation?: {
+    recommended_size: string | null;
+    warnings: Array<string | number>;
+  } | null;
+}) {
+  const recommendation = product.fit_recommendation;
+  if (!recommendation?.recommended_size) {
+    return false;
+  }
+
+  const warnings = recommendation.warnings.map(String);
+  return !warnings.some((warning) => personalFilterBlockingWarnings.has(warning));
+}
+
+function productMatchesQuiz(
+  product: {
+    fit_recommendation?: { warnings: Array<string | number> } | null;
+    recommendation_metadata?: {
+      recommendation_style_tags?: string[];
+      recommendation_seasonality?: string;
+      recommendation_fit_tendency?: string;
+      recommendation_fit_confidence?: number;
+    };
+  },
+  quizProfile: { preferred_style: string; preferred_season: string; preferred_fit: string }
+) {
+  const metadata = product.recommendation_metadata;
+  if (!metadata) {
+    return false;
+  }
+
+  const style = String(quizProfile.preferred_style || "").toLowerCase();
+  const season = String(quizProfile.preferred_season || "").toLowerCase();
+  const fit = String(quizProfile.preferred_fit || "").toLowerCase();
+
+  const styleTokens = (metadata.recommendation_style_tags ?? []).map((token) =>
+    String(token).toLowerCase()
+  );
+  const expectedStyle = STYLE_TOKENS[style] ?? [];
+  const hasStyleMatch = expectedStyle.length
+    ? expectedStyle.some((token) => styleTokens.includes(token))
+    : true;
+
+  const seasonality = String(metadata.recommendation_seasonality ?? "").toLowerCase();
+  const hasSeasonMatch = season
+    ? seasonality.includes(season) ||
+      seasonality.includes("all_season") ||
+      seasonality.includes("all")
+    : true;
+
+  const tendency = String(metadata.recommendation_fit_tendency ?? "").toLowerCase();
+  const hasFitHint = fit ? tendency.includes(fit) : true;
+
+  const confidenceHint = Number(metadata.recommendation_fit_confidence ?? 0);
+  const hasMetadataConfidence = confidenceHint >= 3;
+
+  const warnings = (product.fit_recommendation?.warnings ?? []).map(String);
+  const hasNoHardWarnings = !warnings.includes("fit_profile_incomplete");
+
+  return hasStyleMatch && hasSeasonMatch && hasFitHint && hasMetadataConfidence && hasNoHardWarnings;
+}
+
 function getWarningLabel(warning: string) {
   if (warning === "recommended_size_out_of_stock") {
     return "Размер заканчивается";
@@ -107,6 +187,7 @@ export function CatalogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [size, setSize] = useState("");
   const [inStock, setInStock] = useState(true);
+  const [onlyPersonal, setOnlyPersonal] = useState(false);
 
   const productParams = useMemo(() => {
     const params = new URLSearchParams();
@@ -115,8 +196,9 @@ export function CatalogPage() {
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
     if (size) params.set("size", size);
     if (inStock) params.set("in_stock", "true");
+    if (onlyPersonal) params.set("personal", "true");
     return params;
-  }, [category, franchise, inStock, searchQuery, size]);
+  }, [category, franchise, inStock, onlyPersonal, searchQuery, size]);
 
   const productsQuery = useInfiniteQuery({
     queryKey: ["products", productParams.toString()],
@@ -181,12 +263,26 @@ export function CatalogPage() {
     });
   }, [productsQuery.data]);
 
+  const filteredProducts = useMemo(() => {
+    if (!onlyPersonal) {
+      return products;
+    }
+
+    if (!accessToken) {
+      return [];
+    }
+
+    return products.filter(isPersonalMatch);
+  }, [accessToken, onlyPersonal, products]);
+
   const categories = categoriesQuery.data?.results ?? [];
   const franchises = franchisesQuery.data?.results ?? [];
   const isInitialLoading = productsQuery.isLoading && !productsQuery.data;
   const isProductsError = productsQuery.isError && !productsQuery.data;
-  const hasNoResults = Boolean(productsQuery.data && products.length === 0);
+  const hasNoCatalogResults = Boolean(productsQuery.data && products.length === 0);
+  const hasNoFilteredResults = Boolean(productsQuery.data && filteredProducts.length === 0);
   const hasNextPage = Boolean(productsQuery.hasNextPage);
+  const canLoadMore = hasNextPage && filteredProducts.length > 0;
   const isFetchingNextPage = productsQuery.isFetchingNextPage;
 
   return (
@@ -204,6 +300,7 @@ export function CatalogPage() {
                   setSearchQuery("");
                   setSize("");
                   setInStock(true);
+                  setOnlyPersonal(false);
                 }}
                 className="text-sm font-semibold text-slate-300 transition hover:text-white"
               >
@@ -297,6 +394,23 @@ export function CatalogPage() {
                   className="h-5 w-5 accent-[#ED254E]"
                 />
               </label>
+
+              <label className="flex items-center justify-between border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-slate-200">
+                Подходящие товары именно вам
+                <input
+                  type="checkbox"
+                  checked={onlyPersonal}
+                  onChange={(event) => setOnlyPersonal(event.target.checked)}
+                  className="h-5 w-5 accent-[#ED254E]"
+                />
+              </label>
+              <p className="text-xs leading-5 text-slate-400">
+                Работает по данным теста из{" "}
+                <Link href="/fitting" className="font-semibold text-neon-teal hover:text-white">
+                  рекомендаций
+                </Link>
+                .
+              </p>
             </div>
           </aside>
 
@@ -311,7 +425,9 @@ export function CatalogPage() {
                 </h2>
               </div>
               <p className="hidden text-sm text-slate-400 md:block">
-                {productsQuery.isFetching ? "Обновляем каталог" : `${products.length} позиций`}
+                {productsQuery.isFetching
+                  ? "Обновляем каталог"
+                  : `${filteredProducts.length} позиций`}
               </p>
             </div>
 
@@ -327,7 +443,7 @@ export function CatalogPage() {
 
             {isInitialLoading ? <CatalogGridSkeleton /> : null}
 
-            {hasNoResults ? (
+            {hasNoCatalogResults ? (
               <div className="border border-white/10 bg-white/[0.04] p-10 text-center">
                 <h3 className="text-2xl font-black">Ничего не найдено</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-400">
@@ -337,10 +453,46 @@ export function CatalogPage() {
               </div>
             ) : null}
 
-            {!isInitialLoading && !hasNoResults && !isProductsError ? (
+            {!isInitialLoading && !hasNoCatalogResults && !isProductsError ? (
               <>
+                {onlyPersonal && !accessToken ? (
+                  <div className="mb-4">
+                    <InlineNotice
+                      title="Нужен тест для персональной подборки"
+                      text="Войдите в аккаунт, пройдите тест на странице рекомендаций и вернитесь сюда — после этого фильтр «Подходящие товары именно вам» начнёт работать."
+                      tone="info"
+                    />
+                    <div className="mt-3">
+                      <Link
+                        href="/login"
+                        className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-xs font-black uppercase tracking-[0.18em] text-ice transition hover:bg-neon-teal/20"
+                      >
+                        Войти
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+
+                {onlyPersonal && accessToken && hasNoFilteredResults ? (
+                  <div className="mb-4">
+                    <InlineNotice
+                      title="Пока нет точных совпадений"
+                      text="Похоже, тест ещё не заполнен или данных недостаточно. Пройдите тест на странице рекомендаций и вернитесь сюда."
+                      tone="warning"
+                    />
+                    <div className="mt-3">
+                      <Link
+                        href="/fitting"
+                        className="inline-flex h-10 items-center border border-white/15 bg-white/5 px-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10"
+                      >
+                        Перепройти тест
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="grid auto-rows-[minmax(320px,_auto)] gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {products.map((product, index) => {
+                  {filteredProducts.map((product, index) => {
                     const mediaHeight = "h-[300px] md:h-[340px]";
 
                     return (
@@ -402,26 +554,26 @@ export function CatalogPage() {
                                 </div>
                               ) : null}
 
-                              {product.fit_recommendation ? (
+                              {product.fit_recommendation && false ? (
                                 <div
-                                  className={`mt-4 rounded-2xl border p-3 ${fitRecommendationTone[product.fit_recommendation.confidence] ?? fitRecommendationTone.none}`}
+                                  className={`mt-4 rounded-2xl border p-3 ${fitRecommendationTone[product.fit_recommendation!.confidence] ?? fitRecommendationTone.none}`}
                                 >
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-[11px] font-black uppercase tracking-[0.18em]">
                                       Умная примерочная
                                     </p>
                                     <span className="text-xs font-semibold uppercase">
-                                      {product.fit_recommendation.recommended_size
-                                        ? `Размер ${product.fit_recommendation.recommended_size}`
+                                      {product.fit_recommendation!.recommended_size
+                                        ? `Размер ${product.fit_recommendation!.recommended_size}`
                                         : "Нужны данные"}
                                     </span>
                                   </div>
                                   <p className="mt-2 line-clamp-2 text-sm leading-5">
-                                    {product.fit_recommendation.summary}
+                                    {product.fit_recommendation!.summary}
                                   </p>
-                                  {product.fit_recommendation.warnings.length > 0 ? (
+                                  {product.fit_recommendation!.warnings.length > 0 ? (
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                      {product.fit_recommendation.warnings
+                                      {product.fit_recommendation!.warnings
                                         .slice(0, 2)
                                         .map((warning) => (
                                           <span
@@ -433,25 +585,40 @@ export function CatalogPage() {
                                         ))}
                                     </div>
                                   ) : null}
-                                  {product.fit_recommendation.outfit.items.length > 0 ? (
+                                  {product.fit_recommendation!.warnings
+                                    .map(String)
+                                    .includes("fit_profile_incomplete") ? (
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        return;
+                                      }}
+                                      className="mt-3 inline-flex h-9 items-center rounded-full border border-white/15 bg-white/5 px-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10"
+                                    >
+                                      Пройти тест
+                                    </button>
+                                  ) : null}
+                                  {product.fit_recommendation!.outfit.items.length > 0 ? (
                                     <p className="mt-3 text-xs leading-5 text-slate-200">
                                       Капсула:{" "}
                                       <span className="font-semibold">
-                                        {product.fit_recommendation.outfit.items.length}{" "}
-                                        {product.fit_recommendation.outfit.items.length === 1
+                                        {product.fit_recommendation!.outfit.items.length}{" "}
+                                        {product.fit_recommendation!.outfit.items.length === 1
                                           ? "вещь"
-                                          : product.fit_recommendation.outfit.items.length < 5
+                                          : product.fit_recommendation!.outfit.items.length < 5
                                             ? "вещи"
                                             : "вещей"}
                                       </span>
-                                      {product.fit_recommendation.outfit.total_price ? (
+                                      {product.fit_recommendation!.outfit.total_price ? (
                                         <>
                                           {" "}
                                           · Итого{" "}
                                           <span className="font-semibold">
                                             {money.format(
                                               Number(
-                                                product.fit_recommendation.outfit.total_price
+                                                product.fit_recommendation!.outfit.total_price
                                               )
                                             )}
                                           </span>
@@ -506,7 +673,7 @@ export function CatalogPage() {
                   })}
                 </div>
 
-                {hasNextPage ? (
+                {canLoadMore ? (
                   <div className="mt-8 flex justify-center">
                     <button
                       type="button"

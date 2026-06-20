@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -87,7 +87,7 @@ describe("ProductDetailPage", () => {
       id: 1,
       name: "Neon Ronin Shell",
       slug: "neon-ronin-shell",
-      category: { id: 10, name: "Куртки", slug: "jackets" },
+      category: { id: 10, name: "РљСѓСЂС‚РєРё", slug: "jackets" },
       franchise: { id: 11, name: "Akira", slug: "akira" },
       base_price: "12990.00",
       is_featured: true,
@@ -140,7 +140,7 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("Neon Ronin back")).toBeInTheDocument();
   });
 
-  it("renders fit recommendation and capsule outfit for authenticated users", async () => {
+  it("does not render smart fitting recommendation block on product page", async () => {
     useUserStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -150,7 +150,7 @@ describe("ProductDetailPage", () => {
       id: 1,
       name: "Neon Ronin Shell",
       slug: "neon-ronin-shell",
-      category: { id: 10, name: "Куртки", slug: "jackets" },
+      category: { id: 10, name: "РљСѓСЂС‚РєРё", slug: "jackets" },
       franchise: { id: 11, name: "Akira", slug: "akira" },
       base_price: "12990.00",
       is_featured: true,
@@ -163,8 +163,8 @@ describe("ProductDetailPage", () => {
         confidence: "high",
         profile_ready: true,
         missing_profile_fields: [],
-        summary: "Рекомендуем размер L.",
-        explanation: "Размер подобран по меркам и предпочтению более свободной посадки.",
+        summary: "Р РµРєРѕРјРµРЅРґСѓРµРј СЂР°Р·РјРµСЂ L.",
+        explanation: "Р Р°Р·РјРµСЂ РїРѕРґРѕР±СЂР°РЅ РїРѕ РјРµСЂРєР°Рј Рё РїСЂРµРґРїРѕС‡С‚РµРЅРёСЋ Р±РѕР»РµРµ СЃРІРѕР±РѕРґРЅРѕР№ РїРѕСЃР°РґРєРё.",
         reasons: [],
         warnings: ["closest_available_size_selected"],
         outfit: {
@@ -174,11 +174,11 @@ describe("ProductDetailPage", () => {
               id: 7,
               name: "Tokyo Team Tee",
               slug: "tokyo-team-tee",
-              category: "Футболки",
+              category: "Р¤СѓС‚Р±РѕР»РєРё",
               franchise: "Akira",
               base_price: "5890.00",
               main_image_url: null,
-              reason: "Поддерживает силуэт и цветовую температуру образа."
+              reason: "РџРѕРґРґРµСЂР¶РёРІР°РµС‚ СЃРёР»СѓСЌС‚ Рё С†РІРµС‚РѕРІСѓСЋ С‚РµРјРїРµСЂР°С‚СѓСЂСѓ РѕР±СЂР°Р·Р°."
             }
           ]
         }
@@ -199,12 +199,8 @@ describe("ProductDetailPage", () => {
 
     renderWithQueryClient(<ProductDetailPage slug="neon-ronin-shell" />);
 
-    expect(await screen.findByText("Рекомендуем размер L")).toBeInTheDocument();
-    expect(screen.getByText("Капсульный образ")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Tokyo Team Tee/i })).toHaveAttribute(
-      "href",
-      "/products/tokyo-team-tee"
-    );
+    expect(await screen.findByRole("heading", { name: /neon ronin shell/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Рекоменд/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /размер l, в наличии/i })).toHaveAttribute(
       "aria-pressed",
       "true"
@@ -221,7 +217,7 @@ describe("ProductDetailPage", () => {
       id: 3,
       name: "Fallback Product",
       slug: "fallback-product",
-      category: { id: 12, name: "Худи", slug: "hoodies" },
+      category: { id: 12, name: "РҐСѓРґРё", slug: "hoodies" },
       franchise: null,
       base_price: "9990.00",
       is_featured: false,
@@ -262,7 +258,7 @@ describe("ProductDetailPage", () => {
       id: 2,
       name: "Eva Utility Hoodie",
       slug: "eva-utility-hoodie",
-      category: { id: 12, name: "Худи", slug: "hoodies" },
+      category: { id: 12, name: "РҐСѓРґРё", slug: "hoodies" },
       franchise: { id: 13, name: "Evangelion", slug: "evangelion" },
       base_price: "9990.00",
       is_featured: false,

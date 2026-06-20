@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1320" viewBox="0 0 1800 1320" fill="none">
+  <defs>
+    <style>
+      .bg { fill: #f4f7fb; }
+      .panel { fill: #ffffff; stroke: #d6deea; stroke-width: 2; }
+      .ink { fill: #0f172a; }
+      .muted { fill: #475569; }
+      .soft { fill: #eef4fb; stroke: #cbd5e1; stroke-width: 2; }
+      .ok { fill: #e8f7ee; stroke: #36a269; stroke-width: 2; }
+      .warn { fill: #fff4dd; stroke: #e0a100; stroke-width: 2; }
+      .blue { fill: #e8f0ff; stroke: #5b8def; stroke-width: 2; }
+      .violet { fill: #f1ecff; stroke: #8a63d2; stroke-width: 2; }
+      .title { font: 800 34px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 600 20px Arial, sans-serif; fill: #334155; }
+      .section { font: 800 24px Arial, sans-serif; fill: #0f172a; }
+      .label { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .small { font: 500 16px Arial, sans-serif; fill: #475569; }
+      .tiny { font: 500 14px Arial, sans-serif; fill: #64748b; }
+      .oktext { font: 800 18px Arial, sans-serif; fill: #1f7a4f; }
+      .center { text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1320"/>
+
+  <text class="title" x="90" y="72">Рисунок 2.7 - Сводная схема автоматизированного тестирования в GitHub Actions</text>
+  <text class="subtitle" x="90" y="108">Репозиторий `Zeronez/cloth_web_site`, workflow `Production CI`, подтвержденные успешные прогоны от 4 мая 2026 года</text>
+
+  <rect class="panel" x="70" y="140" width="1660" height="140" rx="24"/>
+  <rect class="ok" x="100" y="174" width="240" height="74" rx="18"/>
+  <text class="oktext center" x="220" y="218">Статус: SUCCESS</text>
+  <text class="small center" x="220" y="240">последние прогоны #20 и #19</text>
+
+  <rect class="soft" x="390" y="174" width="260" height="74" rx="18"/>
+  <text class="label center" x="520" y="208">Production CI #20</text>
+  <text class="small center" x="520" y="232">3m 35s, branch `main`</text>
+
+  <rect class="soft" x="690" y="174" width="260" height="74" rx="18"/>
+  <text class="label center" x="820" y="208">Production CI #19</text>
+  <text class="small center" x="820" y="232">3m 33s, branch `main`</text>
+
+  <rect class="warn" x="990" y="174" width="300" height="74" rx="18"/>
+  <text class="label center" x="1140" y="208">Замечание CI</text>
+  <text class="small center" x="1140" y="232">warnings по deprecated Node.js 20</text>
+
+  <rect class="soft" x="1330" y="174" width="370" height="74" rx="18"/>
+  <text class="label center" x="1515" y="208">Покрываемые уровни</text>
+  <text class="small center" x="1515" y="232">линтинг, безопасность, тесты, сборка</text>
+
+  <text class="section" x="90" y="344">1. Структура workflow GitHub Actions</text>
+
+  <rect class="blue" x="100" y="382" width="440" height="120" rx="22"/>
+  <text class="label center" x="320" y="428">Job 1 - Linting</text>
+  <text class="small center" x="320" y="456">backend: `ruff`, `black --check`</text>
+  <text class="small center" x="320" y="480">frontend: `eslint`</text>
+
+  <rect class="blue" x="680" y="382" width="440" height="120" rx="22"/>
+  <text class="label center" x="900" y="428">Job 2 - Testing</text>
+  <text class="small center" x="900" y="456">Django checks, миграции, `pytest`</text>
+  <text class="small center" x="900" y="480">frontend: `jest`</text>
+
+  <rect class="blue" x="1260" y="382" width="440" height="120" rx="22"/>
+  <text class="label center" x="1480" y="428">Job 3 - Build</text>
+  <text class="small center" x="1480" y="456">сборка Docker-образа backend</text>
+  <text class="small center" x="1480" y="480">сборка Docker-образа frontend</text>
+
+  <line x1="540" y1="442" x2="680" y2="442" stroke="#94a3b8" stroke-width="4"/>
+  <polygon points="668,434 688,442 668,450" fill="#94a3b8"/>
+  <line x1="1120" y1="442" x2="1260" y2="442" stroke="#94a3b8" stroke-width="4"/>
+  <polygon points="1248,434 1268,442 1248,450" fill="#94a3b8"/>
+
+  <text class="section" x="90" y="572">2. Дополнительные автоматические проверки</text>
+
+  <rect class="soft" x="100" y="610" width="300" height="96" rx="18"/>
+  <text class="label center" x="250" y="652">Dependency Scan</text>
+  <text class="small center" x="250" y="678">`pip-audit`, `npm audit`</text>
+
+  <rect class="soft" x="440" y="610" width="300" height="96" rx="18"/>
+  <text class="label center" x="590" y="652">Secret Scan</text>
+  <text class="small center" x="590" y="678">`gitleaks`</text>
+
+  <rect class="soft" x="780" y="610" width="300" height="96" rx="18"/>
+  <text class="label center" x="930" y="652">Container Scan</text>
+  <text class="small center" x="930" y="678">`trivy` для backend/frontend</text>
+
+  <rect class="soft" x="1120" y="610" width="300" height="96" rx="18"/>
+  <text class="label center" x="1270" y="652">Deploy Config</text>
+  <text class="small center" x="1270" y="678">`docker compose`, `Caddyfile`, deploy scripts</text>
+
+  <rect class="soft" x="1460" y="610" width="240" height="96" rx="18"/>
+  <text class="label center" x="1580" y="652">Artifacts</text>
+  <text class="small center" x="1580" y="678">диагностика и логи CI</text>
+
+  <text class="section" x="90" y="778">3. Покрытие backend-автотестов (`pytest`)</text>
+
+  <rect class="panel" x="100" y="812" width="780" height="410" rx="24"/>
+  <rect class="ok" x="128" y="840" width="724" height="58" rx="14"/>
+  <text class="label" x="154" y="876">Проверяются серверная логика, API, БД PostgreSQL, Redis/Celery, миграции и безопасность</text>
+
+  <rect class="soft" x="128" y="922" width="336" height="118" rx="18"/>
+  <text class="label" x="152" y="956">Аутентификация и доступ</text>
+  <text class="small" x="152" y="984">JWT, brute force protection,</text>
+  <text class="small" x="152" y="1008">password reset, phone/email confirm,</text>
+  <text class="small" x="152" y="1032">object authorization, staff roles</text>
+
+  <rect class="soft" x="516" y="922" width="336" height="118" rx="18"/>
+  <text class="label" x="540" y="956">Каталог и профиль</text>
+  <text class="small" x="540" y="984">catalog recommendations, fit profile,</text>
+  <text class="small" x="540" y="1008">sale price/history, media validation,</text>
+  <text class="small" x="540" y="1032">support contact API</text>
+
+  <rect class="soft" x="128" y="1068" width="336" height="118" rx="18"/>
+  <text class="label" x="152" y="1102">Корзина и checkout</text>
+  <text class="small" x="152" y="1130">cart API, totals, service contracts,</text>
+  <text class="small" x="152" y="1154">checkout concurrency, legal consents,</text>
+  <text class="small" x="152" y="1178">delivery and payment foundation</text>
+
+  <rect class="soft" x="516" y="1068" width="336" height="118" rx="18"/>
+  <text class="label" x="540" y="1102">Оплата, доставка, эксплуатация</text>
+  <text class="small" x="540" y="1130">webhooks, refunds, payment return status,</text>
+  <text class="small" x="540" y="1154">tracking, notifications, settings,</text>
+  <text class="small" x="540" y="1178">OpenAPI, health, logging, migration safety</text>
+
+  <text class="section" x="930" y="778">4. Покрытие frontend-автотестов (`jest`)</text>
+
+  <rect class="panel" x="920" y="812" width="780" height="410" rx="24"/>
+  <rect class="ok" x="948" y="840" width="724" height="58" rx="14"/>
+  <text class="label" x="974" y="876">Проверяются пользовательские сценарии интерфейса и клиентская логика взаимодействия с API</text>
+
+  <rect class="violet" x="948" y="922" width="336" height="118" rx="18"/>
+  <text class="label" x="972" y="956">Основные экраны</text>
+  <text class="small" x="972" y="984">auth page, header, catalog page,</text>
+  <text class="small" x="972" y="1008">product detail page, search page</text>
+
+  <rect class="violet" x="1336" y="922" width="336" height="118" rx="18"/>
+  <text class="label" x="1360" y="956">Покупка и оплата</text>
+  <text class="small" x="1360" y="984">cart drawer, checkout page,</text>
+  <text class="small" x="1360" y="1008">payment return page</text>
+
+  <rect class="violet" x="948" y="1068" width="336" height="118" rx="18"/>
+  <text class="label" x="972" y="1102">Личный кабинет</text>
+  <text class="small" x="972" y="1130">account page, order tracking page,</text>
+  <text class="small" x="972" y="1154">favorites interaction</text>
+
+  <rect class="violet" x="1336" y="1068" width="336" height="118" rx="18"/>
+  <text class="label" x="1360" y="1102">Служебные сценарии</text>
+  <text class="small" x="1360" y="1130">contacts form, API helpers,</text>
+  <text class="small" x="1360" y="1154">cart sync utilities</text>
+</svg>

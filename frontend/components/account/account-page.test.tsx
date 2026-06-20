@@ -4,13 +4,11 @@ import { ReactNode } from "react";
 
 import {
   deleteAccount,
-  exportAccountData,
   fetchAddresses,
   fetchFavorites,
   fetchFitProfile,
   fetchMe,
-  fetchOrders,
-  updateFitProfile
+  fetchOrders
 } from "../../lib/api";
 import { useFavoritesStore } from "../../stores/favorites-store";
 import { useUserStore } from "../../stores/user-store";
@@ -42,7 +40,6 @@ jest.mock("../../lib/api", () => ({
   createAddress: jest.fn(),
   deleteAccount: jest.fn(),
   deleteAddress: jest.fn(),
-  exportAccountData: jest.fn(),
   fetchAddresses: jest.fn(),
   fetchFavorites: jest.fn(),
   fetchFitProfile: jest.fn(),
@@ -51,7 +48,6 @@ jest.mock("../../lib/api", () => ({
   logoutUser: jest.fn(),
   removeFavorite: jest.fn(),
   updateAddress: jest.fn(),
-  updateFitProfile: jest.fn(),
   updateMe: jest.fn()
 }));
 
@@ -117,22 +113,27 @@ describe("AccountPage", () => {
       last_name: "Shopper",
       phone: "+15551234567"
     });
-    jest.mocked(fetchAddresses).mockResolvedValue([
-      {
-        id: 3,
-        label: "Home",
-        recipient_name: "QA Shopper",
-        phone: "+15551234567",
-        country: "US",
-        city: "New York",
-        postal_code: "10001",
-        line1: "11 Test Avenue",
-        line2: "Apt 5",
-        is_default: true,
-        created_at: "2026-04-01T10:00:00Z",
-        updated_at: "2026-04-02T10:00:00Z"
-      }
-    ]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 3,
+          label: "Home",
+          recipient_name: "QA Shopper",
+          phone: "+15551234567",
+          country: "US",
+          city: "New York",
+          postal_code: "10001",
+          line1: "11 Test Avenue",
+          line2: "Apt 5",
+          is_default: true,
+          created_at: "2026-04-01T10:00:00Z",
+          updated_at: "2026-04-02T10:00:00Z"
+        }
+      ]
+    } as any);
     jest.mocked(fetchOrders).mockResolvedValue({
       count: 2,
       next: null,
@@ -296,11 +297,13 @@ describe("AccountPage", () => {
     });
     expect(await screen.findByText("QA Shopper")).toBeInTheDocument();
     expect(screen.getByText("shopper@example.com")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Адреса/i }));
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getAllByText(/11 Test Avenue/).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /Заказы/i }));
     expect(screen.getByText("История покупок")).toBeInTheDocument();
-    expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
-    expect(screen.getAllByText("Neon Ronin Shell").length).toBeGreaterThan(0);
     expect(screen.getByText("Заказ #11")).toBeInTheDocument();
     expect(screen.getByText("Ожидает оплаты")).toBeInTheDocument();
     expect(screen.getByText("\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d")).toBeInTheDocument();
@@ -313,6 +316,10 @@ describe("AccountPage", () => {
     expect(
       screen.getByText("\u0417\u0430\u043a\u0430\u0437 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d. \u0415\u0441\u043b\u0438 \u0447\u0442\u043e-\u0442\u043e \u043d\u0435 \u043f\u043e\u0434\u043e\u0448\u043b\u043e, \u043c\u043e\u0436\u043d\u043e \u043e\u0444\u043e\u0440\u043c\u0438\u0442\u044c \u0432\u043e\u0437\u0432\u0440\u0430\u0442.")
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Избранное/i }));
+    expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
+    expect(screen.getAllByText("Neon Ronin Shell").length).toBeGreaterThan(0);
   });
 
   it("smokes the empty orders and favorites sections for an authenticated account", async () => {
@@ -336,7 +343,12 @@ describe("AccountPage", () => {
       last_name: "Shopper",
       phone: "+15551234567"
     });
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest.mocked(fetchOrders).mockResolvedValue({
       count: 0,
       next: null,
@@ -355,11 +367,16 @@ describe("AccountPage", () => {
       expect(fetchFavorites).toHaveBeenCalledWith("access-token");
     });
 
+    await screen.findByText("QA Shopper");
+
+    fireEvent.click(screen.getByRole("button", { name: /Заказы/i }));
     expect(await screen.findByText("История покупок")).toBeInTheDocument();
-    expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
     expect(
       screen.getByText("Пока нет заказов. Первый оформленный дроп появится здесь.")
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Избранное/i }));
+    expect(screen.getByText("Любимые вещи")).toBeInTheDocument();
     expect(
       screen.getByText("Здесь будут вещи, которые вы отложили на потом.")
     ).toBeInTheDocument();
@@ -385,7 +402,12 @@ describe("AccountPage", () => {
       last_name: "Shopper",
       phone: "+15551234567"
     });
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest
       .mocked(fetchOrders)
       .mockRejectedValueOnce(new Error("orders offline"))
@@ -399,6 +421,9 @@ describe("AccountPage", () => {
 
     renderWithQueryClient(<AccountPage />);
 
+    await screen.findByText("QA Shopper");
+    fireEvent.click(screen.getByRole("button", { name: /Заказы/i }));
+
     const retryButton = await screen.findByRole("button", {
       name: "Повторить загрузку заказов"
     });
@@ -409,7 +434,7 @@ describe("AccountPage", () => {
     });
   });
 
-  it("exports account data from the profile tools block", async () => {
+  it("does not show account data export in the profile tools block", async () => {
     useUserStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -430,7 +455,12 @@ describe("AccountPage", () => {
       last_name: "Shopper",
       phone: "+15551234567"
     });
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest.mocked(fetchOrders).mockResolvedValue({
       count: 0,
       next: null,
@@ -438,45 +468,11 @@ describe("AccountPage", () => {
       results: []
     });
     jest.mocked(fetchFavorites).mockResolvedValue([]);
-    jest.mocked(exportAccountData).mockResolvedValue({
-      exported_at: "2026-05-14T15:00:00Z",
-      profile: {
-        id: 7,
-        username: "shopper",
-        email: "shopper@example.com"
-      },
-      addresses: [],
-      favorites: [],
-      cart: null,
-      orders: [],
-      payments: [],
-      notifications: [],
-      contact_requests: []
-    });
-    const createObjectURL = jest.fn(() => "blob:test");
-    const revokeObjectURL = jest.fn();
-    const anchorClick = jest
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(() => {});
-    Object.defineProperty(window.URL, "createObjectURL", {
-      writable: true,
-      value: createObjectURL
-    });
-    Object.defineProperty(window.URL, "revokeObjectURL", {
-      writable: true,
-      value: revokeObjectURL
-    });
 
     renderWithQueryClient(<AccountPage />);
 
-    fireEvent.click(await screen.findByTestId("account-export-button"));
-
-    await waitFor(() => {
-      expect(exportAccountData).toHaveBeenCalledWith("access-token");
-      expect(createObjectURL).toHaveBeenCalled();
-    });
-
-    anchorClick.mockRestore();
+    expect(await screen.findByText("Удаление аккаунта")).toBeInTheDocument();
+    expect(screen.queryByTestId("account-export-button")).not.toBeInTheDocument();
   });
 
   it("deletes the account and clears the local session", async () => {
@@ -500,7 +496,12 @@ describe("AccountPage", () => {
       last_name: "Shopper",
       phone: "+15551234567"
     });
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
+    jest.mocked(fetchAddresses).mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: []
+    } as any);
     jest.mocked(fetchOrders).mockResolvedValue({
       count: 0,
       next: null,
@@ -538,94 +539,4 @@ describe("AccountPage", () => {
     });
   });
 
-  it("saves fit profile data for smart fitting", async () => {
-    useUserStore.setState({
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
-      profile: {
-        id: 7,
-        username: "shopper",
-        email: "shopper@example.com",
-        first_name: "QA",
-        last_name: "Shopper",
-        phone: "+15551234567"
-      }
-    });
-    jest.mocked(fetchMe).mockResolvedValue({
-      id: 7,
-      username: "shopper",
-      email: "shopper@example.com",
-      first_name: "QA",
-      last_name: "Shopper",
-      phone: "+15551234567"
-    });
-    jest.mocked(fetchAddresses).mockResolvedValue([]);
-    jest.mocked(fetchOrders).mockResolvedValue({
-      count: 0,
-      next: null,
-      previous: null,
-      results: []
-    });
-    jest.mocked(fetchFavorites).mockResolvedValue([]);
-    jest.mocked(fetchFitProfile).mockResolvedValue({
-      height_cm: 176,
-      preferred_fit: "regular",
-      updated_at: "2026-05-25T08:00:00Z",
-      is_complete: false
-    } as any);
-    jest.mocked(updateFitProfile).mockResolvedValue({
-      height_cm: 182,
-      weight_kg: "76",
-      preferred_fit: "oversized",
-      preferred_style: "streetwear",
-      tops_usual_size: "L",
-      updated_at: "2026-05-25T09:00:00Z",
-      is_complete: true
-    } as any);
-
-    renderWithQueryClient(<AccountPage />);
-
-    expect(await screen.findByText("Параметры для умной примерочной")).toBeInTheDocument();
-    await waitFor(() => {
-      expect((screen.getByLabelText("Рост, см") as HTMLInputElement).value).toBe("176");
-    });
-
-    fireEvent.change(screen.getByLabelText("Рост, см"), {
-      target: { value: "182" }
-    });
-    fireEvent.change(screen.getByLabelText("Вес, кг"), {
-      target: { value: "76" }
-    });
-    fireEvent.change(screen.getByLabelText("Предпочтительная посадка"), {
-      target: { value: "oversized" }
-    });
-    fireEvent.change(screen.getByLabelText("Любимый стиль"), {
-      target: { value: "streetwear" }
-    });
-    fireEvent.change(screen.getByLabelText("Размер верха"), {
-      target: { value: "L" }
-    });
-    expect((screen.getByLabelText("Рост, см") as HTMLInputElement).value).toBe("182");
-
-    fireEvent.click(screen.getByRole("button", { name: /сохранить fit-profile/i }));
-
-    await waitFor(() => {
-      expect(updateFitProfile).toHaveBeenCalledWith("access-token", {
-        height_cm: 182,
-        weight_kg: "76",
-        chest_cm: null,
-        waist_cm: null,
-        hips_cm: null,
-        inseam_cm: null,
-        preferred_fit: "oversized",
-        preferred_style: "streetwear",
-        preferred_season: null,
-        tops_usual_size: "L",
-        bottoms_usual_size: null,
-        budget_min_rub: null,
-        budget_max_rub: null,
-        notes: null
-      });
-    });
-  });
 });

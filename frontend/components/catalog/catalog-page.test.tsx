@@ -12,6 +12,11 @@ import {
 import { useUserStore } from "../../stores/user-store";
 import { CatalogPage } from "./catalog-page";
 
+const pushMock = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock })
+}));
+
 jest.mock("next/link", () => {
   const React = require("react");
 
@@ -48,6 +53,7 @@ function renderWithQueryClient(children: ReactNode) {
 describe("CatalogPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    pushMock.mockClear();
     useUserStore.setState({
       accessToken: null,
       refreshToken: null,
@@ -291,7 +297,7 @@ describe("CatalogPage", () => {
     expect(jest.mocked(fetchProducts).mock.calls[1][0].get("page")).toBe("3");
   });
 
-  it("renders smart fitting recommendation in catalog for authenticated user", async () => {
+  it("does not render smart fitting card copy in catalog grid", async () => {
     useUserStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -344,9 +350,9 @@ describe("CatalogPage", () => {
 
     renderWithQueryClient(<CatalogPage />);
 
-    expect(await screen.findByText("Умная примерочная")).toBeInTheDocument();
-    expect(screen.getByText("Размер M")).toBeInTheDocument();
-    expect(screen.getByText(/итого/i)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /blazonry body/i })).toBeInTheDocument();
+    expect(screen.queryByText(/умная примерочная/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Подходящие товары именно вам")).toBeInTheDocument();
     expect(jest.mocked(fetchProducts).mock.calls[0][1]).toBe("access-token");
   });
 });

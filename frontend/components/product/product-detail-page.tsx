@@ -40,9 +40,7 @@ const FIT_PROFILE_FIELD_LABELS: Record<string, string> = {
   preferred_style: "любимый стиль",
   preferred_season: "предпочтительный сезон",
   tops_usual_size: "обычный размер верха",
-  bottoms_usual_size: "обычный размер низа",
-  budget_min_rub: "минимальный бюджет",
-  budget_max_rub: "максимальный бюджет"
+  bottoms_usual_size: "обычный размер низа"
 };
 const FIT_RECOMMENDATION_TONE: Record<string, string> = {
   none: "border-white/10 bg-white/[0.04]",
@@ -302,21 +300,16 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           </p>
 
           <div className="mt-8 border-y border-white/10 py-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-3xl font-black">
-                  {money.format(Number(selectedVariant?.price ?? product.base_price))}
-                </p>
-                <p
-                  className={`mt-2 text-sm ${
-                    selectedVariantInStock ? "text-slate-400" : "text-red-200"
-                  }`}
-                >
-                  {availabilityText(selectedVariant)}
-                </p>
-              </div>
-              <FavoriteToggleButton product={product} compact />
-            </div>
+            <p className="text-3xl font-black">
+              {money.format(Number(selectedVariant?.price ?? product.base_price))}
+            </p>
+            <p
+              className={`mt-2 text-sm ${
+                selectedVariantInStock ? "text-slate-400" : "text-red-200"
+              }`}
+            >
+              {availabilityText(selectedVariant)}
+            </p>
           </div>
 
           <div className="mt-8">
@@ -364,10 +357,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
             </div>
           </div>
 
-          {fitRecommendation ? (
+          {false ? (
             <section
               aria-label="Рекомендация по размеру"
-              className={`mt-8 border p-5 ${FIT_RECOMMENDATION_TONE[fitRecommendation.confidence] ?? FIT_RECOMMENDATION_TONE.none}`}
+              className={`mt-8 border p-5 ${FIT_RECOMMENDATION_TONE[fitRecommendation!.confidence] ?? FIT_RECOMMENDATION_TONE.none}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -375,27 +368,27 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                     Рекомендация по размеру
                   </p>
                   <h2 className="mt-2 text-2xl font-black text-white">
-                    {fitRecommendation.recommended_size
-                      ? `Рекомендуем размер ${fitRecommendation.recommended_size}`
+                    {fitRecommendation!.recommended_size
+                      ? `Рекомендуем размер ${fitRecommendation!.recommended_size}`
                       : "Подберём размер точнее после заполнения fit-профиля"}
                   </h2>
                 </div>
                 <span className="border border-white/10 bg-black/20 px-3 py-1 text-xs font-bold uppercase text-slate-200">
-                  {fitRecommendation.confidence === "high"
+                  {fitRecommendation!.confidence === "high"
                     ? "Высокая точность"
-                    : fitRecommendation.confidence === "medium"
+                    : fitRecommendation!.confidence === "medium"
                       ? "Хорошее совпадение"
-                      : fitRecommendation.confidence === "low"
+                      : fitRecommendation!.confidence === "low"
                         ? "Предварительно"
                         : "Нужны данные"}
                 </span>
               </div>
 
               <p className="mt-3 text-sm leading-6 text-slate-200">
-                {fitRecommendation.summary}
+                {fitRecommendation!.summary}
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                {fitRecommendation.explanation}
+                {fitRecommendation!.explanation}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-3">
@@ -408,7 +401,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 {recommendationEntryId ? (
                   <button
                     type="button"
-                    onClick={() => toggleSavedRecommendation(recommendationEntryId)}
+                    onClick={() => toggleSavedRecommendation(recommendationEntryId!)}
                     className="h-10 border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition hover:border-neon-crimson/60 hover:bg-white/10"
                   >
                     {isRecommendationSaved
@@ -418,9 +411,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 ) : null}
               </div>
 
-              {fitRecommendation.warnings.length > 0 ? (
+              {fitRecommendation!.warnings.length > 0 ? (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {fitRecommendation.warnings.map((warning) => (
+                  {fitRecommendation!.warnings.map((warning) => (
                     <span
                       key={warning}
                       className="border border-white/10 bg-black/20 px-2 py-1 text-xs font-semibold uppercase text-slate-200"
@@ -453,18 +446,18 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                 </div>
               ) : null}
 
-              {!fitRecommendation.profile_ready &&
-              fitRecommendation.missing_profile_fields.length > 0 ? (
+              {!fitRecommendation!.profile_ready &&
+              fitRecommendation!.missing_profile_fields.length > 0 ? (
                 <p className="mt-3 text-xs font-semibold text-slate-300">
                   {accessToken
                     ? `Чтобы рекомендация стала точнее, добавьте в fit-профиль: ${formatMissingFitFields(
-                        fitRecommendation.missing_profile_fields
+                        fitRecommendation!.missing_profile_fields
                       )}.`
                     : "Войдите в аккаунт и заполните fit-профиль, чтобы получить персональную рекомендацию по размеру."}
                 </p>
               ) : null}
 
-              {fitRecommendation.outfit.items.length > 0 ? (
+              {fitRecommendation!.outfit.items.length > 0 ? (
                 <div className="mt-5 border-t border-white/10 pt-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -475,15 +468,15 @@ export function ProductDetailPage({ slug }: { slug: string }) {
                         Система собрала вещи, которые сочетаются с этой позицией.
                       </p>
                     </div>
-                    {fitRecommendation.outfit.total_price ? (
+                    {fitRecommendation!.outfit.total_price ? (
                       <p className="text-sm font-semibold text-white">
-                        Итого: {money.format(Number(fitRecommendation.outfit.total_price))}
+                        Итого: {money.format(Number(fitRecommendation!.outfit.total_price))}
                       </p>
                     ) : null}
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    {fitRecommendation.outfit.items.map((item) => (
+                  {fitRecommendation!.outfit.items.map((item) => (
                       <Link
                         key={item.id}
                         href={`/products/${item.slug}`}

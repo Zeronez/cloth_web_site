@@ -18,9 +18,6 @@ export type FitProfileFormState = {
   preferred_season: "" | FitProfilePreferredSeason;
   tops_usual_size: "" | FitProfileSize;
   bottoms_usual_size: "" | FitProfileSize;
-  budget_min_rub: string;
-  budget_max_rub: string;
-  notes: string;
 };
 
 export const emptyFitProfileForm: FitProfileFormState = {
@@ -34,10 +31,7 @@ export const emptyFitProfileForm: FitProfileFormState = {
   preferred_style: "",
   preferred_season: "",
   tops_usual_size: "",
-  bottoms_usual_size: "",
-  budget_min_rub: "",
-  budget_max_rub: "",
-  notes: ""
+  bottoms_usual_size: ""
 };
 
 export const fitSizeOptions: FitProfileSize[] = [
@@ -61,9 +55,7 @@ export const fitProfileFieldLabels: Record<string, string> = {
   preferred_style: "любимый стиль",
   preferred_season: "предпочтительный сезон",
   tops_usual_size: "обычный размер верха",
-  bottoms_usual_size: "обычный размер низа",
-  budget_min_rub: "минимальный бюджет",
-  budget_max_rub: "максимальный бюджет"
+  bottoms_usual_size: "обычный размер низа"
 };
 
 export const fitProfileWizardSteps = [
@@ -80,7 +72,7 @@ export const fitProfileWizardSteps = [
   {
     id: "review",
     title: "Финал",
-    description: "Бюджет, заметки и сохранение профиля."
+    description: "Проверка данных и сохранение профиля."
   }
 ] as const;
 
@@ -110,9 +102,6 @@ export function fitProfileToForm(profile?: Partial<FitProfile> | null): FitProfi
     tops_usual_size: (profile?.tops_usual_size ?? "") as FitProfileFormState["tops_usual_size"],
     bottoms_usual_size: (profile?.bottoms_usual_size ??
       "") as FitProfileFormState["bottoms_usual_size"],
-    budget_min_rub: toFormValue(profile?.budget_min_rub),
-    budget_max_rub: toFormValue(profile?.budget_max_rub),
-    notes: profile?.notes ?? ""
   };
 }
 
@@ -128,10 +117,7 @@ export function fitProfileFormToPayload(form: FitProfileFormState): Partial<FitP
     preferred_style: form.preferred_style || null,
     preferred_season: form.preferred_season || null,
     tops_usual_size: form.tops_usual_size || null,
-    bottoms_usual_size: form.bottoms_usual_size || null,
-    budget_min_rub: normalizeOptionalNumber(form.budget_min_rub),
-    budget_max_rub: normalizeOptionalNumber(form.budget_max_rub),
-    notes: form.notes.trim() || null
+    bottoms_usual_size: form.bottoms_usual_size || null
   };
 }
 
@@ -213,18 +199,6 @@ export function validateFitProfileForm(
       errors.push(`${label} должен быть в диапазоне ${min}–${max}.`);
     }
   });
-
-  const budgetMin = String(form.budget_min_rub ?? "").trim();
-  const budgetMax = String(form.budget_max_rub ?? "").trim();
-  if (budgetMin && Number(budgetMin) < 0) {
-    errors.push("Минимальный бюджет не может быть отрицательным.");
-  }
-  if (budgetMax && Number(budgetMax) < 0) {
-    errors.push("Максимальный бюджет не может быть отрицательным.");
-  }
-  if (budgetMin && budgetMax && Number(budgetMin) > Number(budgetMax)) {
-    errors.push("Бюджет \"от\" не может быть больше бюджета \"до\".");
-  }
 
   return errors;
 }

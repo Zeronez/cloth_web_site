@@ -23,8 +23,10 @@ import {
   getRecommendationScopeKey,
   useRecommendationHistoryStore
 } from "../../stores/recommendation-history-store";
+import { useFitQuizStore } from "../../stores/fit-quiz-store";
 import { useUserStore } from "../../stores/user-store";
-import { RecommendationHistoryPanel } from "./recommendation-history-panel";
+
+const emptyWizardDraft: Partial<FitProfileFormState> = {};
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -79,13 +81,19 @@ export function FittingWizardPage() {
   const accessToken = useUserStore((state) => state.accessToken);
   const profile = useUserStore((state) => state.profile);
   const clearSession = useUserStore((state) => state.clearSession);
+  const completedProfile = useFitQuizStore((state) => state.completedProfile);
+  const completedAt = useFitQuizStore((state) => state.completedAt);
+  const quizExtras = useFitQuizStore((state) => state.extras);
+  const setCompletedProfile = useFitQuizStore((state) => state.setCompletedProfile);
+  const setQuizExtras = useFitQuizStore((state) => state.setExtras);
   const scopeKey = useMemo(
     () => getRecommendationScopeKey(profile?.id),
     [profile?.id]
   );
   const wizardDraft = useRecommendationHistoryStore(
-    (state) => state.wizardDrafts[scopeKey] ?? {}
+    (state) => state.wizardDrafts[scopeKey]
   );
+  const currentWizardDraft = wizardDraft ?? emptyWizardDraft;
   const setWizardDraft = useRecommendationHistoryStore((state) => state.setWizardDraft);
   const clearWizardDraft = useRecommendationHistoryStore((state) => state.clearWizardDraft);
   const [stepIndex, setStepIndex] = useState(0);
@@ -108,31 +116,45 @@ export function FittingWizardPage() {
   }, [clearSession, fitProfileQuery.error]);
 
   useEffect(() => {
+    if (didHydrateDraft) {
+      return;
+    }
+
     if (fitProfileQuery.data) {
       setForm({
         ...fitProfileToForm(fitProfileQuery.data),
-        ...wizardDraft
+        ...currentWizardDraft
       });
       setDidHydrateDraft(true);
       return;
     }
 
-    if (!didHydrateDraft && Object.keys(wizardDraft).length > 0) {
+    if (!accessToken && !didHydrateDraft && completedProfile) {
       setForm((current) => ({
         ...current,
-        ...wizardDraft
+        ...completedProfile,
+        ...currentWizardDraft
+      }));
+      setDidHydrateDraft(true);
+      return;
+    }
+
+    if (Object.keys(currentWizardDraft).length > 0) {
+      setForm((current) => ({
+        ...current,
+        ...currentWizardDraft
       }));
       setDidHydrateDraft(true);
     }
-  }, [didHydrateDraft, fitProfileQuery.data, wizardDraft]);
+  }, [accessToken, completedProfile, currentWizardDraft, didHydrateDraft, fitProfileQuery.data]);
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!didHydrateDraft) {
       return;
     }
 
     setWizardDraft(scopeKey, form);
-  }, [accessToken, form, scopeKey, setWizardDraft]);
+  }, [didHydrateDraft, form, scopeKey, setWizardDraft]);
 
   const completion = getFitProfileCompletion(form);
   const currentStep = fitProfileWizardSteps[stepIndex];
@@ -151,7 +173,7 @@ export function FittingWizardPage() {
         form.tops_usual_size &&
         form.bottoms_usual_size
     ),
-    Boolean(form.notes || form.budget_min_rub || form.budget_max_rub)
+    true
   ];
 
   function updateField<Key extends keyof FitProfileFormState>(
@@ -167,10 +189,6 @@ export function FittingWizardPage() {
   }
 
   async function handleSave() {
-    if (!accessToken) {
-      return;
-    }
-
     const validationErrors = validateFitProfileForm(form, "all");
     if (validationErrors.length > 0) {
       setSaveError(validationErrors[0]);
@@ -178,9 +196,26 @@ export function FittingWizardPage() {
       return;
     }
 
-    setIsSaving(true);
     setSaveError(null);
     setSaveMessage(null);
+    clearWizardDraft(scopeKey);
+
+    setCompletedProfile(form, quizExtras);
+
+    if (!accessToken) {
+      const top = form.tops_usual_size ? (form.tops_usual_size === "ONE_SIZE" ? "One size" : form.tops_usual_size) : "—";
+      const bottom = form.bottoms_usual_size
+        ? form.bottoms_usual_size === "ONE_SIZE"
+          ? "One size"
+          : form.bottoms_usual_size
+        : "—";
+      setSaveMessage(
+        `Готово! По ответам чаще всего подойдут размеры: верх — ${top}, низ — ${bottom}. В каталоге включите «Подходящие товары именно вам».`
+      );
+      return;
+    }
+
+    setIsSaving(true);
 
     try {
       const updatedProfile = await updateFitProfile(
@@ -188,8 +223,9 @@ export function FittingWizardPage() {
         fitProfileFormToPayload(form)
       );
       setForm(fitProfileToForm(updatedProfile));
-      clearWizardDraft(scopeKey);
-      setSaveMessage("Fit-profile сохранён. Smart fitting теперь использует обновлённые данные.");
+      setSaveMessage(
+        "Профиль сохранён. Рекомендации по размеру и капсулы теперь считаются по обновлённым данным."
+      );
       await fitProfileQuery.refetch();
     } catch (error) {
       setSaveError(getErrorMessage(error));
@@ -216,13 +252,12 @@ export function FittingWizardPage() {
     return (
       <main className="min-h-screen bg-ink-950 px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
         <section className="mx-auto grid max-w-4xl gap-6 border border-white/10 bg-white/[0.04] p-8">
-          <p className="text-xs font-black uppercase text-neon-teal">Smart fitting wizard</p>
+          <p className="text-xs font-black uppercase text-neon-teal">Рекомендации</p>
           <h1 className="text-3xl font-black sm:text-5xl">
-            Войдите, чтобы сохранить fit-profile и историю рекомендаций.
+            Войдите, чтобы пройти тест и получать персональные рекомендации.
           </h1>
           <p className="max-w-2xl text-base leading-7 text-slate-300">
-            Wizard собирает fit-profile по шагам, а сохранённые рекомендации помогут
-            сравнивать размеры и capsule looks позже.
+            Тест сохраняется в профиле и используется в каталоге для фильтра «Подходящие товары именно вам».
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -232,10 +267,10 @@ export function FittingWizardPage() {
               Войти
             </Link>
             <Link
-              href="/account"
+              href="/register"
               className="inline-flex h-11 items-center border border-neon-teal/30 bg-neon-teal/10 px-5 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
             >
-              Открыть аккаунт
+              Создать аккаунт
             </Link>
           </div>
         </section>
@@ -256,18 +291,46 @@ export function FittingWizardPage() {
               Wizard работает поверх текущего fit-profile API: черновик сохраняется локально,
               а финальная версия отправляется в аккаунт одним действием.
             </p>
+            {!accessToken ? (
+              <div className="mt-6 border border-neon-amber/25 bg-neon-amber/10 p-4 text-sm leading-6 text-orange-100">
+                <p className="font-semibold">
+                  Можно пройти тест без аккаунта — результат сохранится в браузере.
+                </p>
+                <p className="mt-1 text-orange-100/90">
+                  Войдите, если хотите сохранять результат в профиль и получать персональные рекомендации на
+                  разных устройствах.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Link
+                    href="/login"
+                    className="inline-flex h-10 items-center border border-white/15 bg-white/5 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10"
+                  >
+                    Войти
+                  </Link>
+                </div>
+              </div>
+            ) : null}
             <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
               <span>Готовность профиля: {completion.percent}%</span>
               <span>
                 Заполнено {completion.completedCount} из {completion.totalCount} ключевых полей
               </span>
+              {completedAt ? (
+                <span>Последний результат: {new Date(completedAt).toLocaleString("ru-RU")}</span>
+              ) : null}
             </div>
           </div>
 
           <div className="border border-white/10 bg-black/10 p-5">
             <p className="text-xs font-black uppercase text-neon-amber">Текущее состояние</p>
             <p className="mt-3 text-2xl font-black text-white">
-              {fitProfileQuery.data?.is_complete ? "Профиль готов" : "Нужно уточнить посадку"}
+              {accessToken
+                ? fitProfileQuery.data?.is_complete
+                  ? "Профиль готов"
+                  : "Нужно уточнить посадку"
+                : completedProfile
+                  ? "Тест пройден"
+                  : "Нужно ответить на вопросы"}
             </p>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Черновик сохраняется автоматически в браузере. После финального сохранения
@@ -281,10 +344,10 @@ export function FittingWizardPage() {
                 Перейти в каталог
               </Link>
               <Link
-                href="/account"
+                href={accessToken ? "/account" : "/login"}
                 className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
               >
-                Открыть аккаунт
+                {accessToken ? "Открыть аккаунт" : "Войти"}
               </Link>
             </div>
           </div>
@@ -394,6 +457,28 @@ export function FittingWizardPage() {
                     </select>
                   </label>
 
+                  <label className="block sm:col-span-2">
+                    <span className="mb-2 block text-sm font-semibold text-slate-200">
+                      По цветам/вайбу ты скорее…
+                    </span>
+                    <select
+                      value={quizExtras.color_vibe}
+                      onChange={(event) => {
+                        setSaveError(null);
+                        setSaveMessage(null);
+                        setQuizExtras({ color_vibe: event.target.value });
+                      }}
+                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
+                    >
+                      <option value="">Выбери вайб</option>
+                      <option value="total black / тёмная база">total black / тёмная база</option>
+                      <option value="пастель и нежняк">пастель и нежняк</option>
+                      <option value="ярко, но со вкусом">ярко, но со вкусом</option>
+                      <option value="нейтралка (серый/беж/база)">нейтралка (серый/беж/база)</option>
+                      <option value="контрасты и принты">контрасты и принты</option>
+                    </select>
+                  </label>
+
                   <label className="block">
                     <span className="mb-2 block text-sm font-semibold text-slate-200">
                       Предпочтительный сезон
@@ -459,49 +544,6 @@ export function FittingWizardPage() {
 
             {stepIndex === 2 ? (
               <div className="mt-6 space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-200">
-                      Бюджет от, ₽
-                    </span>
-                    <input
-                      inputMode="numeric"
-                      value={form.budget_min_rub}
-                      onChange={(event) =>
-                        updateField("budget_min_rub", event.target.value as never)
-                      }
-                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-200">
-                      Бюджет до, ₽
-                    </span>
-                    <input
-                      inputMode="numeric"
-                      value={form.budget_max_rub}
-                      onChange={(event) =>
-                        updateField("budget_max_rub", event.target.value as never)
-                      }
-                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    />
-                  </label>
-                </div>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-200">
-                    Примечания для стилиста
-                  </span>
-                  <textarea
-                    rows={5}
-                    value={form.notes}
-                    onChange={(event) => updateField("notes", event.target.value)}
-                    className="w-full border border-white/10 bg-ink-900/80 px-4 py-3 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    placeholder="Например: люблю свободный верх, нужен универсальный capsule look до 20 000 ₽."
-                  />
-                </label>
-
                 <div className="border border-white/10 bg-black/10 p-4">
                   <p className="text-sm font-black uppercase text-neon-teal">Перед сохранением</p>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
@@ -551,20 +593,17 @@ export function FittingWizardPage() {
                   disabled={isSaving}
                   className="h-11 bg-neon-teal px-5 text-sm font-black uppercase text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSaving ? "Сохраняем fit-profile..." : "Сохранить fit-profile"}
+                  {isSaving
+                    ? "Сохраняем..."
+                    : accessToken
+                      ? "Сохранить в профиль"
+                      : "Завершить тест"}
                 </button>
               )}
             </div>
           </section>
         </div>
 
-        <RecommendationHistoryPanel
-          scopeKey={scopeKey}
-          title="Сравнение рекомендаций"
-          description="Здесь остаются просмотренные и сохранённые smart fitting рекомендации, чтобы быстро вернуться к удачным размерам и образам."
-          emptyText="Откройте товар с fit recommendation или сохраните образ из карточки товара."
-          maxItems={8}
-        />
       </section>
     </main>
   );

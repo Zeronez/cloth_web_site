@@ -36,7 +36,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: "animeattire-user",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         refreshToken: state.refreshToken
       })

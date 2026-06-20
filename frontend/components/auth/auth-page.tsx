@@ -182,14 +182,23 @@ const authCopy: Record<
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
-    return error.message;
+    if (error.status >= 500) {
+      return "Сервис временно недоступен. Попробуйте позже.";
+    }
+    if (error.status === 429) {
+      return "Слишком много попыток. Подождите немного и попробуйте снова.";
+    }
+    if (error.status === 401) {
+      return "Неверный логин или пароль.";
+    }
+    return error.message || "Не удалось выполнить запрос. Попробуйте ещё раз.";
   }
 
-  if (error instanceof Error) {
-    return error.message;
+  if (error instanceof TypeError) {
+    return "Не удалось связаться с сервером. Проверьте интернет и попробуйте позже.";
   }
 
-  return "Не удалось выполнить запрос. Попробуйте еще раз.";
+  return "Произошла ошибка. Попробуйте позже.";
 }
 
 function extractMessageFromDetail(detail: unknown) {

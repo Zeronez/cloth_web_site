@@ -77,6 +77,14 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ("-is_featured", "-created_at", "-id")
     lookup_field = "slug"
     throttle_scope = "catalog"
+    personal_filter_blocking_warnings = {
+        "fit_profile_incomplete",
+        "no_active_sizes",
+        "recommended_size_out_of_stock",
+        "style_fit_mismatch",
+        "season_mismatch",
+        "style_mismatch",
+    }
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -90,25 +98,44 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = backend_class().filter_queryset(self.request, queryset, self)
 
         search_query = (self.request.query_params.get("search") or "").strip()
-        if not search_query:
-            return queryset.distinct()
+        if search_query:
+            translated_tag_slugs = get_matching_tag_slugs(search_query)
+            search_filter = (
+                Q(name__icontains=search_query)
+                | Q(description__icontains=search_query)
+                | Q(search_synonyms__icontains=search_query)
+                | Q(material__icontains=search_query)
+                | Q(fit__icontains=search_query)
+                | Q(franchise__name__icontains=search_query)
+                | Q(category__name__icontains=search_query)
+                | Q(tags__name__icontains=search_query)
+                | Q(tags__slug__icontains=search_query)
+            )
+            if translated_tag_slugs:
+                search_filter |= Q(tags__slug__in=translated_tag_slugs)
 
-        translated_tag_slugs = get_matching_tag_slugs(search_query)
-        search_filter = (
-            Q(name__icontains=search_query)
-            | Q(description__icontains=search_query)
-            | Q(search_synonyms__icontains=search_query)
-            | Q(material__icontains=search_query)
-            | Q(fit__icontains=search_query)
-            | Q(franchise__name__icontains=search_query)
-            | Q(category__name__icontains=search_query)
-            | Q(tags__name__icontains=search_query)
-            | Q(tags__slug__icontains=search_query)
-        )
-        if translated_tag_slugs:
-            search_filter |= Q(tags__slug__in=translated_tag_slugs)
+            queryset = queryset.filter(search_filter)
 
-        return queryset.filter(search_filter).distinct()
+        queryset = queryset.distinct()
+
+        if self.request.query_params.get("personal") != "true":
+            return queryset
+
+        user = getattr(self.request, "user", None)
+        if not getattr(user, "is_authenticated", False):
+            return queryset.none()
+
+        matching_ids = []
+        for product in queryset:
+            recommendation = build_size_recommendation(product=product, user=user)
+            warnings = {str(warning) for warning in recommendation.get("warnings", [])}
+            if (
+                recommendation.get("recommended_size")
+                and not warnings.intersection(self.personal_filter_blocking_warnings)
+            ):
+                matching_ids.append(product.id)
+
+        return queryset.filter(id__in=matching_ids)
 
     @action(detail=True, methods=["get"], permission_classes=(AllowAny,))
     def recommendation(self, request, *args, **kwargs):

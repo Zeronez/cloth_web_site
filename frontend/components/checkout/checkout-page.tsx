@@ -551,8 +551,8 @@ export function CheckoutPage() {
   });
 
   const addresses = useMemo(
-    () => addressesQuery.data ?? [],
-    [addressesQuery.data]
+    () => addressesQuery.data?.results ?? [],
+    [addressesQuery.data?.results]
   );
 
   const deliveryMethodsQuery = useQuery({

@@ -10,7 +10,6 @@ import {
   createAddress,
   deleteAccount,
   deleteAddress,
-  exportAccountData,
   fetchAddresses,
   fetchFavorites,
   fetchFitProfile,
@@ -21,7 +20,6 @@ import {
   getOrderStatusTone,
   logoutUser,
   removeFavorite,
-  updateFitProfile,
   updateAddress,
   updateMe,
   type Address,
@@ -34,15 +32,7 @@ import {
   type Order,
   type UserProfile
 } from "../../lib/api";
-import {
-  emptyFitProfileForm,
-  fitProfileFormToPayload,
-  fitProfileToForm,
-  fitSizeOptions
-} from "../../lib/fit-profile";
-import { RecommendationHistoryPanel } from "../fitting/recommendation-history-panel";
 import { useFavoritesStore } from "../../stores/favorites-store";
-import { getRecommendationScopeKey } from "../../stores/recommendation-history-store";
 import { useUserStore } from "../../stores/user-store";
 
 type ProfileFormState = {
@@ -50,23 +40,6 @@ type ProfileFormState = {
   last_name: string;
   email: string;
   phone: string;
-};
-
-type FitProfileFormState = {
-  height_cm: string;
-  weight_kg: string;
-  chest_cm: string;
-  waist_cm: string;
-  hips_cm: string;
-  inseam_cm: string;
-  preferred_fit: "" | FitProfilePreferredFit;
-  preferred_style: "" | FitProfilePreferredStyle;
-  preferred_season: "" | FitProfilePreferredSeason;
-  tops_usual_size: "" | FitProfileSize;
-  bottoms_usual_size: "" | FitProfileSize;
-  budget_min_rub: string;
-  budget_max_rub: string;
-  notes: string;
 };
 
 type AddressFormState = AddressInput;
@@ -342,7 +315,6 @@ export function AccountPage() {
   const setFavorites = useFavoritesStore((state) => state.setFavorites);
   const [isMounted, setIsMounted] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [fitProfileError, setFitProfileError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
@@ -351,19 +323,18 @@ export function AccountPage() {
     email: "",
     phone: ""
   });
-  const [fitProfileForm, setFitProfileForm] =
-    useState<FitProfileFormState>(emptyFitProfileForm);
   const [addressForm, setAddressForm] =
     useState<AddressFormState>(emptyAddressForm);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isSavingFitProfile, setIsSavingFitProfile] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accountToolsError, setAccountToolsError] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState("");
-  const [isExportingAccount, setIsExportingAccount] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "addresses" | "favorites" | "orders"
+  >("profile");
 
   useEffect(() => {
     setIsMounted(true);
@@ -418,17 +389,6 @@ export function AccountPage() {
   }, [profileQuery.data]);
 
   useEffect(() => {
-    if (fitProfileQuery.data) {
-      setFitProfileForm(fitProfileToForm(fitProfileQuery.data));
-      return;
-    }
-
-    if (profileQuery.data?.fit_profile) {
-      setFitProfileForm(fitProfileToForm(profileQuery.data.fit_profile));
-    }
-  }, [fitProfileQuery.data, profileQuery.data?.fit_profile]);
-
-  useEffect(() => {
     if (favoritesQuery.data) {
       setFavorites(favoritesQuery.data);
     }
@@ -473,22 +433,24 @@ export function AccountPage() {
     }
   }, [clearSession, favoritesQuery.error]);
 
-  const fitProfileStatus = fitProfileQuery.data?.is_complete
-    ? "Заполнен"
-    : "Нужно уточнить";
+  const fitProfile =
+    fitProfileQuery.data ??
+    profileQuery.data?.fit_profile ??
+    profile?.fit_profile ??
+    null;
 
-  const recommendationScopeKey = getRecommendationScopeKey(currentProfile?.id);
+  const fitProfileStatus = fitProfile?.is_complete ? "Заполнен" : "Нужно уточнить";
 
   const metrics = useMemo(
     () => [
       { label: "Имя пользователя", value: currentProfile?.username ?? "—" },
       { label: "Телефон", value: currentProfile?.phone ?? "Не указан" },
-      { label: "Адресов", value: String(addressesQuery.data?.length ?? 0) },
+      { label: "Адресов", value: String(addressesQuery.data?.results.length ?? 0) },
       { label: "Заказов", value: String(ordersQuery.data?.results.length ?? 0) },
       { label: "В избранном", value: String(favoritesQuery.data?.length ?? 0) }
     ],
     [
-      addressesQuery.data?.length,
+      addressesQuery.data?.results.length,
       currentProfile,
       favoritesQuery.data?.length,
       ordersQuery.data?.results.length
@@ -522,43 +484,6 @@ export function AccountPage() {
       setProfileError(getErrorMessage(error));
     } finally {
       setIsSavingProfile(false);
-    }
-  }
-
-  async function handleFitProfileSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!accessToken || !refreshToken) {
-      return;
-    }
-
-    setFitProfileError(null);
-    setIsSavingFitProfile(true);
-
-    try {
-      const updatedFitProfile = await updateFitProfile(
-        accessToken,
-        fitProfileFormToPayload(fitProfileForm)
-      );
-
-      setFitProfileForm(fitProfileToForm(updatedFitProfile));
-      setSession({
-        accessToken,
-        refreshToken,
-        profile: {
-          ...(currentProfile ?? profile ?? {
-            id: 0,
-            username: "",
-            email: ""
-          }),
-          fit_profile: updatedFitProfile,
-          fit_profile_updated_at: updatedFitProfile.updated_at ?? null
-        }
-      });
-      await Promise.all([fitProfileQuery.refetch(), profileQuery.refetch()]);
-    } catch (error) {
-      setFitProfileError(getErrorMessage(error));
-    } finally {
-      setIsSavingFitProfile(false);
     }
   }
 
@@ -681,36 +606,6 @@ export function AccountPage() {
     }
   }
 
-  async function handleExportAccount() {
-    if (!accessToken) {
-      return;
-    }
-
-    setAccountToolsError(null);
-    setIsExportingAccount(true);
-
-    try {
-      const payload = await exportAccountData(accessToken);
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json"
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `animeattire-account-export-${new Date()
-        .toISOString()
-        .slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      setAccountToolsError(getErrorMessage(error));
-    } finally {
-      setIsExportingAccount(false);
-    }
-  }
-
   async function handleDeleteAccount() {
     if (!accessToken || !deletePassword) {
       setAccountToolsError("Введите текущий пароль, чтобы удалить аккаунт.");
@@ -823,8 +718,48 @@ export function AccountPage() {
           </button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-          <section className="border border-white/10 bg-white/[0.04] p-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              key: "profile",
+              label: "Профиль"
+            },
+            {
+              key: "addresses",
+              label: "Адреса"
+            },
+            {
+              key: "favorites",
+              label: "Избранное"
+            },
+            {
+              key: "orders",
+              label: "Заказы"
+            }
+          ].map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() =>
+                  setActiveTab(
+                    tab.key as "profile" | "addresses" | "favorites" | "orders"
+                  )
+                }
+                className={`group flex min-h-[92px] items-center border bg-white/[0.04] p-5 text-left transition hover:bg-white/[0.06] ${
+                  isActive ? "border-neon-teal/60" : "border-white/10"
+                }`}
+              >
+                <p className="text-sm font-black uppercase text-white">{tab.label}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-6">
+          {activeTab === "profile" ? (
+            <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase text-neon-teal">Профиль</p>
@@ -856,28 +791,57 @@ export function AccountPage() {
               ))}
             </dl>
 
-            <div className="mt-3 border border-neon-teal/20 bg-neon-teal/5 p-4">
-              <p className="text-xs font-black uppercase text-neon-teal">
-                Умная примерочная
-              </p>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm leading-6 text-slate-200">
-                  Статус fit-профиля:{" "}
-                  <span className="font-semibold text-white">{fitProfileStatus}</span>
-                </p>
-                {fitProfileQuery.data?.updated_at ? (
-                  <p className="text-xs uppercase text-slate-400">
-                    Обновлён {formatDate(fitProfileQuery.data.updated_at)}
+            <section className="mt-8 border border-neon-teal/20 bg-ink-900/60 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase text-neon-teal">
+                    Результат теста
                   </p>
-                ) : null}
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    Статус: <span className="font-semibold text-white">{fitProfileStatus}</span>
+                  </p>
+                </div>
+                <Link
+                  href="/fitting"
+                  className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
+                >
+                  {fitProfile?.is_complete ? "Перепройти тест" : "Пройти тест"}
+                </Link>
               </div>
-              {!fitProfileQuery.data?.is_complete ? (
-                <p className="mt-2 text-xs leading-5 text-slate-400">
-                  Заполните параметры фигуры и предпочтения по стилю, чтобы магазин
-                  точнее рекомендовал размер и подбирал готовые образы.
+
+              {fitProfile?.updated_at ? (
+                <p className="mt-2 text-xs uppercase text-slate-400">
+                  Обновлён {formatDate(fitProfile.updated_at)}
                 </p>
               ) : null}
-            </div>
+
+              {fitProfileQuery.error ? (
+                <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
+                  {getErrorMessage(fitProfileQuery.error)}
+                </div>
+              ) : null}
+
+              <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  ["Рост", fitProfile?.height_cm ? `${fitProfile.height_cm} см` : "—"],
+                  ["Вес", fitProfile?.weight_kg ? `${fitProfile.weight_kg} кг` : "—"],
+                  [
+                    "Грудь/талия/бёдра",
+                    fitProfile?.chest_cm || fitProfile?.waist_cm || fitProfile?.hips_cm
+                      ? `${fitProfile?.chest_cm ?? "—"} / ${fitProfile?.waist_cm ?? "—"} / ${fitProfile?.hips_cm ?? "—"} см`
+                      : "—"
+                  ],
+                  ["Внутр. шов", fitProfile?.inseam_cm ? `${fitProfile.inseam_cm} см` : "—"],
+                  ["Размер верх", fitProfile?.tops_usual_size ?? "—"],
+                  ["Размер низ", fitProfile?.bottoms_usual_size ?? "—"]
+                ].map(([label, value]) => (
+                  <div key={label} className="border border-white/10 bg-ink-950/40 p-4">
+                    <dt className="text-xs uppercase text-slate-500">{label}</dt>
+                    <dd className="mt-2 text-sm font-semibold text-white">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
 
             <form className="mt-6 space-y-4" onSubmit={handleProfileSubmit}>
               {[
@@ -920,265 +884,20 @@ export function AccountPage() {
               </button>
             </form>
 
-            <section className="mt-8 border border-white/10 bg-ink-900/60 p-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase text-neon-teal">
-                    Fit profile
-                  </p>
-                  <h3 className="mt-2 text-lg font-black text-white">
-                    Параметры для умной примерочной
-                  </h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                    Эти данные нужны, чтобы система предлагала подходящий размер,
-                    предупреждала о риске возврата и подбирала капсульные образы под
-                    ваш стиль и бюджет.
-                  </p>
-                </div>
-                <span className="border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase text-slate-300">
-                  {fitProfileStatus}
-                </span>
-              </div>
-
-              {fitProfileQuery.error ? (
-                <div className="mt-4 border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
-                  {getErrorMessage(fitProfileQuery.error)}
-                </div>
-              ) : null}
-
-              <form className="mt-5 space-y-4" onSubmit={handleFitProfileSubmit}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[
-                    ["height_cm", "Рост, см"],
-                    ["weight_kg", "Вес, кг"],
-                    ["chest_cm", "Обхват груди, см"],
-                    ["waist_cm", "Обхват талии, см"],
-                    ["hips_cm", "Обхват бёдер, см"],
-                    ["inseam_cm", "Внутренний шов, см"],
-                    ["budget_min_rub", "Бюджет от, ₽"],
-                    ["budget_max_rub", "Бюджет до, ₽"]
-                  ].map(([name, label]) => (
-                    <label key={name} className="block">
-                      <span className="mb-2 block text-sm font-semibold text-slate-200">
-                        {label}
-                      </span>
-                      <input
-                        inputMode="decimal"
-                        value={fitProfileForm[name as keyof FitProfileFormState] as string}
-                        onChange={(event) =>
-                          setFitProfileForm((current) => ({
-                            ...current,
-                            [name]: event.target.value
-                          }))
-                        }
-                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                      />
-                    </label>
-                  ))}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-200">
-                      Предпочтительная посадка
-                    </span>
-                    <select
-                      value={fitProfileForm.preferred_fit}
-                      onChange={(event) =>
-                        setFitProfileForm((current) => ({
-                          ...current,
-                          preferred_fit: event.target.value as FitProfileFormState["preferred_fit"]
-                        }))
-                      }
-                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    >
-                      <option value="">Не выбрано</option>
-                      <option value="slim">По фигуре</option>
-                      <option value="regular">Стандартно</option>
-                      <option value="relaxed">Свободно</option>
-                      <option value="oversized">Оверсайз</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-200">
-                      Любимый стиль
-                    </span>
-                    <select
-                      value={fitProfileForm.preferred_style}
-                      onChange={(event) =>
-                        setFitProfileForm((current) => ({
-                          ...current,
-                          preferred_style: event.target.value as FitProfileFormState["preferred_style"]
-                        }))
-                      }
-                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    >
-                      <option value="">Не выбрано</option>
-                      <option value="minimal">Минимализм</option>
-                      <option value="streetwear">Стритвир</option>
-                      <option value="dark_fantasy">Тёмное фэнтези</option>
-                      <option value="sport">Спорт</option>
-                      <option value="casual">Повседневный</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-200">
-                      Предпочтительный сезон
-                    </span>
-                    <select
-                      value={fitProfileForm.preferred_season}
-                      onChange={(event) =>
-                        setFitProfileForm((current) => ({
-                          ...current,
-                          preferred_season: event.target.value as FitProfileFormState["preferred_season"]
-                        }))
-                      }
-                      className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    >
-                      <option value="">Не выбрано</option>
-                      <option value="spring">Весна</option>
-                      <option value="summer">Лето</option>
-                      <option value="autumn">Осень</option>
-                      <option value="winter">Зима</option>
-                      <option value="all_season">Круглый год</option>
-                    </select>
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-semibold text-slate-200">
-                        Размер верха
-                      </span>
-                      <select
-                        value={fitProfileForm.tops_usual_size}
-                        onChange={(event) =>
-                          setFitProfileForm((current) => ({
-                            ...current,
-                            tops_usual_size: event.target.value as FitProfileFormState["tops_usual_size"]
-                          }))
-                        }
-                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                      >
-                        <option value="">Не выбрано</option>
-                        {fitSizeOptions.map((size) => (
-                          <option key={`tops-${size}`} value={size}>
-                            {size === "ONE_SIZE" ? "One size" : size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-semibold text-slate-200">
-                        Размер низа
-                      </span>
-                      <select
-                        value={fitProfileForm.bottoms_usual_size}
-                        onChange={(event) =>
-                          setFitProfileForm((current) => ({
-                            ...current,
-                            bottoms_usual_size: event.target.value as FitProfileFormState["bottoms_usual_size"]
-                          }))
-                        }
-                        className="h-12 w-full border border-white/10 bg-ink-900/80 px-4 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                      >
-                        <option value="">Не выбрано</option>
-                        {fitSizeOptions.map((size) => (
-                          <option key={`bottoms-${size}`} value={size}>
-                            {size === "ONE_SIZE" ? "One size" : size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-200">
-                    Примечания для стилиста
-                  </span>
-                  <textarea
-                    rows={4}
-                    value={fitProfileForm.notes}
-                    onChange={(event) =>
-                      setFitProfileForm((current) => ({
-                        ...current,
-                        notes: event.target.value
-                      }))
-                    }
-                    className="w-full border border-white/10 bg-ink-900/80 px-4 py-3 text-white outline-none transition focus:border-neon-teal focus:ring-2 focus:ring-neon-teal/30"
-                    placeholder="Например: не люблю короткие худи, предпочитаю свободные брюки, нужен комплект до 20 000 ₽."
-                  />
-                </label>
-
-                {fitProfileError ? (
-                  <div className="border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-100">
-                    {fitProfileError}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={isSavingFitProfile}
-                  className="flex h-12 items-center justify-center bg-neon-teal px-5 text-sm font-black uppercase text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSavingFitProfile ? "Сохраняем fit-profile..." : "Сохранить fit-profile"}
-                </button>
-              </form>
-            </section>
-
-            <div className="mt-8">
-              <RecommendationHistoryPanel
-                scopeKey={recommendationScopeKey}
-                title="Сохранённые рекомендации"
-                description="Просмотренные smart fitting рекомендации и capsule looks остаются в аккаунте для быстрого сравнения."
-                emptyText="История появится после просмотра карточек товаров с персональной рекомендацией."
-              />
-            </div>
-
             <div className="mt-8 border border-white/10 bg-ink-900/60 p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
-                <div>
-                  <p className="text-xs font-black uppercase text-neon-teal">
-                    Smart fitting wizard
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Если удобнее проходить fit-profile по шагам, откройте отдельный wizard.
-                  </p>
-                </div>
-                <Link
-                  href="/fitting"
-                  className="inline-flex h-10 items-center border border-neon-teal/30 bg-neon-teal/10 px-4 text-sm font-semibold text-ice transition hover:bg-neon-teal/20"
-                >
-                  Открыть wizard
-                </Link>
-              </div>
-
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase text-neon-amber">
                     Данные и доступ
                   </p>
                   <h3 className="mt-2 text-lg font-black text-white">
-                    Экспорт и удаление аккаунта
+                    Удаление аккаунта
                   </h3>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
-                    Можно выгрузить профиль и историю в JSON. При удалении аккаунта
-                    профиль, адреса, корзина и избранное очищаются, а заказы и
-                    платежи остаются в архиве для учета.
+                    При удалении аккаунта профиль, адреса, корзина и избранное очищаются,
+                    а заказы и платежи остаются в архиве для учета.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  data-testid="account-export-button"
-                  onClick={() => void handleExportAccount()}
-                  disabled={isExportingAccount}
-                  className="inline-flex h-11 items-center justify-center border border-neon-teal/30 bg-neon-teal/10 px-5 text-sm font-semibold text-ice transition hover:bg-neon-teal/20 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isExportingAccount ? "Экспорт..." : "Экспортировать данные"}
-                </button>
               </div>
 
               <div className="mt-5 space-y-3 border border-red-400/20 bg-red-500/5 p-4">
@@ -1213,7 +932,9 @@ export function AccountPage() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {activeTab === "addresses" ? (
           <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1221,7 +942,7 @@ export function AccountPage() {
                 <h2 className="mt-3 text-2xl font-black">Доставка и получатели</h2>
               </div>
               <span className="text-sm text-slate-400">
-                {addressesQuery.data?.length ?? 0} запис.
+                {addressesQuery.data?.results.length ?? 0} запис.
               </span>
             </div>
 
@@ -1326,8 +1047,8 @@ export function AccountPage() {
                   <div className="h-36 animate-pulse border border-white/10 bg-white/[0.04]" />
                   <div className="h-36 animate-pulse border border-white/10 bg-white/[0.04]" />
                 </div>
-              ) : addressesQuery.data?.length ? (
-                addressesQuery.data.map((address) => (
+              ) : addressesQuery.data?.results.length ? (
+                addressesQuery.data.results.map((address) => (
                   <AddressCard
                     key={address.id}
                     address={address}
@@ -1344,9 +1065,9 @@ export function AccountPage() {
               )}
             </div>
           </section>
-        </div>
+          ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-2">
+          {activeTab === "orders" ? (
           <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1390,7 +1111,9 @@ export function AccountPage() {
               )}
             </div>
           </section>
+          ) : null}
 
+          {activeTab === "favorites" ? (
           <section className="border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1443,6 +1166,7 @@ export function AccountPage() {
               )}
             </div>
           </section>
+          ) : null}
         </div>
       </section>
     </main>

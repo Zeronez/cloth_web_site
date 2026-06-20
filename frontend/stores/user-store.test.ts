@@ -57,11 +57,7 @@ describe("useUserStore persistence policy", () => {
       refreshToken: "refresh-token",
       profile
     });
-    expect(localStorage.getItem("animeattire-user")).toBeNull();
-
-    const persisted = JSON.parse(
-      sessionStorage.getItem("animeattire-user") ?? "{}"
-    );
+    const persisted = JSON.parse(localStorage.getItem("animeattire-user") ?? "{}");
 
     expect(persisted.state).toEqual({ refreshToken: "refresh-token" });
     expect(JSON.stringify(persisted)).not.toContain("access-token");
@@ -85,9 +81,7 @@ describe("useUserStore persistence policy", () => {
     });
     expect(useFavoritesStore.getState().favorites).toEqual([]);
 
-    const persisted = JSON.parse(
-      sessionStorage.getItem("animeattire-user") ?? "{}"
-    );
+    const persisted = JSON.parse(localStorage.getItem("animeattire-user") ?? "{}");
     expect(persisted.state).toEqual({ refreshToken: null });
   });
 });

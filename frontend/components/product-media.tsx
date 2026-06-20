@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Product, ProductImage } from "../lib/api";
 import { ProductImagePlaceholder } from "./product-image-placeholder";
@@ -139,10 +139,15 @@ function ProductMediaLightbox({
   onClose: () => void;
 }) {
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ pointerId: 0, x: 0, y: 0, panX: 0, panY: 0, moved: false });
 
   useEffect(() => {
     if (!open) return;
     setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setIsPanning(false);
   }, [open]);
 
   useEffect(() => {
@@ -159,6 +164,20 @@ function ProductMediaLightbox({
   if (!open) return null;
 
   const isZoomed = zoom > 1;
+  const resetZoom = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setIsPanning(false);
+  };
+  const updateZoom = (delta: number) => {
+    setZoom((value) => {
+      const next = Math.max(1, Math.min(3, Number((value + delta).toFixed(2))));
+      if (next === 1) {
+        setPan({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  };
 
   return (
     <div
@@ -182,21 +201,21 @@ function ProductMediaLightbox({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setZoom((value) => Math.min(3, Number((value + 0.25).toFixed(2))))}
+              onClick={() => updateZoom(0.25)}
               className="h-9 rounded-full border border-white/15 bg-white/5 px-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10"
             >
               +
             </button>
             <button
               type="button"
-              onClick={() => setZoom((value) => Math.max(1, Number((value - 0.25).toFixed(2))))}
+              onClick={() => updateZoom(-0.25)}
               className="h-9 rounded-full border border-white/15 bg-white/5 px-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10"
             >
               −
             </button>
             <button
               type="button"
-              onClick={() => setZoom(1)}
+              onClick={resetZoom}
               disabled={!isZoomed}
               className="h-9 rounded-full border border-white/15 bg-white/5 px-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -213,15 +232,35 @@ function ProductMediaLightbox({
         </div>
 
         <div
-          className="relative grid max-h-[78vh] min-h-[420px] place-items-center overflow-auto bg-black/20"
+          className="relative grid max-h-[78vh] min-h-[420px] touch-none place-items-center overflow-hidden bg-black/20"
           onWheel={(event) => {
             if (!event.ctrlKey && !event.metaKey) return;
             event.preventDefault();
             const delta = event.deltaY > 0 ? -0.25 : 0.25;
-            setZoom((value) => {
-              const next = Math.max(1, Math.min(3, value + delta));
-              return Number(next.toFixed(2));
-            });
+            updateZoom(delta);
+          }}
+          onPointerMove={(event) => {
+            if (!isPanning || !isZoomed) return;
+            const start = panStartRef.current;
+            if (event.pointerId !== start.pointerId) return;
+            const nextX = start.panX + event.clientX - start.x;
+            const nextY = start.panY + event.clientY - start.y;
+            if (Math.abs(event.clientX - start.x) > 2 || Math.abs(event.clientY - start.y) > 2) {
+              start.moved = true;
+            }
+            setPan({ x: nextX, y: nextY });
+          }}
+          onPointerUp={(event) => {
+            if (event.pointerId === panStartRef.current.pointerId) {
+              setIsPanning(false);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onPointerCancel={(event) => {
+            if (event.pointerId === panStartRef.current.pointerId) {
+              setIsPanning(false);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
           }}
         >
           {asset.type === "video" && asset.url ? (
@@ -239,10 +278,35 @@ function ProductMediaLightbox({
               alt={asset.alt}
               src={asset.url}
               className={`max-h-[78vh] max-w-full object-contain transition ${
-                isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
+                isZoomed ? (isPanning ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
               }`}
-              style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
-              onClick={() => setZoom((value) => (value > 1 ? 1 : 2))}
+              style={{
+                transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+                transformOrigin: "center"
+              }}
+              onPointerDown={(event) => {
+                if (!isZoomed) return;
+                event.preventDefault();
+                panStartRef.current = {
+                  pointerId: event.pointerId,
+                  x: event.clientX,
+                  y: event.clientY,
+                  panX: pan.x,
+                  panY: pan.y,
+                  moved: false
+                };
+                setIsPanning(true);
+                event.currentTarget.parentElement?.setPointerCapture(event.pointerId);
+              }}
+              onClick={() => {
+                if (panStartRef.current.moved) {
+                  panStartRef.current.moved = false;
+                  return;
+                }
+                if (!isZoomed) {
+                  setZoom(2);
+                }
+              }}
               draggable={false}
             />
           ) : (

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" fill="none">
+  <defs>
+    <style>
+      .bg { fill: #052f36; }
+      .panel { fill: #0b3a43; stroke: rgba(255,255,255,0.12); stroke-width: 2; }
+      .card { fill: #0d4049; stroke: rgba(255,255,255,0.1); stroke-width: 2; }
+      .soft { fill: rgba(255,255,255,0.08); stroke: rgba(255,255,255,0.16); stroke-width: 2; }
+      .accentStroke { fill: rgba(255,49,95,0.08); stroke: #ff315f; stroke-width: 2; }
+      .accentText { fill: #ff315f; font: 700 18px Arial, sans-serif; }
+      .title { font: 700 28px Arial, sans-serif; fill: #f8fafc; }
+      .logo { font: 800 36px Arial, sans-serif; fill: #ff315f; }
+      .nav { font: 700 18px Arial, sans-serif; fill: #dce7eb; text-transform: uppercase; }
+      .h1 { font: 800 32px Arial, sans-serif; fill: #f8fafc; }
+      .label { font: 700 20px Arial, sans-serif; fill: #f8fafc; }
+      .small { font: 500 17px Arial, sans-serif; fill: #bfd0d5; }
+      .tiny { font: 500 14px Arial, sans-serif; fill: #9fb4bb; }
+      .num { font: 800 28px Arial, sans-serif; fill: #f8fafc; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1120"/>
+  <text class="title" x="76" y="60">Рисунок 2.6 - Схема личного кабинета AnimeAttire</text>
+
+  <rect x="86" y="92" width="1428" height="88" rx="18" fill="rgba(5,47,54,0.88)"/>
+  <text class="logo" x="120" y="143">AnimeAttire</text>
+  <text class="tiny" x="124" y="162">アニメの服</text>
+  <text class="nav" x="705" y="144">КАТАЛОГ</text>
+  <text class="nav" x="860" y="144">РЕКОМЕНДАЦИИ</text>
+  <text class="nav" x="1078" y="144">КОНТАКТЫ</text>
+  <rect class="soft" x="1306" y="108" width="50" height="50"/>
+  <rect class="soft" x="1372" y="108" width="50" height="50"/>
+
+  <rect class="panel" x="236" y="214" width="1128" height="150" rx="0"/>
+  <rect class="soft" x="266" y="254" width="56" height="56" rx="0"/>
+  <rect class="soft" x="340" y="244" width="260" height="28" rx="0"/>
+  <rect class="soft" x="340" y="286" width="200" height="18" rx="0"/>
+  <rect class="soft" x="1268" y="260" width="68" height="42" rx="0"/>
+
+  <rect class="accentStroke" x="236" y="402" width="270" height="92" rx="0"/>
+  <rect class="panel" x="524" y="402" width="270" height="92" rx="0"/>
+  <rect class="panel" x="812" y="402" width="270" height="92" rx="0"/>
+  <rect class="panel" x="1100" y="402" width="264" height="92" rx="0"/>
+  <text class="label" x="310" y="458">ПРОФИЛЬ</text>
+  <text class="label" x="602" y="458">АДРЕСА</text>
+  <text class="label" x="860" y="458">ИЗБРАННОЕ</text>
+  <text class="label" x="1182" y="458">ЗАКАЗЫ</text>
+
+  <rect class="panel" x="236" y="542" width="1128" height="512" rx="0"/>
+  <text class="accentText" x="266" y="586">ПРОФИЛЬ</text>
+  <rect class="soft" x="266" y="610" width="260" height="26" rx="0"/>
+
+  <rect class="card" x="266" y="676" width="292" height="94" rx="0"/>
+  <rect class="card" x="576" y="676" width="292" height="94" rx="0"/>
+  <rect class="card" x="886" y="676" width="292" height="94" rx="0"/>
+  <rect class="card" x="1196" y="676" width="138" height="94" rx="0"/>
+  <rect class="card" x="266" y="786" width="292" height="94" rx="0"/>
+
+  <rect class="soft" x="286" y="700" width="120" height="12" rx="0"/>
+  <rect class="soft" x="286" y="732" width="160" height="16" rx="0"/>
+  <rect class="soft" x="596" y="700" width="90" height="12" rx="0"/>
+  <rect class="soft" x="596" y="732" width="190" height="16" rx="0"/>
+  <rect class="soft" x="906" y="700" width="90" height="12" rx="0"/>
+  <rect class="soft" x="906" y="732" width="40" height="20" rx="0"/>
+  <rect class="soft" x="1216" y="700" width="90" height="12" rx="0"/>
+  <rect class="soft" x="1216" y="732" width="40" height="20" rx="0"/>
+  <rect class="soft" x="286" y="810" width="110" height="12" rx="0"/>
+  <rect class="soft" x="286" y="842" width="40" height="20" rx="0"/>
+
+  <rect class="card" x="266" y="916" width="1068" height="116" rx="0"/>
+  <text class="accentText" x="286" y="950">РЕЗУЛЬТАТ ТЕСТА</text>
+  <rect class="soft" x="286" y="968" width="180" height="16" rx="0"/>
+  <rect class="accentStroke" x="1216" y="940" width="96" height="40" rx="0"/>
+
+  <rect class="card" x="286" y="1000" width="456" height="12" rx="0"/>
+  <rect class="card" x="760" y="1000" width="552" height="12" rx="0"/>
+</svg>

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" fill="none">
+  <defs>
+    <style>
+      .bg { fill: #052f36; }
+      .panel { fill: #0b3a43; stroke: rgba(255,255,255,0.12); stroke-width: 2; }
+      .card { fill: #0d4049; stroke: rgba(255,255,255,0.1); stroke-width: 2; }
+      .soft { fill: rgba(255,255,255,0.08); stroke: rgba(255,255,255,0.18); stroke-width: 2; }
+      .accent { fill: #ff315f; }
+      .accentStroke { fill: rgba(255,49,95,0.12); stroke: #ff315f; stroke-width: 2; }
+      .muted { fill: #9fb4bb; }
+      .white { fill: #f8fafc; }
+      .line { stroke: rgba(255,255,255,0.25); stroke-width: 2; }
+      .title { font: 700 28px Arial, sans-serif; fill: #f8fafc; }
+      .logo { font: 800 36px Arial, sans-serif; fill: #ff315f; }
+      .nav { font: 700 18px Arial, sans-serif; fill: #dce7eb; text-transform: uppercase; }
+      .h1 { font: 800 42px Arial, sans-serif; fill: #f8fafc; }
+      .label { font: 700 20px Arial, sans-serif; fill: #f8fafc; }
+      .small { font: 500 17px Arial, sans-serif; fill: #bfd0d5; }
+      .tiny { font: 500 14px Arial, sans-serif; fill: #9fb4bb; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="980"/>
+  <text class="title" x="76" y="60">Рисунок 2.4 - Схема главной страницы AnimeAttire</text>
+
+  <rect x="86" y="92" width="1428" height="88" rx="18" fill="rgba(5,47,54,0.88)"/>
+  <text class="logo" x="120" y="143">AnimeAttire</text>
+  <text class="tiny" x="124" y="162">アニメの服</text>
+  <text class="nav" x="705" y="144">КАТАЛОГ</text>
+  <text class="nav" x="860" y="144">РЕКОМЕНДАЦИИ</text>
+  <text class="nav" x="1078" y="144">КОНТАКТЫ</text>
+  <rect class="soft" x="1306" y="108" width="50" height="50"/>
+  <rect class="soft" x="1372" y="108" width="50" height="50"/>
+  <circle cx="1331" cy="128" r="7" stroke="#f8fafc" stroke-width="3"/>
+  <path d="M1319 145c3-7 21-7 24 0" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1387 123h20v18h-20z" stroke="#f8fafc" stroke-width="3"/>
+  <path d="M1391 123c0-5 3-8 6-8s6 3 6 8" stroke="#f8fafc" stroke-width="3"/>
+
+  <rect class="panel" x="86" y="208" width="1428" height="344" rx="28"/>
+  <rect x="122" y="248" width="620" height="264" rx="24" fill="rgba(255,255,255,0.035)"/>
+  <text class="accent" x="152" y="292" style="font:700 18px Arial, sans-serif;">НОВЫЙ ДРОП</text>
+  <text class="h1" x="152" y="356">Лимитированный</text>
+  <text class="h1" x="152" y="408">аниме-стритвир</text>
+  <line class="line" x1="152" y1="438" x2="548" y2="438"/>
+  <line class="line" x1="152" y1="462" x2="516" y2="462"/>
+  <rect x="152" y="566" width="178" height="52" rx="0" fill="#f8fafc"/>
+  <rect class="soft" x="348" y="566" width="178" height="52" rx="0"/>
+  <text x="186" y="599" style="font:700 16px Arial, sans-serif; fill:#052f36;">Добавить сет</text>
+  <text x="385" y="599" style="font:700 16px Arial, sans-serif; fill:#f8fafc;">Смотреть сеты</text>
+
+  <rect class="card" x="804" y="248" width="650" height="264" rx="0"/>
+  <rect x="838" y="280" width="582" height="200" rx="0" fill="rgba(255,255,255,0.08)"/>
+  <rect x="870" y="312" width="518" height="136" rx="0" fill="rgba(255,255,255,0.04)"/>
+  <text class="label" x="1050" y="390">Визуальный баннер</text>
+  <text class="tiny" x="1100" y="416">Сет недели</text>
+  <rect class="accentStroke" x="1218" y="294" width="128" height="40" rx="0"/>
+  <text x="1245" y="319" style="font:700 14px Arial, sans-serif; fill:#f8fafc;">СЕТ НЕДЕЛИ</text>
+
+  <rect class="card" x="122" y="648" width="280" height="118" rx="0"/>
+  <rect class="card" x="432" y="648" width="280" height="118" rx="0"/>
+  <rect class="card" x="742" y="648" width="280" height="118" rx="0"/>
+  <rect class="card" x="1052" y="648" width="280" height="118" rx="0"/>
+  <text class="label" x="154" y="700">48ч</text>
+  <text class="tiny" x="154" y="730">Новые дропы</text>
+  <text class="label" x="464" y="700">0₽</text>
+  <text class="tiny" x="464" y="730">Доставка от</text>
+  <text class="label" x="774" y="700">14</text>
+  <text class="tiny" x="774" y="730">Дней на возврат</text>
+  <text class="label" x="1084" y="700">24/7</text>
+  <text class="tiny" x="1084" y="730">Поддержка</text>
+
+  <text class="label" x="92" y="836">Подборка товаров</text>
+  <rect class="panel" x="86" y="858" width="1428" height="70" rx="20"/>
+  <rect class="soft" x="120" y="878" width="310" height="30"/>
+  <rect class="soft" x="458" y="878" width="310" height="30"/>
+  <rect class="soft" x="796" y="878" width="310" height="30"/>
+  <rect class="soft" x="1134" y="878" width="310" height="30"/>
+</svg>

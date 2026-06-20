@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1180" viewBox="0 0 1680 1180" fill="none">
+  <defs>
+    <style>
+      .win { fill: #f6f8fb; stroke: #9db8d8; stroke-width: 2; }
+      .header { fill: #1677c8; }
+      .toolbar { fill: #eef2f7; stroke: #d1d9e6; stroke-width: 1; }
+      .search { fill: #ffffff; stroke: #ccd6e4; stroke-width: 2; }
+      .grid { stroke: #d7dfeb; stroke-width: 1; }
+      .text { font: 500 16px Arial, sans-serif; fill: #1e293b; }
+      .small { font: 500 14px Arial, sans-serif; fill: #475569; }
+      .head { font: 500 20px Arial, sans-serif; fill: #334155; }
+      .title { font: 500 28px Arial, sans-serif; fill: #ffffff; }
+      .bold { font: 700 18px Arial, sans-serif; fill: #1e293b; }
+      .tree { font: 500 17px Arial, sans-serif; fill: #334155; }
+      .muted { font: 500 16px Arial, sans-serif; fill: #64748b; }
+      .selected { fill: #1677c8; }
+      .seltext { font: 500 17px Arial, sans-serif; fill: #ffffff; }
+      .barbg { fill: #f7dada; stroke: #ecb6b6; stroke-width: 2; }
+      .barok { fill: #1fad4b; }
+      .outline { stroke: #64748b; stroke-width: 2; fill: none; }
+      .note { font: 500 15px Arial, sans-serif; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect class="win" x="2" y="2" width="1676" height="1176"/>
+  <rect class="header" x="2" y="2" width="1676" height="76"/>
+  <text class="title" x="18" y="49">Automated Test Coverage</text>
+  <circle cx="1578" cy="40" r="12" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <path d="M1615 26l28 28M1643 26l-28 28" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+
+  <rect class="toolbar" x="8" y="82" width="336" height="54"/>
+  <text class="head" x="74" y="117">Coverage Tree</text>
+  <rect class="toolbar" x="348" y="82" width="268" height="54"/>
+  <text class="head" x="414" y="117">Auto Test Scope</text>
+  <rect class="toolbar" x="622" y="82" width="478" height="54"/>
+  <text class="head" x="644" y="117">All Project Tests in Current Repository</text>
+  <rect class="toolbar" x="1116" y="82" width="556" height="54"/>
+  <text class="head" x="1168" y="117">Backend + Frontend test groups</text>
+
+  <rect class="toolbar" x="8" y="142" width="1664" height="58"/>
+  <rect class="search" x="8" y="204" width="1664" height="72"/>
+  <text x="22" y="250" style="font:500 28px Arial, sans-serif; fill:#9aa7b8;">Type to search</text>
+
+  <line class="grid" x1="8" y1="320" x2="1672" y2="320"/>
+  <line class="grid" x1="980" y1="276" x2="980" y2="1170"/>
+  <line class="grid" x1="1272" y1="276" x2="1272" y2="1170"/>
+
+  <text class="head" x="18" y="302">Symbol</text>
+  <text class="head" x="996" y="302">Coverage (%)</text>
+  <text class="head" x="1288" y="302">Test Files</text>
+
+  <line class="grid" x1="8" y1="356" x2="1672" y2="356"/>
+  <line class="grid" x1="8" y1="424" x2="1672" y2="424"/>
+  <line class="grid" x1="8" y1="492" x2="1672" y2="492"/>
+  <line class="grid" x1="8" y1="560" x2="1672" y2="560"/>
+  <line class="grid" x1="8" y1="628" x2="1672" y2="628"/>
+  <line class="grid" x1="8" y1="696" x2="1672" y2="696"/>
+  <line class="grid" x1="8" y1="764" x2="1672" y2="764"/>
+  <line class="grid" x1="8" y1="832" x2="1672" y2="832"/>
+  <line class="grid" x1="8" y1="900" x2="1672" y2="900"/>
+  <line class="grid" x1="8" y1="968" x2="1672" y2="968"/>
+  <line class="grid" x1="8" y1="1036" x2="1672" y2="1036"/>
+  <line class="grid" x1="8" y1="1104" x2="1672" y2="1104"/>
+
+  <text class="tree" x="58" y="398">Total</text>
+  <text class="tree" x="110" y="466">cloth_web_site</text>
+  <text class="tree" x="180" y="534">backend/tests</text>
+  <text class="tree" x="234" y="602">payment_* / webhook / refund</text>
+  <text class="tree" x="234" y="670">auth_* / object auth / staff</text>
+  <text class="tree" x="234" y="738">cart_* / checkout_* / pricing</text>
+  <text class="tree" x="234" y="806">catalog_* / fit_profile / support</text>
+  <text class="tree" x="234" y="874">api_* / admin_* / migration / openapi</text>
+  <text class="tree" x="180" y="942">frontend tests</text>
+  <text class="tree" x="234" y="1010">account / catalog / checkout</text>
+  <text class="tree" x="234" y="1078">auth / product / contacts / legal</text>
+  <text class="tree" x="234" y="1146">lib / stores / header / footer</text>
+
+  <path d="M26 384l18 18h-18z" fill="#111827"/>
+  <path d="M78 452l18 18h-18z" fill="#111827"/>
+  <path d="M148 520l18 18h-18z" fill="#111827"/>
+  <path d="M202 928l18 18h-18z" fill="#111827"/>
+  <path d="M213 588l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 656l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 724l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 792l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 860l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 996l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 1064l14 14h-14z" fill="#6b7280"/>
+  <path d="M213 1132l14 14h-14z" fill="#6b7280"/>
+
+  <rect class="barbg" x="994" y="366" width="250" height="50"/>
+  <rect class="barok" x="994" y="366" width="250" height="50"/>
+  <text x="1090" y="400" style="font:500 22px Arial, sans-serif; fill:#111827;">100%</text>
+
+  <rect class="barbg" x="994" y="434" width="250" height="50"/>
+  <rect class="barok" x="994" y="434" width="250" height="50"/>
+  <text x="1090" y="468" style="font:500 22px Arial, sans-serif; fill:#111827;">100%</text>
+
+  <rect class="barbg" x="994" y="502" width="250" height="50"/>
+  <rect class="barok" x="994" y="502" width="185" height="50"/>
+  <text x="1090" y="536" style="font:500 22px Arial, sans-serif; fill:#111827;">74%</text>
+
+  <rect class="barbg" x="994" y="570" width="250" height="50"/>
+  <rect class="barok" x="994" y="570" width="68" height="50"/>
+  <text x="1096" y="604" style="font:500 22px Arial, sans-serif; fill:#111827;">27%</text>
+
+  <rect class="barbg" x="994" y="638" width="250" height="50"/>
+  <rect class="barok" x="994" y="638" width="50" height="50"/>
+  <text x="1098" y="672" style="font:500 22px Arial, sans-serif; fill:#111827;">20%</text>
+
+  <rect class="barbg" x="994" y="706" width="250" height="50"/>
+  <rect class="barok" x="994" y="706" width="50" height="50"/>
+  <text x="1098" y="740" style="font:500 22px Arial, sans-serif; fill:#111827;">20%</text>
+
+  <rect class="barbg" x="994" y="774" width="250" height="50"/>
+  <rect class="barok" x="994" y="774" width="38" height="50"/>
+  <text x="1100" y="808" style="font:500 22px Arial, sans-serif; fill:#111827;">15%</text>
+
+  <rect class="barbg" x="994" y="842" width="250" height="50"/>
+  <rect class="barok" x="994" y="842" width="29" height="50"/>
+  <text x="1100" y="876" style="font:500 22px Arial, sans-serif; fill:#111827;">11%</text>
+
+  <rect class="barbg" x="994" y="910" width="250" height="50"/>
+  <rect class="barok" x="994" y="910" width="65" height="50"/>
+  <text x="1098" y="944" style="font:500 22px Arial, sans-serif; fill:#111827;">26%</text>
+
+  <rect class="barbg" x="994" y="978" width="250" height="50"/>
+  <rect class="barok" x="994" y="978" width="20" height="50"/>
+  <text x="1104" y="1012" style="font:500 22px Arial, sans-serif; fill:#111827;">8%</text>
+
+  <rect class="barbg" x="994" y="1046" width="250" height="50"/>
+  <rect class="barok" x="994" y="1046" width="27" height="50"/>
+  <text x="1102" y="1080" style="font:500 22px Arial, sans-serif; fill:#111827;">11%</text>
+
+  <rect class="barbg" x="994" y="1114" width="250" height="50"/>
+  <rect class="barok" x="994" y="1114" width="18" height="50"/>
+  <text x="1104" y="1148" style="font:500 22px Arial, sans-serif; fill:#111827;">7%</text>
+
+  <text class="bold" x="1292" y="398">73 / 73</text>
+  <text class="bold" x="1292" y="466">73 / 73</text>
+  <text class="bold" x="1292" y="534">54 / 73</text>
+  <text class="bold" x="1292" y="602">5 / 73</text>
+  <text class="bold" x="1292" y="670">4 / 73</text>
+  <text class="bold" x="1292" y="738">4 / 73</text>
+  <text class="bold" x="1292" y="806">3 / 73</text>
+  <text class="bold" x="1292" y="874">5 / 73</text>
+  <text class="bold" x="1292" y="942">19 / 73</text>
+  <text class="bold" x="1292" y="1010">6 / 73</text>
+  <text class="bold" x="1292" y="1078">8 / 73</text>
+  <text class="bold" x="1292" y="1146">5 / 73</text>
+
+  <rect class="selected" x="8" y="904" width="1664" height="60"/>
+  <text class="seltext" x="180" y="942">frontend tests</text>
+  <rect class="barbg" x="994" y="910" width="250" height="50"/>
+  <rect class="barok" x="994" y="910" width="65" height="50"/>
+  <text x="1098" y="944" style="font:500 22px Arial, sans-serif; fill:#111827;">26%</text>
+  <text class="seltext" x="1292" y="942">19 / 73</text>
+
+  <text class="note" x="74" y="83">Схема показывает реальные наборы тестовых файлов проекта: backend `54`, frontend `19`, всего `73`.</text>
+</svg>

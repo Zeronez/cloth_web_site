@@ -240,6 +240,17 @@ export type ProductVariant = {
   is_active: boolean;
 };
 
+export type ProductRecommendationMetadata = {
+  recommendation_fit_tendency: string;
+  recommendation_fit_confidence: number;
+  recommendation_silhouette: string;
+  recommendation_style_tags: string[];
+  recommendation_seasonality: string;
+  recommendation_layering_role: string;
+  recommendation_body_shape_notes: string;
+  recommendation_notes: string;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -251,6 +262,7 @@ export type Product = {
   main_image: ProductImage | null;
   total_stock: number;
   tags?: ProductTag[];
+  recommendation_metadata?: ProductRecommendationMetadata;
   description?: string;
   images?: ProductImage[];
   variants?: ProductVariant[];
@@ -976,7 +988,7 @@ export async function deleteAccount(token: string, currentPassword: string) {
 }
 
 export async function fetchAddresses(token: string) {
-  return apiRequest<Address[]>(apiPath("/addresses/"), { token });
+  return apiRequest<Paginated<Address>>(apiPath("/addresses/"), { token });
 }
 
 export async function createAddress(token: string, input: AddressInput) {
