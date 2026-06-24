@@ -114,9 +114,7 @@ psycopg-binary==3.3.4
 pygments==2.20.0
     # via pytest
 pyjwt==2.12.1
-    # via
-    #   djangorestframework-simplejwt
-    #   redis
+    # via djangorestframework-simplejwt
 pyproject-hooks==1.2.0
     # via
     #   build
@@ -133,7 +131,7 @@ python-dateutil==2.9.0.post0
     #   celery
 pyyaml==6.0.3
     # via drf-spectacular
-redis==5.3.1
+redis==8.0.1
     # via -r requirements.in
 referencing==0.37.0
     # via
